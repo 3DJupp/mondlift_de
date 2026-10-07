@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mondlift</title>
+    <meta
+      name="description"
+      content="Private Fan-Hommage an den Mondlift, ein Huss Enterprise auf Reisen. Inoffiziell und ohne Verbindung zum Betreiber des Fahrgeschäfts."
+    />
+    <link rel="canonical" href="https://mondlift.de/" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Mondlift" />
+    <meta
+      property="og:description"
+      content="Private Fan-Hommage an ein Fahrgeschäft auf Reisen."
+    />
+    <meta property="og:url" content="https://mondlift.de/" />
+    <meta property="og:locale" content="de_DE" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#inhalt">Zum Inhalt springen</a>
+
+    <!-- Die Animation ist reine Dekoration und fuer Screenreader unsichtbar. -->
+    <canvas id="ride" aria-hidden="true"></canvas>
+
+    <div class="hero">
+      <header class="hero__head" id="inhalt">
+        <h1 class="hero__title" data-site="site.name">Mondlift</h1>
+        <p class="hero__sub" data-site="site.tagline">
+          Eine Fan-Hommage an ein Fahrgeschäft auf Reisen
+        </p>
+      </header>
+
+      <footer class="foot">
+        <ul class="foot__nav">
+          <li><a href="/impressum">Impressum</a></li>
+          <li><a href="/datenschutz">Datenschutz</a></li>
+          <li><a data-site-href="contact.mailto" href="#">Kontakt</a></li>
+        </ul>
+        <p class="disclaimer">
+          <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
+          Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
+          des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
+        </p>
+      </footer>
+    </div>
+
+    <script src="/assets/js/enterprise.js" defer></script>
+  </body>
+</html>
