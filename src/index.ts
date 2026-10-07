@@ -3,6 +3,7 @@
  *
  * Aufgaben:
  *  - www.* auf die Apex-Domain umleiten
+ *  - POST /api/contact entgegennehmen
  *  - Daten aus site.config.json in die HTML-Seiten einsetzen
  *  - Security-Header auf jede Antwort legen
  *
@@ -11,8 +12,14 @@
 
 import { withSecurityHeaders } from "./headers";
 import { injectSiteConfig, isHtml } from "./site-config";
+import { handleContact, contactJson, contactRedirect } from "./contact";
 
-const ALLOWED_METHODS = new Set(["GET", "HEAD"]);
+const CONTACT_ENDPOINT = "/api/contact";
+
+/** Erkennt den Weg mit JavaScript: fetch() schickt diesen Accept-Kopf. */
+function wantsJson(request: Request): boolean {
+  return (request.headers.get("accept") ?? "").includes("application/json");
+}
 
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
@@ -25,20 +32,55 @@ export default {
       return Response.redirect(target.toString(), 301);
     }
 
-    // Phase 1 ist reines Ausliefern. POST /api/contact kommt in Phase 2.
-    if (!ALLOWED_METHODS.has(request.method)) {
+    // --- Kontaktformular -------------------------------------------------
+    if (url.pathname === CONTACT_ENDPOINT) {
+      if (request.method !== "POST") {
+        return withSecurityHeaders(
+          new Response("Method Not Allowed", {
+            status: 405,
+            headers: {
+              allow: "POST",
+              "content-type": "text/plain; charset=utf-8",
+            },
+          }),
+          url,
+        );
+      }
+      const status = await handleContact(request, env);
+      const response = wantsJson(request)
+        ? contactJson(status)
+        : contactRedirect(status, url);
+      return withSecurityHeaders(response, url);
+    }
+
+    if (request.method !== "GET" && request.method !== "HEAD") {
       return withSecurityHeaders(
         new Response("Method Not Allowed", {
           status: 405,
-          headers: { Allow: "GET, HEAD", "content-type": "text/plain; charset=utf-8" },
+          headers: {
+            allow: "GET, HEAD",
+            "content-type": "text/plain; charset=utf-8",
+          },
         }),
         url,
       );
     }
 
+    // --- Auslieferung ----------------------------------------------------
     try {
-      const asset = await env.ASSETS.fetch(request);
-      const body = isHtml(asset) ? injectSiteConfig(asset) : asset;
+      // Das Asset-Binding soll die Query nicht sehen: ?status=... gehört
+      // zur Seitenlogik, nicht zum Dateinamen, und würde sonst den Cache
+      // unnötig aufteilen.
+      const assetUrl = new URL(url);
+      assetUrl.search = "";
+      const asset = await env.ASSETS.fetch(new Request(assetUrl, request));
+
+      const body = isHtml(asset)
+        ? injectSiteConfig(asset, {
+            turnstileSiteKey: env.TURNSTILE_SITE_KEY,
+            status: url.searchParams.get("status"),
+          })
+        : asset;
       return withSecurityHeaders(body, url);
     } catch (error) {
       // Strukturiert loggen, nach aussen nichts Internes preisgeben.

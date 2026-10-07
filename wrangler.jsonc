@@ -4,7 +4,7 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-10-07",
 
-  // Static Assets. Der Worker laeuft zuerst, damit jede Antwort - auch CSS,
+  // Static Assets. Der Worker läuft zuerst, damit jede Antwort - auch CSS,
   // JS und Bilder - dieselben Security-Header bekommt. Danach reicht der
   // Worker an das Asset-Binding weiter.
   "assets": {
@@ -21,20 +21,37 @@
     { "pattern": "www.mondlift.de", "custom_domain": true }
   ],
 
+  // Öffentliche Variablen. Der Turnstile Site Key ist öffentlich und steht
+  // ohnehin im HTML - der Secret Key gehört dagegen in `wrangler secret put`.
+  // Leer lassen heißt: kein Widget im Formular.
+  "vars": {
+    "TURNSTILE_SITE_KEY": ""
+  },
+
+  // Rate Limits fürs Kontaktformular, pro IP. Die Periode darf nur 10 oder
+  // 60 Sekunden sein, längere Fenster kann dieses Binding nicht.
+  // Der strenge Limiter greift nur für Einsendungen ohne Turnstile-Token.
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 3, "period": 60 }
+    },
+    {
+      "name": "CONTACT_RATE_LIMIT_STRICT",
+      "namespace_id": "1002",
+      "simple": { "limit": 1, "period": 60 }
+    }
+  ],
+
+  // Zustellung des Kontaktformulars. Darf nur an verifizierte
+  // Zieladressen des Accounts senden - siehe README.
+  "send_email": [{ "name": "CONTACT_MAILER" }],
+
   "observability": {
     "enabled": true,
     "traces": {
       "enabled": true
     }
   }
-
-  // Phase 2 (Kontaktformular). Erst aktivieren, wenn Email Routing und die
-  // verifizierte Zieladresse im Dashboard eingerichtet sind:
-  //
-  // "send_email": [
-  //   { "name": "CONTACT_MAILER" }
-  // ],
-  //
-  // Oeffentliche Variablen duerfen hier stehen, Secrets nicht:
-  // "vars": { "TURNSTILE_SITE_KEY": "0x0000000000000000000000" }
 }
