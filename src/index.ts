@@ -46,7 +46,20 @@ export default {
           url,
         );
       }
-      const status = await handleContact(request, env);
+      // Auch Unerwartetes darf nur die allgemeine Meldung ergeben. Ohne
+      // dieses Netz käme eine rohe Fehlerseite ohne Security-Header zurück.
+      let status: Awaited<ReturnType<typeof handleContact>>;
+      try {
+        status = await handleContact(request, env);
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "contact_unhandled",
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        status = "fehler";
+      }
       const response = wantsJson(request)
         ? contactJson(status)
         : contactRedirect(status, url);
