@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kontakt — Mondlift</title>
+    <meta
+      name="description"
+      content="Nachricht an den Betreiber von mondlift.de. Kein Tracking, keine Cookies."
+    />
+    <link rel="canonical" href="https://mondlift.de/kontakt" />
+    <meta name="theme-color" content="#070a12" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body class="page">
+    <main class="wrap">
+      <a class="back" href="/">&larr; Zurück zum Mondlift</a>
+
+      <h1>Kontakt</h1>
+
+      <p class="lead">
+        Fragen, Hinweise, Korrekturen oder einfach ein Foto vom Mondlift —
+        gern über dieses Formular. Wer lieber direkt schreibt, erreicht mich
+        unter
+        <a data-site-href="contact.mailto" data-site="contact.email" href="#"
+          >—</a
+        >.
+      </p>
+
+      <!-- Rückmeldungen. Der Worker macht nach dem Absenden ohne JavaScript
+           den passenden Absatz sichtbar, mit JavaScript übernimmt das
+           kontakt.js. -->
+      <div
+        class="status"
+        id="formular"
+        role="status"
+        aria-live="polite"
+        data-status-box
+      >
+        <p class="status__msg status__msg--ok" data-status="ok" hidden>
+          Danke, die Nachricht ist angekommen. Ich melde mich, sobald ich
+          dazu komme.
+        </p>
+        <p class="status__msg status__msg--warn" data-status="ungueltig" hidden>
+          Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn
+          Zeichen angeben.
+        </p>
+        <p class="status__msg status__msg--warn" data-status="spam" hidden>
+          Die Nachricht konnte nicht zugestellt werden. Bitte noch einmal
+          versuchen oder direkt eine E-Mail schreiben.
+        </p>
+        <p class="status__msg status__msg--warn" data-status="zuviel" hidden>
+          Zu viele Versuche in kurzer Zeit. Bitte eine Minute warten.
+        </p>
+        <p class="status__msg status__msg--warn" data-status="fehler" hidden>
+          Das hat gerade nicht geklappt. Bitte später noch einmal versuchen
+          oder direkt eine E-Mail schreiben.
+        </p>
+      </div>
+
+      <form
+        class="form"
+        action="/api/contact"
+        method="post"
+        novalidate
+        data-contact-form
+      >
+        <div class="field">
+          <label for="name">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            maxlength="80"
+            required
+            autocomplete="name"
+          />
+        </div>
+
+        <div class="field">
+          <label for="email">E-Mail-Adresse</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            maxlength="160"
+            required
+            autocomplete="email"
+          />
+          <p class="field__hint">Nur, damit ich antworten kann.</p>
+        </div>
+
+        <div class="field">
+          <label for="message">Nachricht</label>
+          <textarea
+            id="message"
+            name="message"
+            rows="8"
+            maxlength="4000"
+            required
+          ></textarea>
+        </div>
+
+        <!-- Honigtopf. Für Besucher unsichtbar und nicht erreichbar,
+             einfache Bots füllen ihn aus und werden abgewiesen. -->
+        <div class="trap" aria-hidden="true">
+          <label for="website">Website (bitte frei lassen)</label>
+          <input
+            type="text"
+            id="website"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+          />
+        </div>
+
+        <div data-turnstile class="cf-turnstile" data-action="kontakt"></div>
+
+        <button type="submit" class="btn" data-submit>Nachricht senden</button>
+
+        <p class="form__note">
+          Die Angaben werden nur zur Beantwortung verwendet. Was dabei
+          verarbeitet wird, steht in der
+          <a href="/datenschutz">Datenschutzerklärung</a>.
+        </p>
+      </form>
+    </main>
+
+    <script
+      data-turnstile-script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      async
+      defer
+    ></script>
+    <script src="/assets/js/kontakt.js" defer></script>
+  </body>
+</html>

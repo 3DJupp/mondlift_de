@@ -1,17 +1,23 @@
 /**
- * Setzt die Werte aus site.config.json serverseitig in die HTML-Seiten ein.
+ * Setzt die Werte aus site.config.json serverseitig in die HTML-Seiten ein
+ * und erledigt nebenbei zwei Dinge für das Kontaktformular.
  *
- * Grund: Name, Adresse und E-Mail stehen an genau einer Stelle im Repo. Die
- * HTML-Dateien enthalten nur Platzhalter. Das laeuft im Worker per
- * HTMLRewriter, also ohne Client-JavaScript - das Impressum ist damit auch
- * ohne aktives JS vollstaendig.
+ * Grund für den HTMLRewriter statt Client-JavaScript: Name, Anschrift und
+ * E-Mail stehen an genau einer Stelle im Repo, und das Impressum ist auch
+ * ohne aktives JavaScript vollständig. Aus demselben Grund wird hier die
+ * Rückmeldung des Formulars eingesetzt - wer kein JavaScript hat, bekommt
+ * nach dem Absenden trotzdem einen lesbaren Satz zu sehen.
  *
  * Platzhalter in den HTML-Dateien:
- *   <span data-site="owner.name"></span>        -> Textinhalt
- *   <a data-site-href="contact.mailto"></a>     -> href-Attribut
+ *   <span data-site="owner.name"></span>      Textinhalt
+ *   <a data-site-href="contact.mailto">        href-Attribut
+ *   <div data-turnstile>                       bekommt data-sitekey
+ *   <script data-turnstile-script>             entfällt ohne Site Key
+ *   <p data-status="ok" hidden>                sichtbar bei ?status=ok
  */
 
 import config from "../site.config.json";
+import { MESSAGES } from "./contact";
 
 /** Flache Nachschlagetabelle inklusive abgeleiteter Werte. */
 const VALUES: Record<string, string> = {
@@ -30,6 +36,13 @@ const VALUES: Record<string, string> = {
   "contact.mailto": `mailto:${config.contact.email}`,
 };
 
+export interface PageContext {
+  /** Öffentlicher Turnstile Site Key, leer wenn kein Widget gewünscht. */
+  turnstileSiteKey?: string;
+  /** Wert von ?status= nach dem Absenden ohne JavaScript. */
+  status?: string | null;
+}
+
 /** ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ. */
 function formatGermanDate(iso: string): string {
   const [year, month, day] = iso.split("-");
@@ -38,7 +51,18 @@ function formatGermanDate(iso: string): string {
 }
 
 /** Schiebt eine HTML-Antwort durch den HTMLRewriter. */
-export function injectSiteConfig(response: Response): Response {
+export function injectSiteConfig(
+  response: Response,
+  context: PageContext = {},
+): Response {
+  const status = context.status;
+  // Nur bekannte Status durchlassen. Sonst stünde der Inhalt der URL-Query
+  // im Weg, über den ein Fremder die Seite falsch beschriften könnte.
+  const knownStatus =
+    status && Object.prototype.hasOwnProperty.call(MESSAGES, status)
+      ? status
+      : null;
+
   return new HTMLRewriter()
     .on("[data-site]", {
       element(element) {
@@ -55,6 +79,31 @@ export function injectSiteConfig(response: Response): Response {
         const value = key ? VALUES[key] : undefined;
         if (value !== undefined) element.setAttribute("href", value);
         element.removeAttribute("data-site-href");
+      },
+    })
+    .on("[data-turnstile]", {
+      element(element) {
+        const key = context.turnstileSiteKey;
+        if (key) {
+          element.setAttribute("data-sitekey", key);
+        } else {
+          // Ohne Site Key kein Widget - sonst stünde dort ein leerer Kasten.
+          element.remove();
+        }
+      },
+    })
+    .on("[data-turnstile-script]", {
+      element(element) {
+        // Ohne Site Key gar nicht erst laden: spart einen Fremdabruf und
+        // hält die Seite frei von Verbindungen zu Dritten.
+        if (!context.turnstileSiteKey) element.remove();
+      },
+    })
+    .on("[data-status]", {
+      element(element) {
+        if (element.getAttribute("data-status") === knownStatus) {
+          element.removeAttribute("hidden");
+        }
       },
     })
     .transform(response);

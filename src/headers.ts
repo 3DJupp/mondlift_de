@@ -2,8 +2,8 @@
  * Security-Header fuer jede Antwort des Workers.
  *
  * Die CSP ist absichtlich eng: alles von der eigenen Origin, keine Inline-
- * Skripte, keine Inline-Styles. Einzige Ausnahme ist Cloudflare Turnstile,
- * das ab Phase 2 (Kontaktformular) ein Skript und ein iframe braucht.
+ * Skripte, keine Inline-Styles. Einzige Ausnahme ist Cloudflare Turnstile
+ * auf der Kontaktseite - dafuer sind ein Skript und ein iframe noetig.
  */
 
 const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";

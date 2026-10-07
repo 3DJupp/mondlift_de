@@ -1,13 +1,15 @@
 # Kopie als .dev.vars anlegen (ist in .gitignore) und echte Werte eintragen.
 # In Produktion stattdessen: wrangler secret put <NAME>
-#
-# Erst ab Phase 2 (Kontaktformular) notwendig:
 
-# Cloudflare Turnstile - Secret Key (NICHT der Site Key!)
+# Cloudflare Turnstile - Secret Key (NICHT der Site Key!).
+# Ist er nicht gesetzt, wird kein Token geprüft; das Formular nimmt dann
+# nur über Honigtopf und Rate Limit gesicherte Nachrichten an.
+# Der hier eingetragene Wert ist der Cloudflare-Testschlüssel, der jedes
+# Token akzeptiert - nur für lokale Entwicklung brauchbar.
 TURNSTILE_SECRET_KEY="1x0000000000000000000000000000000AA"
 
-# Zieladresse fuer das Kontaktformular (verifizierte Empfaengeradresse)
+# Verifizierte Zieladresse, an die das Kontaktformular zustellt.
 CONTACT_TO_EMAIL="du@example.org"
 
-# Absenderadresse auf der eigenen Domain
+# Absenderadresse auf der eigenen Domain.
 CONTACT_FROM_EMAIL="formular@mondlift.de"

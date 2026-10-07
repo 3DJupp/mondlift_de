@@ -19,21 +19,11 @@
 
       <h1>Datenschutzerklärung</h1>
 
-      <div class="note">
-        <span class="note__label">Entwurf</span>
-        <p>
-          Dieser Text ist ein <strong>Entwurf</strong> und noch nicht
-          rechtlich geprüft. Er beschreibt den tatsächlichen technischen Stand
-          der Seite, ersetzt aber keine Rechtsberatung. Bis zur Prüfung gilt er
-          als vorläufige Information.
-        </p>
-      </div>
-
       <p class="lead">
         Diese Website ist absichtlich einfach gebaut: Es gibt keine Cookies,
-        keine Analyse-Werkzeuge, keine Werbenetzwerke, keine Social-Media-Plugins
-        und keine von fremden Servern nachgeladenen Schriften oder Skripte. Alles,
-        was im Browser läuft, kommt von dieser Domain.
+        keine Analyse-Werkzeuge, keine Werbenetzwerke und keine
+        Social-Media-Plugins. Bis auf den Spamschutz des Kontaktformulars
+        kommt alles, was im Browser läuft, von dieser Domain.
       </p>
 
       <h2>1. Verantwortlicher</h2>
@@ -133,10 +123,16 @@
         Alle Dateien dieser Seite — HTML, CSS, JavaScript, Schriftarten und
         Grafiken — werden von dieser Domain ausgeliefert. Es werden keine
         Schriften von Google Fonts oder anderen Anbietern nachgeladen, keine
-        Karten, keine Videos und keine eingebetteten Inhalte Dritter. Beim
-        Aufruf der Seite baut Ihr Browser daher keine Verbindung zu fremden
-        Servern auf. Die Animation auf der Startseite wird vollständig lokal in
-        Ihrem Browser berechnet; dabei werden keine Daten übertragen.
+        Karten, keine Videos und keine eingebetteten Inhalte Dritter. Die
+        Animation auf der Startseite wird vollständig lokal in Ihrem Browser
+        berechnet; dabei werden keine Daten übertragen.
+      </p>
+      <p>
+        Eine einzige Ausnahme gibt es: Auf der Seite
+        <a href="/kontakt">/kontakt</a> wird für den Spamschutz ein Skript von
+        Cloudflare Turnstile nachgeladen. Näheres dazu in Abschnitt 7. Auf
+        allen anderen Seiten baut Ihr Browser keine Verbindung zu fremden
+        Servern auf.
       </p>
       <p>
         Externe Links sind als solche erkennbar. Wenn Sie einem Link folgen,
@@ -163,21 +159,63 @@
         Übertragungsweg ist.
       </p>
 
-      <h2>7. Geplantes Kontaktformular</h2>
-      <div class="note">
-        <span class="note__label">Noch nicht aktiv</span>
-        <p>
-          Ein Kontaktformular ist geplant, aber derzeit
-          <strong>nicht eingerichtet</strong>. Sobald es online geht, wird
-          dieser Abschnitt durch die tatsächliche Beschreibung ersetzt. Vorgesehen
-          sind dann: die Felder Name, E-Mail-Adresse und Nachricht, ein
-          serverseitiges Begrenzen der Anfragen pro IP-Adresse gegen Missbrauch
-          sowie Cloudflare Turnstile als Spamschutz. Turnstile ist bewusst
-          gewählt, weil es ohne Cookies und ohne Verhaltensprofile arbeitet;
-          dabei werden technische Daten einschließlich der IP-Adresse an
-          Cloudflare übermittelt. Bis dahin erreichen Sie mich per E-Mail.
-        </p>
-      </div>
+      <h2>7. Kontaktformular</h2>
+      <p>
+        Über das <a href="/kontakt">Kontaktformular</a> können Sie mir eine
+        Nachricht schicken, ohne ein eigenes E-Mail-Programm zu öffnen.
+        Verarbeitet werden die Angaben, die Sie eintragen — Name,
+        E-Mail-Adresse und der Text Ihrer Nachricht — sowie Ihre IP-Adresse.
+        Die Nachricht wird als E-Mail an mein Postfach zugestellt; gespeichert
+        wird sie nur dort, nicht in einer Datenbank dieser Website.
+      </p>
+      <p>
+        Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO beziehungsweise, wenn
+        Ihre Anfrage auf einen Vertrag zielt, Art. 6 Abs. 1 lit. b DSGVO. Das
+        berechtigte Interesse liegt darin, Anfragen beantworten zu können.
+        Nachrichten werden gelöscht, sobald sie erledigt sind und keine
+        gesetzlichen Aufbewahrungspflichten entgegenstehen.
+      </p>
+
+      <h3>Spamschutz</h3>
+      <p>
+        Damit das Formular nicht von automatisierten Anfragen überschwemmt
+        wird, kommen drei Mittel zum Einsatz:
+      </p>
+      <ul>
+        <li>
+          ein unsichtbares Zusatzfeld, das nur von automatisierten Programmen
+          ausgefüllt wird und keine Daten über Sie erhebt,
+        </li>
+        <li>
+          eine Begrenzung der Anzahl von Einsendungen je IP-Adresse; dafür
+          wird Ihre IP-Adresse kurzzeitig im Speicher des Cloudflare-Netzwerks
+          gezählt, aber nicht dauerhaft gespeichert,
+        </li>
+        <li>
+          <strong>Cloudflare Turnstile</strong> als Prüfung, ob die Anfrage von
+          einem Menschen stammt.
+        </li>
+      </ul>
+      <p>
+        Turnstile ist bewusst gewählt, weil es ohne Cookies und ohne
+        Verhaltensprofile über Websites hinweg arbeitet und keine Bilderrätsel
+        stellt. Beim Laden des Formulars wird dafür ein Skript von
+        <code>challenges.cloudflare.com</code> nachgeladen. Dabei werden
+        technische Daten an Cloudflare übermittelt, darunter Ihre IP-Adresse,
+        Angaben zu Browser und Gerät sowie Informationen über Ihr Verhalten
+        auf dieser Seite, soweit sie zur Unterscheidung von Mensch und
+        Maschine nötig sind. Cloudflare gibt an, diese Daten nicht zur
+        Profilbildung oder für Werbung zu nutzen. Rechtsgrundlage ist Art. 6
+        Abs. 1 lit. f DSGVO, das berechtigte Interesse ist die Abwehr von
+        Missbrauch und Spam.
+      </p>
+      <p>
+        Turnstile ist die einzige Stelle dieser Website, an der ein Inhalt von
+        einem fremden Server geladen wird, und das ausschließlich auf der
+        Seite <a href="/kontakt">/kontakt</a>. Wenn Sie das vermeiden möchten,
+        schreiben Sie mir einfach direkt an die oben genannte E-Mail-Adresse —
+        das Formular ist kein notwendiger Weg.
+      </p>
 
       <h2>8. Ihre Rechte</h2>
       <p>Sie haben jederzeit das Recht auf:</p>
@@ -215,14 +253,14 @@
 
       <h2>10. Änderungen</h2>
       <p>
-        Wenn sich die Technik der Seite ändert — etwa durch das geplante
-        Kontaktformular — wird diese Erklärung entsprechend angepasst. Es gilt
-        jeweils die hier veröffentlichte Fassung.
+        Wenn sich die Technik der Seite ändert, wird diese Erklärung
+        entsprechend angepasst. Es gilt jeweils die hier veröffentlichte
+        Fassung; das Datum unten nennt den aktuellen Stand.
       </p>
 
       <p class="meta">
-        Stand: <span data-site="site.lastUpdated">—</span> · Entwurf, nicht
-        rechtlich geprüft · <a href="/impressum">Impressum</a>
+        Stand: <span data-site="site.lastUpdated">—</span> ·
+        <a href="/impressum">Impressum</a> · <a href="/kontakt">Kontakt</a>
       </p>
     </main>
   </body>

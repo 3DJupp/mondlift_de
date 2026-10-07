@@ -6,6 +6,11 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://mondlift.de/kontakt</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://mondlift.de/impressum</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

@@ -296,7 +296,7 @@ address {
   color: var(--ink-soft);
 }
 
-/* Hervorgehobener Kasten, etwa fuer Disclaimer oder Entwurfs-Hinweis */
+/* Hervorgehobener Kasten, etwa fuer den Disclaimer im Impressum */
 .note {
   margin: 1.6rem 0;
   padding: 1rem 1.2rem;
@@ -363,4 +363,134 @@ address {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ------------------------------------------------------- Kontaktformular */
+
+.form {
+  margin-top: 2rem;
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.7em 0.85em;
+  font: inherit;
+  color: var(--ink);
+  background: rgba(8, 12, 22, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 9rem;
+  line-height: 1.6;
+}
+
+.field input:hover,
+.field textarea:hover {
+  border-color: rgba(170, 186, 216, 0.34);
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.field__hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+/* Honigtopf: aus dem Bild geschoben statt display:none, weil manche Bots
+   verborgene Felder sonst überspringen. */
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.btn {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.75em 1.8em;
+  font: inherit;
+  font-weight: 600;
+  color: #10131c;
+  background: linear-gradient(180deg, var(--amber-hot), var(--amber));
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    filter 0.15s ease,
+    transform 0.05s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  cursor: progress;
+  filter: grayscale(0.5) brightness(0.8);
+}
+
+.form__note {
+  margin-top: 1.4rem;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+
+/* Turnstile-Widget bekommt etwas Luft */
+.cf-turnstile {
+  margin: 0 0 1.5rem;
+  min-height: 65px;
+}
+
+/* Rückmeldungen über dem Formular */
+.status:empty {
+  display: none;
+}
+
+.status__msg {
+  margin: 0 0 1.6rem;
+  padding: 0.9rem 1.15rem;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--ink) !important;
+}
+
+.status__msg--ok {
+  border-left-color: #6fd08c;
+}
+
+.status__msg--warn {
+  border-left-color: var(--amber);
 }
