@@ -1,0 +1,21 @@
+# Secrets - niemals einchecken
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+
+# Wrangler / Cloudflare
+.wrangler/
+worker-configuration.d.ts
+
+# Node
+node_modules/
+npm-debug.log*
+*.tsbuildinfo
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mondlift-de",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-10-07",
+
+  // Static Assets. Der Worker laeuft zuerst, damit jede Antwort - auch CSS,
+  // JS und Bilder - dieselben Security-Header bekommt. Danach reicht der
+  // Worker an das Asset-Binding weiter.
+  "assets": {
+    "directory": "./public/",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": true
+  },
+
+  // Custom Domains. Die Zone-/Account-IDs stehen absichtlich nicht hier:
+  // Wrangler nimmt sie aus CLOUDFLARE_ACCOUNT_ID bzw. aus dem Login.
+  "routes": [
+    { "pattern": "mondlift.de", "custom_domain": true },
+    { "pattern": "www.mondlift.de", "custom_domain": true }
+  ],
+
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+
+  // Phase 2 (Kontaktformular). Erst aktivieren, wenn Email Routing und die
+  // verifizierte Zieladresse im Dashboard eingerichtet sind:
+  //
+  // "send_email": [
+  //   { "name": "CONTACT_MAILER" }
+  // ],
+  //
+  // Oeffentliche Variablen duerfen hier stehen, Secrets nicht:
+  // "vars": { "TURNSTILE_SITE_KEY": "0x0000000000000000000000" }
+}

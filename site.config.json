@@ -1,0 +1,19 @@
+{
+  "site": {
+    "name": "Mondlift",
+    "domain": "mondlift.de",
+    "url": "https://mondlift.de",
+    "tagline": "Eine Fan-Hommage an ein Fahrgeschäft auf Reisen",
+    "lastUpdated": "2026-10-07"
+  },
+  "owner": {
+    "name": "Dominic Spatz",
+    "street": "Max-Schmeling-Straße 2",
+    "postalCode": "40597",
+    "city": "Düsseldorf",
+    "country": "Deutschland"
+  },
+  "contact": {
+    "email": "kontakt@mondlift.de"
+  }
+}
