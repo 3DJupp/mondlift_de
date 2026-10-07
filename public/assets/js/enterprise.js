@@ -55,10 +55,26 @@
   const SCENE_W = 21.5;
   const SCENE_H = 21.5;
 
-  // Gondelkoerper in m
-  const HANGER_LEN = 0.85;
-  const CAR_LEN = 1.85;
-  const CAR_HALF_W = 0.68;
+  // Radtragwerk. Das echte Rad ist kein Speichenrad, sondern ein Fachwerk:
+  // Hauptträger nach außen, ein innerer Ring, dazwischen Dreiecksverbände,
+  // und außen eine doppelte Felge mit Querstreben.
+  const RIM_INNER = 0.9; // innerer Felgenring, Anteil von R
+  const RING_MID = 0.44; // innerer Ring, Anteil von R
+  const RIM_LAMPS = 3; // Lampen je Felgensegment
+
+  // Gondel als Körper in m: Breite tangential, Höhe in Hängerichtung,
+  // Tiefe senkrecht dazu.
+  const HANGER_LEN = 0.8;
+  const CAR_W = 1.52;
+  const CAR_H = 1.62;
+  const CAR_D = 0.98;
+
+  // Eine Lichtrichtung für die Flächenschattierung, grob vom Mond her.
+  const LIGHT = (() => {
+    const v = { x: 0.48, y: 0.78, z: 0.4 };
+    const l = Math.hypot(v.x, v.y, v.z);
+    return { x: v.x / l, y: v.y / l, z: v.z / l };
+  })();
 
   // ------------------------------------------------------------------- Zustand
 
@@ -118,6 +134,53 @@
     const p = (FOV / (FOV - zc)) * pxPerM;
     return { x: originX + x * p, y: originY - yc * p, p, z: zc };
   }
+
+  /** Zeigt eine Flächennormale zur Kamera? Entscheidet über sichtbare Seiten. */
+  function facesCamera(n) {
+    return n.y * sinCam + n.z * cosCam > 0;
+  }
+
+  /**
+   * Einfache Schattierung einer Fläche: Grundhelligkeit plus Anteil, der von
+   * der Lichtrichtung abhängt. Billiger als ein Verlauf pro Fläche und sorgt
+   * dafür, dass der Körper als Körper lesbar ist.
+   */
+  function shade(n, base) {
+    const d = n.x * LIGHT.x + n.y * LIGHT.y + n.z * LIGHT.z;
+    const f = 0.42 + 0.58 * Math.max(0, d);
+    return `rgb(${Math.round(base[0] * f)},${Math.round(base[1] * f)},${Math.round(base[2] * f)})`;
+  }
+
+  /** Kreuzprodukt, normiert. */
+  function cross(a, b) {
+    const x = a.y * b.z - a.z * b.y;
+    const y = a.z * b.x - a.x * b.z;
+    const z = a.x * b.y - a.y * b.x;
+    const l = Math.hypot(x, y, z) || 1;
+    return { x: x / l, y: y / l, z: z / l };
+  }
+
+  /** Linie zwischen zwei Bildpunkten. */
+  function line(a, b, color, width) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.6, width);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  /** Viereck als Pfad anlegen. */
+  function quadPath(a, b, c, d) {
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(d.x, d.y);
+    ctx.closePath();
+  }
+
+  const mix = (a, b, f) => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
 
   // -------------------------------------------------------------- Himmelsebene
 
@@ -466,12 +529,30 @@
       dy /= dLen;
       dz /= dLen;
 
-      units.push({ theta, rim, rad, tan, d: { x: dx, y: dy, z: dz }, i });
+      // Stuetzpunkte des Fachwerks auf demselben Radialstrahl
+      const at = (f) => ({
+        x: hub.x + R * f * rad.x,
+        y: hub.y + R * f * rad.y,
+        z: hub.z + R * f * rad.z,
+      });
+
+      units.push({
+        theta,
+        rim,
+        rimIn: at(RIM_INNER),
+        mid: at(RING_MID),
+        rad,
+        tan,
+        d: { x: dx, y: dy, z: dz },
+        i,
+      });
     }
 
     // Projektionen vorberechnen und nach Kameratiefe sortieren
     for (const u of units) {
       u.pRim = project(u.rim.x, u.rim.y, u.rim.z);
+      u.pRimIn = project(u.rimIn.x, u.rimIn.y, u.rimIn.z);
+      u.pMid = project(u.mid.x, u.mid.y, u.mid.z);
     }
     units.sort((a, b) => a.pRim.z - b.pRim.z);
 
@@ -480,8 +561,8 @@
     const byIndex = new Map(units.map((u) => [u.i, u]));
     const drawUnit = (u) => {
       const next = byIndex.get((u.i + 1) % ARMS);
-      if (next) drawRimSegment(u, next);
-      drawArm(u, pHub);
+      if (next) drawTruss(u, next);
+      drawBeam(u, pHub);
       drawGondola(u, clock);
     };
 
@@ -493,7 +574,7 @@
     flushBulbs();
 
     // ... dann der Unterbau, der sie verdeckt ...
-    drawStructure(hub, pHub, wheelPoint, tiltNorm);
+    drawStructure(hub, pHub, wheelPoint);
 
     // ... dann die vordere Haelfte. Deren Lampen gehen zusammen mit dem
     // Bodenlicht in einen letzten additiven Durchgang.
@@ -504,47 +585,73 @@
     flushBulbs();
   }
 
-  /** Felgensegment zwischen zwei Auslegern, mit Lampe am Knoten. */
-  function drawRimSegment(a, b) {
-    ctx.strokeStyle = "rgba(126,138,162,0.75)";
-    ctx.lineWidth = Math.max(0.8, 0.09 * a.pRim.p);
-    ctx.beginPath();
-    ctx.moveTo(a.pRim.x, a.pRim.y);
-    ctx.lineTo(b.pRim.x, b.pRim.y);
-    ctx.stroke();
+  /**
+   * Fachwerk zwischen zwei benachbarten Auslegern.
+   *
+   * Das echte Rad besteht aus mehreren Lagen: außen eine doppelte Felge mit
+   * Querstreben dazwischen, innen ein Ring auf etwa halbem Radius, und
+   * dazwischen ein durchgehender Dreiecksverband. Erst das lässt es nach
+   * Stahlbau aussehen statt nach einem Wagenrad.
+   */
+  function drawTruss(a, b) {
+    const w = a.pRim.p; // Massstab an dieser Tiefe, Pixel je Meter
 
-    // Lauflicht um die Felge
-    const u = a.i / ARMS - clock * 0.3;
-    queueBulb(a.pRim.x, a.pRim.y, Math.max(0.9, 0.1 * a.pRim.p), chase(u));
+    // Dreiecksverband zwischen innerem Ring und Felge: zwei Diagonalen, die
+    // sich kreuzen. Daraus ergeben sich die Rauten des Originals.
+    line(a.pMid, b.pRimIn, "rgba(104,118,146,0.6)", 0.05 * w);
+    line(a.pRimIn, b.pMid, "rgba(104,118,146,0.6)", 0.05 * w);
+
+    // Innerer Ring
+    line(a.pMid, b.pMid, "rgba(118,132,160,0.8)", 0.07 * w);
+
+    // Doppelte Felge mit Querstreben
+    line(a.pRimIn, b.pRimIn, "rgba(126,140,168,0.85)", 0.08 * w);
+    line(a.pRim, b.pRim, "rgba(150,164,196,0.95)", 0.1 * w);
+    line(a.pRim, a.pRimIn, "rgba(126,140,168,0.75)", 0.06 * w);
+    line(a.pRim, b.pRimIn, "rgba(110,124,152,0.5)", 0.04 * w);
+
+    // Lauflicht auf der Felge, dichter als ein Licht je Ausleger
+    for (let k = 0; k < RIM_LAMPS; k++) {
+      const f = k / RIM_LAMPS;
+      const p = mix(a.pRim, b.pRim, f);
+      const phase = (a.i + f) / ARMS - clock * 0.3;
+      queueBulb(p.x, p.y, Math.max(0.8, 0.085 * w), chase(phase));
+    }
   }
 
-  /** Ausleger von der Nabe zur Felge, plus Lampenkette darauf. */
-  function drawArm(u, pHub) {
-    const grad = ctx.createLinearGradient(pHub.x, pHub.y, u.pRim.x, u.pRim.y);
-    grad.addColorStop(0, "rgba(150,162,186,0.95)");
-    grad.addColorStop(1, "rgba(96,106,128,0.8)");
-    ctx.strokeStyle = grad;
-    ctx.lineCap = "round";
-    ctx.lineWidth = Math.max(1, 0.16 * u.pRim.p);
-    ctx.beginPath();
-    ctx.moveTo(pHub.x, pHub.y);
-    ctx.lineTo(u.pRim.x, u.pRim.y);
-    ctx.stroke();
+  /** Hauptträger von der Nabe zur Felge, plus Lampenkette darauf. */
+  function drawBeam(u, pHub) {
+    // Zwei Gurte statt einer Linie: innen kräftig, außen schlanker.
+    line(pHub, u.pMid, "rgba(158,170,198,0.95)", 0.16 * u.pRim.p);
+    line(u.pMid, u.pRim, "rgba(132,146,174,0.9)", 0.12 * u.pRim.p);
 
     // Lampen laufen von innen nach aussen. f ist der Anteil des Radius.
     for (let k = 0; k < BULBS_PER_ARM; k++) {
-      const f = 0.34 + (k / (BULBS_PER_ARM - 1)) * 0.6;
+      const f = 0.34 + (k / (BULBS_PER_ARM - 1)) * 0.56;
       const p = project(
         u.rim.x - (1 - f) * R * u.rad.x,
         u.rim.y - (1 - f) * R * u.rad.y,
         u.rim.z - (1 - f) * R * u.rad.z,
       );
       const phase = u.i / ARMS - k / (BULBS_PER_ARM * 1.6) - clock * 0.55;
-      queueBulb(p.x, p.y, Math.max(0.8, 0.075 * p.p), chase(phase));
+      queueBulb(p.x, p.y, Math.max(0.8, 0.07 * p.p), chase(phase));
     }
   }
 
-  /** Gondel: Haenger, Wagenkasten, Fensterband. */
+  /*
+   * Gondel.
+   *
+   * Beim Original ist das ein Käfig: geschlossene farbige Außenschale, Dach
+   * darüber, offene Seiten mit Gitterstäben. Deshalb wird hier ein echter
+   * Körper gezeichnet - acht Ecken, und nur die Flächen, die zur Kamera
+   * zeigen. Flache Vierecke sahen aus wie aufgeklebte Platten.
+   */
+
+  /** Farben der Gondel, Grundwerte vor der Schattierung. */
+  const CAR_SHELL = [134, 48, 54]; // gedämpftes Rot wie beim Original
+  const CAR_CAGE = [44, 24, 28]; // offene Seiten: dunkel, aber warm getönt
+  const CAR_DARK = [14, 17, 25];
+
   function drawGondola(u, time) {
     const { rim, d, tan, i } = u;
 
@@ -554,96 +661,95 @@
     const wy = d.y + tan.y * wob;
     const wz = d.z + tan.z * wob;
     const wl = Math.hypot(wx, wy, wz) || 1;
-    const ux = wx / wl;
-    const uy = wy / wl;
-    const uz = wz / wl;
+    const down = { x: wx / wl, y: wy / wl, z: wz / wl };
 
+    // Dritte Achse des Körpers, senkrecht auf Breite und Hängerichtung.
+    const dep = cross(tan, down);
     const pRim = u.pRim;
 
-    // Haenger: zwei Streben, die sich zum Wagen hin verjuengen. Eine
-    // einzelne Linie wirkte zu duenn fuer ein Stahlfahrgeschaeft.
-    ctx.strokeStyle = "rgba(126,138,162,0.9)";
-    ctx.lineWidth = Math.max(0.7, 0.05 * pRim.p);
-    ctx.lineCap = "butt";
-    for (const side of [-0.52, 0.52]) {
-      const foot = project(
-        rim.x + ux * HANGER_LEN + tan.x * side * CAR_HALF_W,
-        rim.y + uy * HANGER_LEN + tan.y * side * CAR_HALF_W,
-        rim.z + uz * HANGER_LEN + tan.z * side * CAR_HALF_W,
+    // Mittelpunkt des Kastens
+    const c = {
+      x: rim.x + down.x * (HANGER_LEN + CAR_H / 2),
+      y: rim.y + down.y * (HANGER_LEN + CAR_H / 2),
+      z: rim.z + down.z * (HANGER_LEN + CAR_H / 2),
+    };
+
+    /** Ecke in lokalen Vorzeichen (Breite, Höhe, Tiefe), je -1 oder 1. */
+    const corner = (sw, sh, sd) =>
+      project(
+        c.x + tan.x * (sw * CAR_W) / 2 + down.x * (sh * CAR_H) / 2 + dep.x * (sd * CAR_D) / 2,
+        c.y + tan.y * (sw * CAR_W) / 2 + down.y * (sh * CAR_H) / 2 + dep.y * (sd * CAR_D) / 2,
+        c.z + tan.z * (sw * CAR_W) / 2 + down.z * (sh * CAR_H) / 2 + dep.z * (sd * CAR_D) / 2,
       );
-      ctx.beginPath();
-      ctx.moveTo(pRim.x, pRim.y);
-      ctx.lineTo(foot.x, foot.y);
-      ctx.stroke();
+
+    // Hänger: zwei Streben vom Felgenknoten zum Dach des Kastens.
+    const neg = (v) => ({ x: -v.x, y: -v.y, z: -v.z });
+    ctx.lineCap = "butt";
+    for (const side of [-0.54, 0.54]) {
+      const foot = project(
+        rim.x + down.x * HANGER_LEN + tan.x * side * CAR_W,
+        rim.y + down.y * HANGER_LEN + tan.y * side * CAR_W,
+        rim.z + down.z * HANGER_LEN + tan.z * side * CAR_W,
+      );
+      line(pRim, foot, "rgba(132,144,170,0.9)", 0.05 * pRim.p);
     }
 
-    // Wagenkasten als projiziertes Viereck: Laenge entlang der
-    // Gondelrichtung, Breite tangential zum Rad. So stimmt die Verkuerzung
-    // in jeder Lage, auch wenn das Rad flach liegt und man von oben
-    // hineinschaut.
-    const corner = (alongW, alongL) => {
-      const l = HANGER_LEN + alongL * CAR_LEN;
-      return project(
-        rim.x + ux * l + tan.x * alongW * CAR_HALF_W,
-        rim.y + uy * l + tan.y * alongW * CAR_HALF_W,
-        rim.z + uz * l + tan.z * alongW * CAR_HALF_W,
-      );
+    const edge = Math.max(0.5, 0.028 * pRim.p);
+    const barW = Math.max(0.5, 0.022 * pRim.p);
+
+    /** Füllt eine Fläche und legt optional Gitterstäbe darüber. */
+    const face = (c1, c2, c3, c4, normal, base, bars) => {
+      if (!facesCamera(normal)) return;
+      ctx.fillStyle = shade(normal, base);
+      quadPath(c1, c2, c3, c4);
+      ctx.fill();
+      if (bars) {
+        // Stäbe laufen quer, von Kante c1-c2 zur Kante c4-c3.
+        ctx.strokeStyle = "rgba(206,218,240,0.72)";
+        ctx.lineWidth = barW;
+        for (let k = 1; k <= bars; k++) {
+          const f = k / (bars + 1);
+          const a = mix(c1, c4, f);
+          const b = mix(c2, c3, f);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = "rgba(168,182,210,0.55)";
+      ctx.lineWidth = edge;
+      quadPath(c1, c2, c3, c4);
+      ctx.stroke();
     };
-    const quad = (a, b, c, d) => {
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.lineTo(c.x, c.y);
-      ctx.lineTo(d.x, d.y);
-      ctx.closePath();
-    };
 
-    const c1 = corner(-1, 0);
-    const c2 = corner(1, 0);
-    const c3 = corner(1, 1);
-    const c4 = corner(-1, 1);
+    // Acht Ecken
+    const p000 = corner(-1, -1, -1), p100 = corner(1, -1, -1);
+    const p110 = corner(1, 1, -1), p010 = corner(-1, 1, -1);
+    const p001 = corner(-1, -1, 1), p101 = corner(1, -1, 1);
+    const p111 = corner(1, 1, 1), p011 = corner(-1, 1, 1);
 
-    // Korpus: oben heller, zum Boden hin dunkler
-    const body = ctx.createLinearGradient(c1.x, c1.y, c4.x, c4.y);
-    body.addColorStop(0, "#39415a");
-    body.addColorStop(0.45, "#232a3d");
-    body.addColorStop(1, "#11151f");
-    ctx.fillStyle = body;
-    quad(c1, c2, c3, c4);
-    ctx.fill();
+    // Dach zur Felge hin: farbiges Verdeck, beim Original der auffälligste
+    // Teil, wenn das Rad flach liegt und man von oben hineinschaut.
+    face(p000, p100, p101, p001, neg(down), CAR_SHELL, 0);
+    // Boden
+    face(p010, p110, p111, p011, down, CAR_DARK, 0);
+    // Rückwand farbig, Vorderseite offen. Die Fahrgäste sitzen alle in
+    // dieselbe Richtung - das ist beim Enterprise tatsächlich so, weil die
+    // Achse für das ganze Rad dieselbe ist.
+    face(p000, p100, p110, p010, neg(dep), CAR_SHELL, 0);
+    face(p001, p101, p111, p011, dep, CAR_CAGE, 3);
+    // Seiten, beide mit Gitter
+    face(p100, p101, p111, p110, tan, CAR_CAGE, 2);
+    face(p000, p001, p011, p010, neg(tan), CAR_CAGE, 2);
 
-    // Warmes Fensterband im oberen Drittel, schmal gehalten
-    const w1 = corner(-0.86, 0.17);
-    const w2 = corner(0.86, 0.17);
-    const w3 = corner(0.86, 0.39);
-    const w4 = corner(-0.86, 0.39);
-    ctx.fillStyle = "rgba(255,178,84,0.62)";
-    quad(w1, w2, w3, w4);
-    ctx.fill();
-
-    // Sitzschale unten, etwas abgesetzt
-    const s1 = corner(-0.78, 0.56);
-    const s2 = corner(0.78, 0.56);
-    const s3 = corner(0.78, 0.95);
-    const s4 = corner(-0.78, 0.95);
-    ctx.fillStyle = "rgba(10,13,20,0.55)";
-    quad(s1, s2, s3, s4);
-    ctx.fill();
-
-    // Kante aussen herum, plus eine hellere Oberkante als Glanzlicht
-    ctx.lineWidth = Math.max(0.5, 0.03 * pRim.p);
-    ctx.strokeStyle = "rgba(150,164,192,0.55)";
-    quad(c1, c2, c3, c4);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(205,218,245,0.5)";
-    ctx.beginPath();
-    ctx.moveTo(c1.x, c1.y);
-    ctx.lineTo(c2.x, c2.y);
-    ctx.stroke();
+    // Warmes Licht aus dem Inneren des Wagens
+    const pc = project(c.x, c.y, c.z);
+    queueBulb(pc.x, pc.y, Math.max(0.7, 0.085 * pc.p), 0.55);
   }
 
   /** Nabe, Hydraulikzylinder, Lagerbock und Unterbau. */
-  function drawStructure(hub, pHub, wheelPoint, tiltNorm) {
+  function drawStructure(hub, pHub, wheelPoint) {
     const pivot = wheelPoint(0, -R);
     const pPivot = project(pivot.x, pivot.y, pivot.z);
     const ramTop = wheelPoint(0, -R * 0.42);
@@ -653,7 +759,7 @@
     // Hydraulikzylinder: dickes Rohr unten, duenne Stange oben
     ctx.lineCap = "round";
     ctx.strokeStyle = "#3b4356";
-    ctx.lineWidth = Math.max(2, 0.5 * ramBase.p);
+    ctx.lineWidth = Math.max(3, 0.78 * ramBase.p);
     ctx.beginPath();
     ctx.moveTo(ramBase.x, ramBase.y);
     ctx.lineTo(
@@ -662,7 +768,7 @@
     );
     ctx.stroke();
     ctx.strokeStyle = "#8b94a8";
-    ctx.lineWidth = Math.max(1.2, 0.2 * ramBase.p);
+    ctx.lineWidth = Math.max(2, 0.34 * ramBase.p);
     ctx.beginPath();
     ctx.moveTo(
       lerp(ramBase.x, pRamTop.x, 0.45),
@@ -675,7 +781,7 @@
     const legL = project(-2.6, 0, -R - 1.4);
     const legR = project(2.6, 0, -R - 1.4);
     ctx.strokeStyle = "#333b4d";
-    ctx.lineWidth = Math.max(2, 0.42 * pPivot.p);
+    ctx.lineWidth = Math.max(3, 0.62 * pPivot.p);
     ctx.beginPath();
     ctx.moveTo(legL.x, legL.y);
     ctx.lineTo(pPivot.x, pPivot.y);
@@ -702,41 +808,45 @@
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Nabe
-    const hubR = Math.max(3, 1.05 * pHub.p);
+    // Nabe: beim Original eine große, glatte Kappe, kein Kugelchen.
+    const hubR = Math.max(4, 1.55 * pHub.p);
+
+    // Kragen hinter der Kappe, in den die Träger laufen
+    ctx.fillStyle = "#1b2230";
+    ctx.beginPath();
+    ctx.arc(pHub.x, pHub.y, hubR * 1.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(140,154,184,0.5)";
+    ctx.lineWidth = Math.max(1, 0.05 * pHub.p);
+    ctx.stroke();
+
     const hubGrad = ctx.createRadialGradient(
-      pHub.x - hubR * 0.3,
-      pHub.y - hubR * 0.3,
-      hubR * 0.1,
+      pHub.x - hubR * 0.35,
+      pHub.y - hubR * 0.4,
+      hubR * 0.08,
       pHub.x,
       pHub.y,
       hubR,
     );
-    hubGrad.addColorStop(0, "#9aa4bb");
-    hubGrad.addColorStop(0.7, "#4a5468");
-    hubGrad.addColorStop(1, "#262d3c");
+    hubGrad.addColorStop(0, "#aab4ca");
+    hubGrad.addColorStop(0.55, "#5a6578");
+    hubGrad.addColorStop(1, "#222a38");
     ctx.fillStyle = hubGrad;
     ctx.beginPath();
     ctx.arc(pHub.x, pHub.y, hubR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Zentrallampe, atmet mit der Neigung. Sie ist viel groesser als die
-    // Kettenlampen und bekommt deshalb ihren eigenen Verlauf statt eines
-    // Sprites - ein Aufruf pro Bild faellt nicht ins Gewicht.
-    const lampR = hubR * 1.9;
-    const lamp = ctx.createRadialGradient(
-      pHub.x, pHub.y, 0, pHub.x, pHub.y, lampR,
-    );
-    const li = 0.14 + 0.16 * tiltNorm;
-    lamp.addColorStop(0, `rgba(255,248,230,${li})`);
-    lamp.addColorStop(0.2, `rgba(255,198,110,${li * 0.75})`);
-    lamp.addColorStop(1, "rgba(255,140,40,0)");
-    ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = lamp;
-    ctx.beginPath();
-    ctx.arc(pHub.x, pHub.y, lampR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
+    // Lampenkranz auf dem Kragen, wie die verzierte Nabenscheibe im Original
+    const ring = 12;
+    for (let k = 0; k < ring; k++) {
+      const a = (k / ring) * Math.PI * 2 + clock * 0.25;
+      queueBulb(
+        pHub.x + Math.cos(a) * hubR * 1.1,
+        pHub.y + Math.sin(a) * hubR * 1.1,
+        Math.max(0.7, 0.07 * pHub.p),
+        chase(k / ring - clock * 0.4),
+      );
+    }
   }
 
   /** Warmer Lichtteppich am Boden unter dem Fahrgeschaeft. */
