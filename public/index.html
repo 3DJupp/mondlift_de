@@ -24,8 +24,12 @@
   <body>
     <a class="skip" href="#inhalt">Zum Inhalt springen</a>
 
-    <!-- Die Animation ist reine Dekoration und fuer Screenreader unsichtbar. -->
+    <!-- Die Animation ist reine Dekoration und für Screenreader unsichtbar.
+         Ohne WebGL tritt das Standbild darunter an ihre Stelle. -->
     <canvas id="ride" aria-hidden="true"></canvas>
+    <div id="ride-fallback" class="fallback" hidden aria-hidden="true">
+      <img src="/assets/img/mondlift-standbild.svg" alt="" />
+    </div>
 
     <div class="hero">
       <header class="hero__head" id="inhalt">
@@ -49,6 +53,6 @@
       </footer>
     </div>
 
-    <script src="/assets/js/enterprise.js" defer></script>
+    <script src="/assets/js/mondlift.js" defer></script>
   </body>
 </html>

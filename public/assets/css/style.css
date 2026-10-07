@@ -494,3 +494,48 @@ address {
 .status__msg--warn {
   border-left-color: var(--amber);
 }
+
+/* ------------------------------------------- Standbild ohne WebGL */
+
+.fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.fallback img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ------------------------------------------------- Debug-Anzeige */
+/* Nur sichtbar mit ?debug in der Adresse. */
+
+.debug {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(4, 6, 14, 0.82);
+  border-top: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
+.debug__read {
+  margin: 0;
+  letter-spacing: 0.06em;
+}
+
+.debug__slider {
+  width: 100%;
+  accent-color: var(--amber);
+}

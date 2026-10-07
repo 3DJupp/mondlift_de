@@ -1,46 +1,37 @@
 # Backlog
 
-## Optik der Enterprise-Animation
+## Animation
 
-Der Abgleich mit Referenzfotos eines Huss Enterprise ist weitgehend
-abgearbeitet. Umgesetzt sind:
+Die Animation läuft auf Three.js. Was vom Abgleich mit den Referenzfotos
+noch offen ist:
 
-- **Fachwerk statt Speichen.** Hauptträger von der Nabe nach außen, ein
-  innerer Ring auf 44 % des Radius, dazwischen ein durchgehender
-  Dreiecksverband, und außen eine doppelte Felge mit Querstreben. Daraus
-  ergeben sich die Rauten des Originals.
-- **Gondeln als Körper.** Acht Ecken, nur die zur Kamera zeigenden Flächen
-  werden gezeichnet, schattiert über eine feste Lichtrichtung. Farbige
-  Rückwand und farbiges Verdeck, offene Seiten mit Gitterstäben.
-- **Nabe und Unterbau** kräftiger, mit Lampenkranz auf dem Nabenkragen.
-- **Dichtere Lampenkette** auf der Felge, drei je Segment statt einer je
-  Ausleger.
+### Mast und Unterbau
 
-Offen bleibt:
+Der Mast steht jetzt hinter dem Rad statt quer davor, ist aber noch ein
+schlichtes Rohr. Beim Original ist dort ein verkleideter Träger mit
+Plattform, Geländer und Aufstieg. Bei der Darstellungsgröße fraglich, ob
+sich das lohnt.
 
-### Unterbau
+### Beschriftung
 
-Der Trailer ist noch ein schlichtes Trapez. Beim Original ist dort eine
-Plattform mit Geländer, Aufstieg und Kassenhäuschen. Das ist bei der
-Darstellungsgröße allerdings fraglich — es würde unten viel Unruhe
-erzeugen, wo gerade die Fußzeile steht.
+Das Original trägt einen beleuchteten Schriftzug über dem Eingang. Der
+fehlt hier bewusst: er wäre eine Nachbildung der Marke, und die Seite ist
+inoffiziell.
 
-### Sitze in den Gondeln
+### Innenleben der Gondeln
 
-Durch die Gitterstäbe sieht man beim Original die Sitzschale. Aktuell ist
-dahinter nur eine dunkle Fläche. Lohnt sich erst, wenn die Gondeln größer
-dargestellt werden als jetzt.
+Durch die Chrombügel sieht man beim Original die Sitzschalen. Aktuell ist
+der Rumpf geschlossen. Lohnt erst, wenn die Gondeln größer im Bild stehen.
 
-### Zugstangen-Variante
+### Messung in dieser Umgebung
 
-Manche Enterprise haben statt des Fachwerks viele dünne Zugstangen, etwa
-zwei pro Gondel in V-Form, was eher wie ein Fahrradlaufrad aussieht. Beide
-Bauarten kommen vor; das Fachwerk ist die häufigere und wurde deshalb
-gewählt. Kein Handlungsbedarf, nur als Notiz.
+Die Bildraten aus der Entwicklung (rund 20 fps) stammen aus einer Umgebung
+ohne GPU, in der WebGL über SwiftShader in Software läuft. Sie sagen nichts
+über echte Geräte aus. Die adaptive Qualitätsstufe greift dort deshalb
+sofort. Auf echter Hardware muss das nachgemessen werden.
 
-### Hinweis zur Zeichengeschwindigkeit
+## Offen aus dem letzten Durchgang
 
-Das Fachwerk hat die Bildzeit nicht verändert: vorher wie nachher rund
-16,7 ms auf Mobil- und Desktopgröße, also vsync-begrenzt. Das bestätigt die
-frühere Messung — zusätzliche Linien sind günstig, teuer sind nur skalierte
-Sprites. Wer hier weiterbaut, sollte vor und nach dem Umbau messen.
+- Formulierungen auf den Seiten entschlacken
+- Generische Fehlermeldungen für das Kontaktformular prüfen und vereinheitlichen
+- SEO und Auffindbarkeit ausbauen
