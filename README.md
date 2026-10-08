@@ -128,12 +128,16 @@ Object — für diese Seite wäre das überdimensioniert.
 ## Sitemap
 
 `GET /sitemap.xml` wird vom Worker aus `site.config.json` erzeugt. Die
-Seitenliste steht dort unter `pages`, die Domain unter `site.url`, das Datum
-unter `site.lastUpdated`:
+Seitenliste steht dort unter `pages`, die Domain unter `site.url`:
 
 ```json
 "pages": [
-  { "path": "/", "changefreq": "monthly", "priority": "1.0" }
+  {
+    "path": "/",
+    "lastmod": "2026-10-07",
+    "changefreq": "monthly",
+    "priority": "1.0"
+  }
 ]
 ```
 
@@ -144,19 +148,53 @@ Liste.
 
 Von den drei Angaben je Seite wertet Google nur `lastmod` aus; `changefreq`
 und `priority` ignoriert es seit Jahren. Sie stehen trotzdem drin, weil
-andere Suchmaschinen sie weiterhin lesen und sie nichts kosten. `lastmod`
-kommt aus `site.lastUpdated`.
+andere Suchmaschinen sie weiterhin lesen und sie nichts kosten.
 
-Dieses Datum hat zwei Aufgaben: es steht als „Stand:“ unter Impressum und
-Datenschutz und es ist das `lastmod` jeder Seite. Es bedeutet damit
-genau eine Sache — **das Datum der letzten inhaltlichen Änderung**. Wer
-Texte ändert, zieht es mit; wer nur an der Technik schraubt, lässt es
-stehen. Ein zweites Datum nur für die Sitemap wäre für vier Seiten, die
-ohnehin gemeinsam deployt werden, Buchhaltung ohne Nutzen.
+### Warum das Datum pro Seite steht
+
+Hier stand vorher ein Datum für alle vier Seiten, `site.lastUpdated`, mit
+der Begründung: vier Seiten werden gemeinsam deployt, ein zweites Datum je
+Seite wäre Buchhaltung ohne Nutzen. Die Annahme stimmt nicht. Die vier
+Seiten ändern sich nicht gemeinsam — Startseite und Kontakt zuletzt am
+7.10., Impressum und Datenschutz am 8.10. Mit einem gemeinsamen Datum
+behauptet die Sitemap bei jeder Textänderung irgendwo, alle vier Seiten
+seien neu.
+
+Das ist nicht nur ungenau, es kostet die Angabe ihre Wirkung: Google
+benutzt `lastmod` nur so lange, wie es dem Verhalten der Seiten entspricht,
+und verwirft das Feld, wenn es sich als unzuverlässig erweist. Ein Datum,
+das für alle Seiten gleichzeitig springt, ist genau dieser Fall.
+
+Deshalb hat jede Seite ihr eigenes `lastmod`. Die Regel dafür ist
+unverändert: **Datum der letzten inhaltlichen Änderung**. Wer den Text einer
+Seite ändert, zieht deren Datum mit; wer nur an der Technik schraubt, lässt
+alle stehen. Fehlt der Eintrag bei einer Seite, nimmt der Worker
+`site.lastUpdated` als Rückfall.
+
+`site.lastUpdated` bleibt dafür und für seine zweite Aufgabe: es steht als
+„Stand:“ unter Impressum und Datenschutz.
 
 `priority` ist absichtlich als Zeichenkette notiert. Als Zahl würde `1.0`
 beim Serialisieren zu `1`, und das ist ein unnötiger Unterschied zwischen
 Config und ausgelieferter Datei.
+
+### ETag für die erzeugten Dateien
+
+Sitemap, Anschriftsbild und IndexNow-Schlüsseldatei entstehen im Worker und
+ändern sich nur mit einem Deploy. Sie bekommen deshalb in `src/cache.ts`
+einen ETag über ihren Inhalt, und ein passendes `If-None-Match` beantwortet
+der Worker mit `304` ohne Rumpf.
+
+Das zahlt sich vor allem bei der Sitemap aus, die Googlebot regelmäßig
+nachsieht, und beim Anschriftsbild, das bei jedem Besuch des Impressums
+geladen wird. Nebeneffekt: der Inhalt wird einmal je Isolate erzeugt statt
+einmal pro Anfrage — die Glyphenumrisse der Anschrift werden also nicht
+mehr bei jedem Aufruf zusammengesetzt.
+
+Der ETag ist ein FNV-1a-Hash über den Inhalt mit der Byte-Länge davor, als
+schwacher ETag (`W/"…"`) ausgezeichnet. Keine Kryptografie, und das ist
+richtig so: ein ETag muss sich ändern, wenn sich der Inhalt ändert, und
+nicht fälschungssicher sein.
 
 ## IndexNow
 

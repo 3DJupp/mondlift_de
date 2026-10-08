@@ -27,6 +27,7 @@
 
 import config from "../site.config.json";
 import { GLYPHS, UPM, ASCENDER, DESCENDER } from "./anschrift-glyphen";
+import { generatedFile } from "./cache";
 
 /** Die Zeilen des Anschriftenblocks, wie im Impressum gesetzt. */
 const LINES = [
@@ -115,12 +116,11 @@ function buildSvg(): string {
   ].join("");
 }
 
-export function handleAnschrift(): Response {
-  return new Response(buildSvg(), {
-    headers: {
-      "content-type": "image/svg+xml; charset=utf-8",
-      // Aendert sich nur mit einem Deploy.
-      "cache-control": "public, max-age=86400",
-    },
-  });
+// Aendert sich nur mit einem Deploy, deshalb ein Tag Cache und ein ETag.
+// Das SVG wird dadurch auch nur einmal je Isolate aus den Umrissen
+// zusammengesetzt statt bei jeder Anfrage.
+const FILE = generatedFile(buildSvg, "image/svg+xml; charset=utf-8", 86400);
+
+export function handleAnschrift(request: Request): Response {
+  return FILE.respond(request);
 }
