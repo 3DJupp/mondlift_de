@@ -410,12 +410,11 @@ Der **Site Key** von Turnstile ist öffentlich und steht als `vars`-Eintrag
 in `wrangler.jsonc` — der **Secret Key** gehört dort nicht hin. Das ist der
 häufigste Fehler an dieser Stelle.
 
-In der Produktion ist `TURNSTILE_SITE_KEY` noch leer. Der Wert lässt sich
-nicht erfinden: er entsteht erst, wenn im Dashboard ein Widget angelegt
-wird (siehe unten). Bis dahin läuft das Formular ohne Turnstile. Der
-`previews`-Block trägt dagegen schon den offiziellen Testschlüssel
-`1x00000000000000000000AA`, damit sich das Widget in einem Preview ansehen
-lässt.
+In der Produktion steht der Site Key des angelegten Widgets:
+`0x4AAAAAAFRtdEHO2PO0lLFd`. Der `previews`-Block trägt dagegen weiter den
+offiziellen Testschlüssel `1x00000000000000000000AA` — ein Preview soll
+nicht am echten Widget drehen, und ohne gesetztes Secret prüft es ohnehin
+kein Token.
 
 Ist `TURNSTILE_SITE_KEY` leer, entfernt der Worker sowohl das Widget als
 auch das Turnstile-Skript aus der Seite. Das Formular funktioniert dann
@@ -424,13 +423,29 @@ von fremden Servern.
 
 ## Turnstile einrichten
 
-1. Dashboard → **Turnstile** → **Add widget**.
-2. Hostnames: `mondlift.de` und `www.mondlift.de`. `localhost` nur
-   hinzufügen, wenn lokal mit einem echten Widget getestet werden soll —
-   für die Produktion ist es nicht nötig und besser, es wegzulassen.
-3. Widget Mode: **Managed**.
-4. Den Site Key in `wrangler.jsonc` unter `vars.TURNSTILE_SITE_KEY`
-   eintragen, den Secret Key per `wrangler secret put` setzen.
+Das Widget ist angelegt, der Site Key steht in `wrangler.jsonc`. Es fehlt
+nur noch der Secret Key:
+
+```bash
+npx wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Den Wert zeigt das Dashboard unter **Turnstile** → Widget → **Settings**,
+oder `npx wrangler turnstile widget get 0x4AAAAAAFRtdEHO2PO0lLFd`. Er gehört
+nicht ins Repo und nicht in `wrangler.jsonc`.
+
+Beim Widget selbst sind zwei Dinge wichtig:
+
+- **Hostnames**: `mondlift.de` und `www.mondlift.de`. `localhost` nur
+  hinzufügen, wenn lokal mit dem echten Widget getestet werden soll — für
+  die Produktion ist es nicht nötig und besser, es wegzulassen. Fehlt ein
+  Hostname, liefert Siteverify `success: false`, und das Formular antwortet
+  mit `spam`.
+- **Widget Mode**: **Managed**.
+
+Ein neues Widget wird im Dashboard über **Turnstile** → **Add widget**
+angelegt; danach Site Key in `wrangler.jsonc` unter `vars` eintragen und
+den Secret Key wie oben setzen.
 
 Der Worker prüft nicht nur `success`, sondern auch, dass die Aktion
 `kontakt` lautet und der Hostname zu dem passt, unter dem die Seite
