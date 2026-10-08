@@ -34,10 +34,19 @@ export default {
     const url = new URL(request.url);
 
     // www.mondlift.de -> mondlift.de, Pfad und Query bleiben erhalten.
+    // Auch diese Antwort bekommt die Security-Header: HSTS gehoert gerade an
+    // die Weiterleitung, denn sie ist bei einem Aufruf von www oft die erste
+    // und einzige Antwort, die der Browser von dieser Domain sieht.
     if (url.hostname.startsWith("www.")) {
       const target = new URL(url);
       target.hostname = url.hostname.slice(4);
-      return Response.redirect(target.toString(), 301);
+      return withSecurityHeaders(
+        new Response(null, {
+          status: 301,
+          headers: { location: target.toString() },
+        }),
+        url,
+      );
     }
 
     // --- Kontaktformular -------------------------------------------------
@@ -76,17 +85,19 @@ export default {
 
     // --- Erzeugte Dateien ------------------------------------------------
     // Alle drei kommen aus site.config.json statt aus public/, damit
-    // Seitenliste, Schluessel und Anschrift nur an einer Stelle stehen.
+    // Seitenliste, Schluessel und Anschrift nur an einer Stelle stehen. Sie
+    // bekommen den ganzen Request, weil sie ein passendes If-None-Match mit
+    // 304 beantworten - siehe src/cache.ts.
     if (url.pathname === SITEMAP_PATH) {
-      return withSecurityHeaders(handleSitemap(), url);
+      return withSecurityHeaders(handleSitemap(request), url);
     }
 
     if (url.pathname === ANSCHRIFT_PATH) {
-      return withSecurityHeaders(handleAnschrift(), url);
+      return withSecurityHeaders(handleAnschrift(request), url);
     }
 
     if (INDEXNOW_KEY_PATH !== null && url.pathname === INDEXNOW_KEY_PATH) {
-      return withSecurityHeaders(handleIndexNowKey(), url);
+      return withSecurityHeaders(handleIndexNowKey(request), url);
     }
 
     // --- Auslieferung ----------------------------------------------------

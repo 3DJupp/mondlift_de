@@ -22,6 +22,7 @@
  */
 
 import config from "../site.config.json";
+import { generatedFile } from "./cache";
 
 /** Zeichen und Laenge nach IndexNow-Spezifikation. */
 const KEY_PATTERN = /^[A-Za-z0-9-]{8,128}$/;
@@ -38,14 +39,11 @@ export const INDEXNOW_KEY_PATH: string | null = KEY_PATTERN.test(KEY)
   ? `/${KEY}.txt`
   : null;
 
-export function handleIndexNowKey(): Response {
-  // Bewusst ohne Zeilenumbruch: die Spezifikation beschreibt den Inhalt als
-  // den Schluessel selbst. Die meisten Pruefer schneiden Leerraum ab, aber
-  // darauf angewiesen sein muss man nicht.
-  return new Response(KEY, {
-    headers: {
-      "content-type": "text/plain; charset=utf-8",
-      "cache-control": "public, max-age=86400",
-    },
-  });
+// Bewusst ohne Zeilenumbruch: die Spezifikation beschreibt den Inhalt als
+// den Schluessel selbst. Die meisten Pruefer schneiden Leerraum ab, aber
+// darauf angewiesen sein muss man nicht.
+const FILE = generatedFile(() => KEY, "text/plain; charset=utf-8", 86400);
+
+export function handleIndexNowKey(request: Request): Response {
+  return FILE.respond(request);
 }

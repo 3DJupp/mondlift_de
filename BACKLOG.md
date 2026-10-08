@@ -70,3 +70,34 @@ Mehr Streben heißen mehr Zeichenbefehle pro Bild. Die Messung aus der
 Entwicklung gilt weiter: unskalierte Sprites sind billig, skalierte sind
 teuer. Zusätzliche Linien sind dagegen günstig — das Fachwerk sollte sich
 ohne Einbruch der Bildrate zeichnen lassen. Vor und nach dem Umbau messen.
+
+## Sichtbarkeit: zwei bewusst offene Punkte
+
+Beim Nachsehen der Sitemap sind zwei Dinge aufgefallen, die nicht
+umgesetzt wurden. Beide sind Abwägungen, keine Versäumnisse.
+
+### Link-Vorschau (`og:image`)
+
+Die Seiten haben `og:type`, `og:title`, `og:description`, `og:url` und
+`og:locale`, aber kein `og:image`. Wer den Link in einem Messenger oder
+einem Netzwerk teilt, bekommt deshalb eine Textkarte ohne Bild.
+
+Was fehlt, ist ein Rasterbild von etwa 1200×630 px. SVG nimmt dort fast
+niemand an, und der Worker kann kein PNG erzeugen — es gibt im Repo keinen
+Encoder und für einen gäbe es keinen zweiten Verwendungszweck. Es bliebe
+also eine Datei in `public/assets/`, einmal von Hand gebaut: ein Standbild
+der Enterprise-Animation wäre das Naheliegende. Das ist die eine Stelle,
+an der die Regel „alles aus `site.config.json`" nicht trägt.
+
+### Strukturierte Daten (JSON-LD)
+
+Üblich wäre ein `<script type="application/ld+json">` mit `WebSite` und
+`Person`. Die CSP der Seite erlaubt mit `script-src 'self'` keine Inline-
+Skripte, und das gilt auch für JSON-LD. Es ginge nur mit einem
+sha256-Hash des Blocks in der CSP — und der müsste bei jeder Änderung des
+Blocks mitgezogen werden, sonst verschwinden die Daten stillschweigend.
+
+Für vier Seiten ohne Produkte, Veranstaltungen oder Artikel ist der
+Gewinn gering: Google baut daraus kein Rich Result, das es hier nicht
+ohnehin schon gibt. Die enge CSP ist dagegen jeden Tag etwas wert.
+Deshalb bleibt es so — nicht weil es nicht ginge.
