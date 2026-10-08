@@ -26,12 +26,15 @@ src/
   site-config.ts            setzt site.config.json per HTMLRewriter ein
   sitemap.ts                erzeugt /sitemap.xml
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
+  anschrift.ts              zeichnet /anschrift.svg
+  anschrift-glyphen.ts      Zeichenumrisse dafür (erzeugt)
   contact.ts                POST /api/contact
   turnstile.ts              serverseitige Token-Prüfung
   validation.ts             Feldprüfung und Längengrenzen
   env.d.ts                  Typen der Secrets
 scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
+  glyphs.py                 erzeugt anschrift-glyphen.ts (läuft selten)
 site.config.json            Name, Anschrift, E-Mail, Seitenliste, IndexNow-Key
 wrangler.jsonc              Worker-Konfiguration
 ```
@@ -52,8 +55,8 @@ Auslieferung und kann vier Dinge tun, die rein statisch nicht gingen:
    füllt. Es läuft also kein Client-JavaScript dafür — das Impressum ist
    auch mit abgeschaltetem JavaScript vollständig.
 4. **Die Rückmeldung des Formulars rendern**, ebenfalls ohne JavaScript.
-5. **`sitemap.xml` und die IndexNow-Schlüsseldatei erzeugen**, beide aus
-   derselben `site.config.json`.
+5. **`sitemap.xml`, die IndexNow-Schlüsseldatei und das Anschrift-Bild
+   erzeugen**, alle drei aus derselben `site.config.json`.
 
 Wer die Anschrift ändern will, ändert `site.config.json` und sonst nichts.
 Für eine neue Seite gilt dasselbe: ein Eintrag in `pages`, und Sitemap wie
@@ -210,6 +213,76 @@ und ohne Skript. Das ist weniger genau — Cloudflare entscheidet, was als
 Änderung gilt — aber es kostet nichts und läuft von allein. Beides
 gleichzeitig schadet nicht.
 
+## Die Anschrift als Bild
+
+Im Impressum steht die Anschrift nicht als Text, sondern als Bild unter
+`/anschrift.svg`. Grund ist Adresshandel: Programme durchsuchen Impressen
+nach Anschriften, und was dort als Text steht, landet in Adresslisten.
+
+Drei Dinge, die man dazu wissen sollte.
+
+**Es sind Umrisse, kein `<text>` im SVG.** Text in einem SVG ist genauso
+auslesbar wie Text in HTML — der Umweg wäre sonst wirkungslos. Der Worker
+setzt jeden Buchstaben als Pfad zusammen; in der ausgelieferten Datei kommt
+die Anschrift als Zeichenfolge nicht vor. Die Umrisse stehen in
+`src/anschrift-glyphen.ts`.
+
+**Die Anschrift steht weiter nur in `site.config.json`.** Ein fertiges Bild
+im Repo wäre die zweite Stelle mit der Adresse, und eine Änderung müsste
+jemand in einem Grafikprogramm nachziehen. Es bleibt also dabei: wer die
+Anschrift ändert, ändert `site.config.json` und sonst nichts.
+
+**Barrierefreiheit ist eingeschränkt, und das ist eine Abwägung.** Wer das
+Bild nicht sehen kann, liest die Anschrift nicht. Der `alt`-Text nennt sie
+deshalb bewusst nicht — er würde sie den Sammelprogrammen gleich wieder
+servieren. Stattdessen steht unter dem Bild, dass es die Anschrift auf
+Anfrage als Text gibt, und E-Mail-Adresse wie Kontaktformular bleiben
+durchgehend Text. Niemand ist also vom Kontakt abgeschnitten.
+
+Wer das anders gewichtet, setzt die Anschrift in den `alt`-Text des `<img>`
+in `public/impressum.html`. Dann ist die Seite barrierefrei und der Schutz
+praktisch dahin — beides gleichzeitig geht hier nicht.
+
+In der Datenschutzerklärung steht die Anschrift nicht noch einmal: Abschnitt
+1 nennt Name und E-Mail-Adresse und verweist für die Anschrift auf das
+Impressum.
+
+### Farbe und Größe
+
+Die Farbe ist in `src/anschrift.ts` als `#b3bdd1` eingetragen und entspricht
+`--ink-soft` in `style.css`. `currentColor` geht nicht: ein per `<img>`
+eingebundenes SVG erbt die Farbe der Seite nicht, sondern löst gegen Schwarz
+auf — auf dem dunklen Hintergrund also unsichtbar. Wer die Farbe im
+Stylesheet ändert, ändert sie dort mit.
+
+Breite und Höhe rechnet der Worker aus und schreibt sie ins SVG, das `<img>`
+im HTML braucht deshalb keine Maße und die Seite springt beim Laden nicht.
+
+### Die Zeichenumrisse
+
+`src/anschrift-glyphen.ts` ist **erzeugt** und wird nicht von Hand
+geändert. Darin stehen 134 Zeichen: Buchstaben, Ziffern und die Satzzeichen,
+die in Namen und Anschriften vorkommen, dazu die Buchstaben des
+Latin-1-Nachtrags für Umlaute und Akzente. Zeichen wie `$ % # @` fehlen
+absichtlich — sie haben die größten Pfade und kommen in keiner Adresse vor.
+
+Fehlt ein Zeichen doch, zeichnet der Worker ein leeres Kästchen an seine
+Stelle und schreibt es in die Workers Logs. Lieber sichtbar falsch als
+stillschweigend verschluckt: ein fehlender Buchstabe in einer Anschrift
+fällt sonst niemandem auf.
+
+Neu erzeugen muss man die Datei nur, wenn Schrift oder Zeichenvorrat
+wechseln sollen. Dafür braucht es Python und fontTools, beides sonst
+nirgends im Projekt:
+
+```bash
+pip install fonttools
+python3 scripts/glyphs.py
+```
+
+Die Schrift ist DejaVu Sans; der Lizenzhinweis steht im Kopf der erzeugten
+Datei.
+
 ## Entwicklung
 
 Voraussetzung: Node 20 oder neuer.
@@ -251,7 +324,8 @@ geheim, und gehört er zum Inhalt oder zum Betrieb?*
 
 | Wert | Ort | Nötig für |
 |------|-----|-----------|
-| `site.*`, `owner.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel |
+| `site.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel |
+| `owner.*` | `site.config.json` | Impressum und das Anschrift-Bild |
 | `pages` | `site.config.json` | Sitemap und IndexNow-Meldung |
 | `indexNow.key` | `site.config.json` | Schlüsseldatei, öffentlich |
 | `TURNSTILE_SITE_KEY` | `wrangler.jsonc` → `vars` | Turnstile-Widget im Formular |

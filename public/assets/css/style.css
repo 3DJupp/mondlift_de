@@ -296,6 +296,21 @@ address {
   color: var(--ink-soft);
 }
 
+/* Die Anschrift im Impressum ist ein Bild. Groesse und Farbe stecken im SVG,
+   das der Worker zeichnet - hier steht nur, dass es auf schmalen Schirmen
+   mitschrumpfen darf. */
+.anschrift {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.anschrift__hinweis {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
 /* Hervorgehobener Kasten, etwa fuer den Disclaimer im Impressum */
 .note {
   margin: 1.6rem 0;
