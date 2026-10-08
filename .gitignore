@@ -19,3 +19,7 @@ npm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Build-Ausgabe der Animation (wird von wrangler erzeugt)
+public/assets/js/mondlift.js
+public/assets/js/mondlift.js.map

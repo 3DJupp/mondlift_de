@@ -1,4 +1,7 @@
+# mondlift.de
+
 User-agent: *
 Allow: /
+Disallow: /api/
 
 Sitemap: https://mondlift.de/sitemap.xml

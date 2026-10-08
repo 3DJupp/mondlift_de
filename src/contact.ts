@@ -59,12 +59,35 @@ async function withinLimit(
   return success;
 }
 
+/**
+ * Prüft, ob alles da ist, was zum Zustellen gebraucht wird.
+ *
+ * Fehlt etwas, ist das ein Konfigurationsfehler des Betreibers und keiner
+ * des Besuchers. Nach außen gibt es dafür nur die allgemeine Meldung; was
+ * genau fehlt, steht ausschließlich im Log.
+ *
+ * @returns Beschreibung des Problems fürs Log, oder null wenn alles passt.
+ */
+function missingConfig(env: Env): string | null {
+  if (typeof env.CONTACT_MAILER?.send !== "function") return "CONTACT_MAILER";
+  if (!env.CONTACT_TO_EMAIL) return "CONTACT_TO_EMAIL";
+  if (!env.CONTACT_FROM_EMAIL) return "CONTACT_FROM_EMAIL";
+  return null;
+}
+
 export async function handleContact(
   request: Request,
   env: Env,
 ): Promise<Status> {
   const url = new URL(request.url);
   const ip = request.headers.get("cf-connecting-ip") ?? "unbekannt";
+
+  // Vor aller Arbeit: kann das Formular überhaupt zustellen?
+  const missing = missingConfig(env);
+  if (missing) {
+    console.error(JSON.stringify({ event: "contact_not_configured", missing }));
+    return "fehler";
+  }
 
   // Rate Limit zuerst: schützt auch vor dem Aufwand des Rests.
   if (!(await withinLimit(env.CONTACT_RATE_LIMIT, ip))) return "zuviel";
@@ -116,11 +139,6 @@ export async function handleContact(
   }
 
   // --- Zustellung --------------------------------------------------------
-  if (!env.CONTACT_TO_EMAIL || !env.CONTACT_FROM_EMAIL) {
-    console.error(JSON.stringify({ event: "contact_addresses_missing" }));
-    return "fehler";
-  }
-
   const body = [
     `Name:    ${name}`,
     `E-Mail:  ${email}`,
@@ -131,10 +149,14 @@ export async function handleContact(
     message,
   ].join("\n");
 
+  // missingConfig() hat beide Adressen bereits geprüft.
+  const toAddress = env.CONTACT_TO_EMAIL as string;
+  const fromAddress = env.CONTACT_FROM_EMAIL as string;
+
   try {
     await env.CONTACT_MAILER.send({
-      to: env.CONTACT_TO_EMAIL,
-      from: { email: env.CONTACT_FROM_EMAIL, name: "Mondlift Kontaktformular" },
+      to: toAddress,
+      from: { email: fromAddress, name: "Mondlift Kontaktformular" },
       replyTo: { email, name },
       subject: `Kontaktformular mondlift.de: ${name}`.slice(0, 120),
       text: body,

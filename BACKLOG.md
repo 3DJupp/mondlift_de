@@ -1,72 +1,37 @@
 # Backlog
 
-## Optik der Enterprise-Animation
+## Animation
 
-Die Bewegung stimmt — das Kippen um die hintere Felgenkante und die
-Gondelstellung aus der resultierenden Kraft entsprechen dem echten Gerät.
-Das **Aussehen** tut es noch nicht. Nach Abgleich mit Referenzfotos eines
-Huss Enterprise sind das die Unterschiede, von oben nach unten sortiert
-nach Wirkung:
+Die Animation läuft auf Three.js. Was vom Abgleich mit den Referenzfotos
+noch offen ist:
 
-### 1. Das Rad ist ein Fachwerk, keine Speichen
+### Mast und Unterbau
 
-Aktuell gehen 20 glatte Linien von der Nabe zur Felge. Das echte Rad ist
-ein Tragwerk aus mehreren Lagen:
+Der Mast steht jetzt hinter dem Rad statt quer davor, ist aber noch ein
+schlichtes Rohr. Beim Original ist dort ein verkleideter Träger mit
+Plattform, Geländer und Aufstieg. Bei der Darstellungsgröße fraglich, ob
+sich das lohnt.
 
-- radiale Hauptträger von der Nabe nach außen,
-- ein **innerer Ring** auf etwa halbem Radius,
-- dazwischen eine durchgehende **Dreiecksverstrebung** im Zickzack, die
-  zwischen je zwei Hauptträgern Dreiecke und Rauten bildet,
-- eine **doppelte Felge**: zwei konzentrische Ringe mit Querstreben
-  dazwischen.
+### Beschriftung
 
-Das ist der mit Abstand größte Unterschied. Das Rad wirkt dadurch wie
-Stahlbau statt wie ein Wagenrad.
+Das Original trägt einen beleuchteten Schriftzug über dem Eingang. Der
+fehlt hier bewusst: er wäre eine Nachbildung der Marke, und die Seite ist
+inoffiziell.
 
-Variante bei manchen Geräten: statt dicker Träger viele **dünne
-Zugstangen**, etwa zwei pro Gondel in V-Form, was eher wie ein
-Fahrradlaufrad aussieht. Beide Bauarten kommen vor; das Fachwerk ist die
-häufigere und die optisch reizvollere.
+### Innenleben der Gondeln
 
-### 2. Die Gondeln sind Käfige, keine Platten
+Durch die Chrombügel sieht man beim Original die Sitzschalen. Aktuell ist
+der Rumpf geschlossen. Lohnt erst, wenn die Gondeln größer im Bild stehen.
 
-Aktuell: ein flaches Viereck mit einem warmen Streifen. Tatsächlich:
+### Messung in dieser Umgebung
 
-- ein **Dach** über dem Wagen, deutlich abgesetzt,
-- eine geschlossene, farbige **Außenschale** (die Seite, die nach außen
-  zeigt),
-- **offene Seiten mit Gitterstäben** in hellem Metall,
-- Sitzschale innen, sichtbar durch das Gitter.
+Die Bildraten aus der Entwicklung (rund 20 fps) stammen aus einer Umgebung
+ohne GPU, in der WebGL über SwiftShader in Software läuft. Sie sagen nichts
+über echte Geräte aus. Die adaptive Qualitätsstufe greift dort deshalb
+sofort. Auf echter Hardware muss das nachgemessen werden.
 
-Die Gondeln hängen an einem Drehpunkt an der Felge und öffnen sich nach
-innen zur Nabe hin.
+## Offen aus dem letzten Durchgang
 
-### 3. Nabe und Unterbau
-
-- Die Nabe ist beim Original eine große, glatte **Kappe** oder ein
-  kantiges Gehäuse, nicht eine simple Kugel.
-- Der Unterbau ist je nach Gerät entweder ein **kräftiger schräger
-  Ausleger** oder ein **hoher rechteckiger Mast** bis zur Nabe, montiert
-  auf einem Trailer mit Plattform. Der aktuelle dünne Hydraulikzylinder
-  ist zu zierlich.
-
-### 4. Farbe
-
-Die Originale sind kräftig gefärbt: rote Gondeln auf blauem Stahl, oder
-jede Gondel in einer anderen Farbe (blau, grün, gelb, pink). Das Briefing
-verlangt ein dunkles Schema mit warmem Gelb und Orange für die Lichter,
-also keine Kirmesbuntheit — aber ein zurückhaltender Farbakzent auf den
-Gondelschalen wäre drin und würde dem Bild viel geben.
-
-### 5. Lampen
-
-Beim Original sitzen die Lampen **dicht an dicht** als durchgehende Kette
-auf der Felge und rund um die Nabenscheibe. Aktuell ist es eine Lampe je
-Ausleger. Dichter wäre näher am Original.
-
-### Hinweis zur Umsetzung
-
-Mehr Streben heißen mehr Zeichenbefehle pro Bild. Die Messung aus der
-Entwicklung gilt weiter: unskalierte Sprites sind billig, skalierte sind
-teuer. Zusätzliche Linien sind dagegen günstig — das Fachwerk sollte sich
-ohne Einbruch der Bildrate zeichnen lassen. Vor und nach dem Umbau messen.
+- Formulierungen auf den Seiten entschlacken
+- Generische Fehlermeldungen für das Kontaktformular prüfen und vereinheitlichen
+- SEO und Auffindbarkeit ausbauen

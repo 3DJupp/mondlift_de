@@ -4,6 +4,12 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-10-07",
 
+  // Bündelt die Animation vor jedem dev, preview und deploy. Das Ergebnis
+  // unter public/assets/js/mondlift.js ist deshalb nicht eingecheckt.
+  "build": {
+    "command": "npm run build"
+  },
+
   // Static Assets. Der Worker läuft zuerst, damit jede Antwort - auch CSS,
   // JS und Bilder - dieselben Security-Header bekommt. Danach reicht der
   // Worker an das Asset-Binding weiter.
