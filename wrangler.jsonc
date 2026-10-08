@@ -25,7 +25,7 @@
   // ohnehin im HTML - der Secret Key gehört dagegen in `wrangler secret put`.
   // Leer lassen heißt: kein Widget im Formular.
   "vars": {
-    "TURNSTILE_SITE_KEY": ""
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFRtdEHO2PO0lLFd"
   },
 
   // Rate Limits fürs Kontaktformular, pro IP. Die Periode darf nur 10 oder
