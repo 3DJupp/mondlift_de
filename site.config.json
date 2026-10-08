@@ -15,5 +15,14 @@
   },
   "contact": {
     "email": "kontakt@mondlift.de"
-  }
+  },
+  "indexNow": {
+    "key": "366baf56aa87ec95c4bb8fcf1da73011"
+  },
+  "pages": [
+    { "path": "/", "changefreq": "monthly", "priority": "1.0" },
+    { "path": "/kontakt", "changefreq": "yearly", "priority": "0.5" },
+    { "path": "/impressum", "changefreq": "yearly", "priority": "0.3" },
+    { "path": "/datenschutz", "changefreq": "yearly", "priority": "0.3" }
+  ]
 }

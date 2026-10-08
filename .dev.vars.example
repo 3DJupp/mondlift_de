@@ -13,3 +13,8 @@ CONTACT_TO_EMAIL="du@example.org"
 
 # Absenderadresse auf der eigenen Domain.
 CONTACT_FROM_EMAIL="formular@mondlift.de"
+
+# Nicht hierher gehoeren: der Turnstile *Site* Key (oeffentlich, steht in
+# wrangler.jsonc unter vars) und der IndexNow-Schluessel (oeffentlich, steht
+# in site.config.json unter indexNow.key - jede Suchmaschine laedt ihn als
+# Datei von der Domain).

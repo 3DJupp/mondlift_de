@@ -16,7 +16,7 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   kontakt.html              Kontaktformular
   impressum.html            § 5 DDG
   datenschutz.html
-  404.html  robots.txt  sitemap.xml  favicon.svg
+  404.html  robots.txt  favicon.svg
   assets/css/style.css      gemeinsames Stylesheet
   assets/js/enterprise.js   Canvas-Animation
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
@@ -24,13 +24,20 @@ src/
   index.ts                  Routing, www-Redirect, Fehlerfälle
   headers.ts                Security-Header inkl. CSP
   site-config.ts            setzt site.config.json per HTMLRewriter ein
+  sitemap.ts                erzeugt /sitemap.xml
+  indexnow.ts               liefert die IndexNow-Schlüsseldatei
   contact.ts                POST /api/contact
   turnstile.ts              serverseitige Token-Prüfung
   validation.ts             Feldprüfung und Längengrenzen
   env.d.ts                  Typen der Secrets
-site.config.json            einzige Stelle mit Name, Anschrift und E-Mail
+scripts/
+  indexnow.mjs              meldet Änderungen an die Suchmaschinen
+site.config.json            Name, Anschrift, E-Mail, Seitenliste, IndexNow-Key
 wrangler.jsonc              Worker-Konfiguration
 ```
+
+`sitemap.xml` liegt bewusst **nicht** in `public/`: sie wird aus
+`site.config.json` erzeugt, siehe unten.
 
 ### Warum ein Worker vor den Assets
 
@@ -45,8 +52,12 @@ Auslieferung und kann vier Dinge tun, die rein statisch nicht gingen:
    füllt. Es läuft also kein Client-JavaScript dafür — das Impressum ist
    auch mit abgeschaltetem JavaScript vollständig.
 4. **Die Rückmeldung des Formulars rendern**, ebenfalls ohne JavaScript.
+5. **`sitemap.xml` und die IndexNow-Schlüsseldatei erzeugen**, beide aus
+   derselben `site.config.json`.
 
 Wer die Anschrift ändern will, ändert `site.config.json` und sonst nichts.
+Für eine neue Seite gilt dasselbe: ein Eintrag in `pages`, und Sitemap wie
+IndexNow-Meldung kennen sie.
 
 ### Die Animation
 
@@ -111,6 +122,94 @@ Das Rate-Limiting-Binding kennt nur Zeitfenster von 10 oder 60 Sekunden.
 Längere Fenster, etwa „fünf pro Stunde", bräuchten KV oder ein Durable
 Object — für diese Seite wäre das überdimensioniert.
 
+## Sitemap
+
+`GET /sitemap.xml` wird vom Worker aus `site.config.json` erzeugt. Die
+Seitenliste steht dort unter `pages`, die Domain unter `site.url`, das Datum
+unter `site.lastUpdated`:
+
+```json
+"pages": [
+  { "path": "/", "changefreq": "monthly", "priority": "1.0" }
+]
+```
+
+Eine fertige Datei in `public/` wäre die zweite Stelle im Repo, an der
+Seitenliste, Domain und Datum stehen — und die läuft mit der Zeit
+auseinander. So gibt es nur eine, und `scripts/indexnow.mjs` liest dieselbe
+Liste.
+
+Von den drei Angaben je Seite wertet Google nur `lastmod` aus; `changefreq`
+und `priority` ignoriert es seit Jahren. Sie stehen trotzdem drin, weil
+andere Suchmaschinen sie weiterhin lesen und sie nichts kosten. `lastmod`
+kommt aus `site.lastUpdated`.
+
+Dieses Datum hat zwei Aufgaben: es steht als „Stand:“ unter Impressum und
+Datenschutz und es ist das `lastmod` jeder Seite. Es bedeutet damit
+genau eine Sache — **das Datum der letzten inhaltlichen Änderung**. Wer
+Texte ändert, zieht es mit; wer nur an der Technik schraubt, lässt es
+stehen. Ein zweites Datum nur für die Sitemap wäre für vier Seiten, die
+ohnehin gemeinsam deployt werden, Buchhaltung ohne Nutzen.
+
+`priority` ist absichtlich als Zeichenkette notiert. Als Zahl würde `1.0`
+beim Serialisieren zu `1`, und das ist ein unnötiger Unterschied zwischen
+Config und ausgelieferter Datei.
+
+## IndexNow
+
+IndexNow ist ein Protokoll, mit dem man Suchmaschinen aktiv mitteilt, dass
+sich eine Adresse geändert hat, statt auf den nächsten Crawl zu warten.
+Teilnehmer sind unter anderem Bing, Yandex, Seznam und Naver — **Google
+nicht**; dort zählt weiter die Sitemap.
+
+Zwei Teile:
+
+**Die Schlüsseldatei.** Das Protokoll verlangt einen Nachweis, dass man die
+Domain kontrolliert: der Schlüssel muss unter
+`https://mondlift.de/<schlüssel>.txt` abrufbar sein und genau den Schlüssel
+enthalten. Der Worker beantwortet diesen einen Pfad; der Schlüssel steht in
+`site.config.json` unter `indexNow.key`.
+
+Er gehört **nicht** in `wrangler secret put`. Er ist öffentlich — jede
+Suchmaschine lädt die Datei — und als Secret oder `vars`-Eintrag stünde
+derselbe Wert zweimal im Repo, einmal für den Worker und einmal für das
+Skript. Geheim muss er nicht sein, nur schwer zu erraten; deshalb eine
+Zufallsfolge. Wechseln heißt: neuen Wert eintragen, deployen, neu melden.
+Erlaubt sind 8 bis 128 Zeichen aus `a-z`, `A-Z`, `0-9` und Bindestrich.
+
+**Die Meldung.** Nach einem Deploy, der Inhalte geändert hat:
+
+```bash
+npm run indexnow                      # alle Seiten aus der Config
+npm run indexnow -- /kontakt          # nur diese Seite
+npm run indexnow -- --dry-run         # nur zeigen, was gesendet würde
+```
+
+Das Skript prüft zuerst, ob die Schlüsseldatei live erreichbar ist und den
+richtigen Wert enthält — der häufigste Fehler ist ein Melden vor dem
+Deploy, und ohne diese Prüfung sieht man das erst am `403` der
+Suchmaschine. Danach geht eine Anfrage an `api.indexnow.org`, die an alle
+teilnehmenden Suchmaschinen verteilt. `200` heißt angenommen, `202` heißt
+angenommen und der Schlüssel wird noch geprüft — beides ist Erfolg.
+
+Der richtige Zeitpunkt ist ein Deploy **mit** Inhaltsänderung, nicht jeder
+Deploy. IndexNow ist dafür gedacht, Änderungen zu melden; eine unveränderte
+Seite erneut zu melden bringt nichts.
+
+Deshalb gibt es auch keinen Cron im Worker: ein Cron ohne Gedächtnis kann
+nicht wissen, ob sich seit dem letzten Lauf etwas geändert hat, und würde
+entweder immer melden oder nie. Ein Zustand dafür bräuchte KV oder ein
+Durable Object — für vier Seiten wäre das überdimensioniert. Der Deploy
+weiß es, also hängt die Meldung daran.
+
+### Die Alternative ohne Code
+
+Cloudflare kann das auch selbst: **Crawler Hints** im Dashboard unter
+Caching → Configuration meldet IndexNow für die ganze Zone, ohne Schlüssel
+und ohne Skript. Das ist weniger genau — Cloudflare entscheidet, was als
+Änderung gilt — aber es kostet nichts und läuft von allein. Beides
+gleichzeitig schadet nicht.
+
 ## Entwicklung
 
 Voraussetzung: Node 20 oder neuer.
@@ -145,7 +244,37 @@ Einmalig im Cloudflare-Dashboard nötig:
    setzen. Sie steht bewusst nicht in `wrangler.jsonc`, weil das Repo
    öffentlich ist.
 
-## Secrets
+## Variablen und Secrets
+
+Es gibt drei Orte, und welcher es ist, entscheidet eine Frage: *Ist der Wert
+geheim, und gehört er zum Inhalt oder zum Betrieb?*
+
+| Wert | Ort | Nötig für |
+|------|-----|-----------|
+| `site.*`, `owner.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel |
+| `pages` | `site.config.json` | Sitemap und IndexNow-Meldung |
+| `indexNow.key` | `site.config.json` | Schlüsseldatei, öffentlich |
+| `TURNSTILE_SITE_KEY` | `wrangler.jsonc` → `vars` | Turnstile-Widget im Formular |
+| `TURNSTILE_SECRET_KEY` | `wrangler secret put` | Prüfung des Turnstile-Tokens |
+| `CONTACT_TO_EMAIL` | `wrangler secret put` | Zustellung des Formulars |
+| `CONTACT_FROM_EMAIL` | `wrangler secret put` | Absenderadresse der Mail |
+
+Dazu kommen die Bindings aus `wrangler.jsonc`, die Wrangler selbst anlegt:
+`ASSETS`, `CONTACT_RATE_LIMIT`, `CONTACT_RATE_LIMIT_STRICT` und
+`CONTACT_MAILER`. Für die ist nichts einzutragen.
+
+Alles ist optional typisiert und der Worker kommt mit fehlenden Werten
+zurecht, statt beim Start umzufallen — er schaltet dann die betroffene
+Funktion ab:
+
+| Fehlt | Folge |
+|-------|-------|
+| `TURNSTILE_SITE_KEY` | kein Widget, kein Turnstile-Skript; das Formular läuft über Honigtopf und das strenge Rate Limit |
+| `TURNSTILE_SECRET_KEY` | ein eintreffendes Token kann nicht geprüft werden, die Einsendung wird abgewiesen |
+| `CONTACT_TO_EMAIL` / `CONTACT_FROM_EMAIL` | das Formular nimmt an, stellt aber nicht zu und meldet einen Fehler |
+| `indexNow.key` (ungültig) | keine Schlüsseldatei; `npm run indexnow` bricht mit einer Meldung ab |
+
+### Secrets
 
 Im Repo steht **nichts** Geheimes. Secrets kommen über
 `wrangler secret put <NAME>` in die Produktion und lokal in `.dev.vars`
@@ -163,9 +292,18 @@ npx wrangler secret put CONTACT_TO_EMAIL
 npx wrangler secret put CONTACT_FROM_EMAIL
 ```
 
+### Der Site Key
+
 Der **Site Key** von Turnstile ist öffentlich und steht als `vars`-Eintrag
 in `wrangler.jsonc` — der **Secret Key** gehört dort nicht hin. Das ist der
 häufigste Fehler an dieser Stelle.
+
+In der Produktion ist `TURNSTILE_SITE_KEY` noch leer. Der Wert lässt sich
+nicht erfinden: er entsteht erst, wenn im Dashboard ein Widget angelegt
+wird (siehe unten). Bis dahin läuft das Formular ohne Turnstile. Der
+`previews`-Block trägt dagegen schon den offiziellen Testschlüssel
+`1x00000000000000000000AA`, damit sich das Widget in einem Preview ansehen
+lässt.
 
 Ist `TURNSTILE_SITE_KEY` leer, entfernt der Worker sowohl das Widget als
 auch das Turnstile-Skript aus der Seite. Das Formular funktioniert dann
