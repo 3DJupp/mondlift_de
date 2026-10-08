@@ -8,6 +8,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "types": "wrangler types --strict-vars=false",
+    "indexnow": "node scripts/indexnow.mjs",
     "pretypecheck": "wrangler types --strict-vars=false",
     "typecheck": "tsc --noEmit"
   },

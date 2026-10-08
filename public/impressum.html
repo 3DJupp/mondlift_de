@@ -21,12 +21,26 @@
       <h1>Impressum</h1>
 
       <h2>Angaben gemäß § 5 DDG</h2>
+      <!-- Die Anschrift steht als Bild, nicht als Text. Der Worker zeichnet
+           sie unter /anschrift.svg aus denselben Angaben in
+           site.config.json; Breite und Höhe stecken im SVG. -->
       <address>
-        <span data-site="owner.name">—</span><br />
-        <span data-site="owner.street">—</span><br />
-        <span data-site="owner.cityLine">—</span><br />
-        <span data-site="owner.country">—</span>
+        <img
+          class="anschrift"
+          src="/anschrift.svg"
+          alt="Name und Anschrift des Anbieters, als Bild wiedergegeben."
+        />
       </address>
+      <p class="anschrift__hinweis">
+        Die Anschrift steht bewusst als Bild, damit Programme sie nicht
+        automatisch einsammeln und für Werbepost verwenden können. Wer sie
+        als Text braucht — etwa beim Lesen mit einem Screenreader —, bekommt
+        sie auf Anfrage an
+        <a data-site-href="contact.mailto" data-site="contact.email" href="#"
+          >—</a
+        >
+        oder über das <a href="/kontakt">Kontaktformular</a>.
+      </p>
 
       <h2>Kontakt</h2>
       <p>
@@ -44,7 +58,7 @@
 
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <address>
-        <span data-site="owner.name">—</span>, Adresse wie oben
+        <span data-site="owner.name">—</span>, Anschrift wie oben
       </address>
 
       <h2>Hinweis zur Unabhängigkeit dieser Seite</h2>
