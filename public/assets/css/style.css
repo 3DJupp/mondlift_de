@@ -539,3 +539,25 @@ address {
   width: 100%;
   accent-color: var(--amber);
 }
+
+/* ------------------------------- Inhalt unterhalb der Animation */
+/* Scrollt über das feststehende Canvas, braucht deshalb einen
+   deckenden Hintergrund. */
+
+.page--below {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(#070a12, #0b1120 40%, #0a0e1a);
+  border-top: 1px solid var(--line);
+}
+
+.page--below .wrap {
+  padding-top: clamp(2.5rem, 7vw, 4.5rem);
+}
+
+.page--below h2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  font-size: clamp(1.4rem, 4.6vw, 1.9rem);
+}

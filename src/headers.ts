@@ -40,8 +40,34 @@ const PERMISSIONS_POLICY = [
  * Legt die Security-Header auf eine Antwort. Die Antwort wird kopiert, weil
  * Header von Asset-Antworten immutable sind.
  */
+/**
+ * Setzt Cache-Zeiten nach Dateityp.
+ *
+ * Ohne das liefert das Asset-Binding alles mit max-age=0 aus, und das
+ * Three.js-Bündel von rund 570 KB würde bei jedem Seitenaufruf neu geholt.
+ * HTML bleibt ungecacht, damit Textänderungen sofort sichtbar sind; der
+ * ETag sorgt dort trotzdem für kurze Antworten.
+ */
+function cacheFor(pathname: string): string | null {
+  if (/\.(js|css|woff2?)$/.test(pathname)) {
+    // Kein Dateiname mit Inhaltshash, deshalb nur ein Tag fest und danach
+    // Nachfragen beim Server erlaubt.
+    return "public, max-age=86400, stale-while-revalidate=604800";
+  }
+  if (/\.(png|jpe?g|svg|webp|avif|ico)$/.test(pathname)) {
+    return "public, max-age=604800, stale-while-revalidate=2592000";
+  }
+  if (/\.(xml|txt)$/.test(pathname)) {
+    return "public, max-age=3600";
+  }
+  return null;
+}
+
 export function withSecurityHeaders(response: Response, url: URL): Response {
   const headers = new Headers(response.headers);
+
+  const cache = cacheFor(url.pathname);
+  if (cache && response.ok) headers.set("Cache-Control", cache);
 
   headers.set("Content-Security-Policy", CSP);
   headers.set("X-Content-Type-Options", "nosniff");
