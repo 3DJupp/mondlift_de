@@ -1,5 +1,9 @@
 # Backlog
 
+Offen, nach Wichtigkeit: die Optik der Animation, danach die Entscheidung
+zur Reichweitenmessung. Die Optik bleibt der oberste Punkt — die Bewegung
+stimmt, das Bild noch nicht.
+
 ## Optik der Enterprise-Animation
 
 Die Bewegung stimmt — das Kippen um die hintere Felgenkante und die
@@ -71,33 +75,71 @@ Entwicklung gilt weiter: unskalierte Sprites sind billig, skalierte sind
 teuer. Zusätzliche Linien sind dagegen günstig — das Fachwerk sollte sich
 ohne Einbruch der Bildrate zeichnen lassen. Vor und nach dem Umbau messen.
 
-## Sichtbarkeit: zwei bewusst offene Punkte
+## Reichweite messen: Vorschlag für den nächsten Schritt
 
-Beim Nachsehen der Sitemap sind zwei Dinge aufgefallen, die nicht
-umgesetzt wurden. Beide sind Abwägungen, keine Versäumnisse.
+Die Seite hat jetzt Inhalte, die ranken können — damit wird zum ersten Mal
+interessant, ob das auch passiert. Gewünscht war ausdrücklich eine Anregung
+zu Google Analytics; hier steht sie, zusammen mit den Alternativen, weil die
+Abwägung nicht technisch ist.
 
-### Link-Vorschau (`og:image`)
+### Zuerst: die zwei Werkzeuge ohne Code und ohne Einwilligung
 
-Die Seiten haben `og:type`, `og:title`, `og:description`, `og:url` und
-`og:locale`, aber kein `og:image`. Wer den Link in einem Messenger oder
-einem Netzwerk teilt, bekommt deshalb eine Textkarte ohne Bild.
+Beide gehören eingerichtet, bevor über Analytics überhaupt geredet wird. Sie
+beantworten genau die Fragen, um die es hier geht, und kosten weder eine
+Zeile Code noch einen Banner.
 
-Was fehlt, ist ein Rasterbild von etwa 1200×630 px. SVG nimmt dort fast
-niemand an, und der Worker kann kein PNG erzeugen — es gibt im Repo keinen
-Encoder und für einen gäbe es keinen zweiten Verwendungszweck. Es bliebe
-also eine Datei in `public/assets/`, einmal von Hand gebaut: ein Standbild
-der Enterprise-Animation wäre das Naheliegende. Das ist die eine Stelle,
-an der die Regel „alles aus `site.config.json`" nicht trägt.
+- **Google Search Console.** Zeigt, für welche Suchbegriffe die Seite
+  erscheint, auf welcher Position, wie oft geklickt wird, welche Seiten
+  indexiert sind und wo Google beim Crawlen hängt. Für eine Seite, die
+  gefunden werden will, ist das die wichtigste Quelle überhaupt. Der
+  Nachweis läuft über einen DNS-TXT-Eintrag in der Cloudflare-Zone, es
+  kommt also nichts in den Code. Die Sitemap lässt sich dort direkt
+  einreichen.
+- **Bing Webmaster Tools.** Dasselbe für Bing — und damit für Copilot und
+  alle, die den Bing-Index benutzen. Die Daten aus der Search Console lassen
+  sich beim Anlegen importieren.
 
-### Strukturierte Daten (JSON-LD)
+Dazu kommt ohne jede Einrichtung die **Analyse im Cloudflare-Dashboard**:
+Anfragen, Besucher, Länder, Statuscodes, alles serverseitig gezählt. Kein
+Skript im Browser, keine Cookies, keine Einwilligung, keine Lücke durch
+Werbeblocker.
 
-Üblich wäre ein `<script type="application/ld+json">` mit `WebSite` und
-`Person`. Die CSP der Seite erlaubt mit `script-src 'self'` keine Inline-
-Skripte, und das gilt auch für JSON-LD. Es ginge nur mit einem
-sha256-Hash des Blocks in der CSP — und der müsste bei jeder Änderung des
-Blocks mitgezogen werden, sonst verschwinden die Daten stillschweigend.
+### Dann erst: Besucherverhalten
 
-Für vier Seiten ohne Produkte, Veranstaltungen oder Artikel ist der
-Gewinn gering: Google baut daraus kein Rich Result, das es hier nicht
-ohnehin schon gibt. Die enge CSP ist dagegen jeden Tag etwas wert.
-Deshalb bleibt es so — nicht weil es nicht ginge.
+Wenn darüber hinaus interessiert, *wie* sich Besucher auf der Seite bewegen,
+stehen drei Wege zur Wahl.
+
+| Weg | Was es kostet |
+|-----|---------------|
+| **Cloudflare Web Analytics** | Ein Skript von `static.cloudflareinsights.com`, also eine Zeile mehr in der CSP und der erste Fremdabruf außerhalb von Turnstile. Ohne Cookies, ohne geräteübergreifende Wiedererkennung. Kostenlos. |
+| **Google Analytics 4** | Cookies, damit Einwilligung nach § 25 TTDSG — also ein Banner vor der Seite, ein neuer Abschnitt in der Datenschutzerklärung und eine Vereinbarung zur Auftragsverarbeitung. Dazu: Ein Banner verzerrt die Messung, die er ermöglichen soll, weil ein erheblicher Teil ablehnt. |
+| **Selbst zählen im Worker** | Kein Fremdskript, keine Cookies, volle Kontrolle — aber Workers Analytics Engine oder KV als Speicher, eine Auswertung von Hand, und ein Stück Code, das gepflegt werden will. |
+
+**Empfehlung:** Search Console und Bing Webmaster Tools einrichten, die
+Cloudflare-Analyse mitlesen, und erst wenn danach eine konkrete Frage offen
+bleibt, Cloudflare Web Analytics dazunehmen. Google Analytics lohnt sich für
+vier Inhaltsseiten ohne Konversionsziel nicht — es bringt Funktionen, die
+hier niemand braucht, und kostet dafür den Cookie-Banner, der als erstes
+auf der Seite steht.
+
+Wenn GA4 trotzdem gewünscht ist, ist der Weg klar und machbar: Banner mit
+echter Ablehnmöglichkeit, Skript erst nach Einwilligung nachladen, CSP um
+`googletagmanager.com` und `google-analytics.com` erweitern, Datenschutz-
+erklärung um Zweck, Rechtsgrundlage, Empfänger und Speicherdauer ergänzen.
+Es ist eine Entscheidung, keine Fleißarbeit — deshalb steht sie hier und
+nicht im Code.
+
+## Erledigt
+
+Zwei Punkte aus diesem Backlog sind umgesetzt und stehen nur noch als
+Hinweis, wo die Begründung nachzulesen ist.
+
+- **Link-Vorschau (`og:image`).** Es gibt jetzt ein Standbild unter
+  `/assets/og/mondlift.png`, gerendert aus der Animation selbst mit
+  `scripts/og-image.mjs`. Die Annahme von damals — „der Worker kann kein
+  PNG erzeugen" — stimmt weiter; erzeugt wird es nicht im Worker, sondern
+  einmalig beim Entwickeln.
+- **Strukturierte Daten (JSON-LD).** Der Einwand war die CSP und ein Hash,
+  der von Hand nachgezogen werden müsste. Der Worker rechnet ihn jetzt
+  selbst über denselben Block, den er ausliefert — siehe
+  `src/strukturierte-daten.ts` und den Abschnitt im README.

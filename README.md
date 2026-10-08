@@ -1,8 +1,9 @@
 # mondlift.de
 
-Private Fan-Hommage an den Mondlift, ein Huss Enterprise auf Reisen.
-Die Seite ist **inoffiziell** und hat keine Verbindung zum Betreiber oder
-Hersteller des Fahrgeschäfts.
+Private Fan-Hommage an den Mondlift, ein Huss Enterprise auf Reisen, und
+ein kleines Nachschlagewerk zu diesem Gerät und zu seiner Bauform. Die Seite
+ist **inoffiziell** und hat keine Verbindung zum Betreiber oder Hersteller
+des Fahrgeschäfts.
 
 Technisch: ein Cloudflare Worker mit Static Assets. Kein Framework, kein
 Build-Schritt, keine Laufzeit-Abhängigkeiten. HTML, CSS und JavaScript liegen
@@ -12,7 +13,11 @@ fertig in `public/`, TypeScript gibt es nur im Worker.
 
 ```
 public/                     ausgelieferte Dateien (keine Build-Ausgabe)
-  index.html                Startseite mit der Animation
+  index.html                Startseite mit der Animation und dem Einstieg
+  mondlift.html             das Gerät: Steckbrief und Geschichte
+  enterprise.html           die Bauform: Herkunft, Technik, Hersteller
+  glossar.html              Hülle für das erzeugte Glossar
+  fragen.html               Hülle für die FAQ, dazu Quellen und Methode
   kontakt.html              Kontaktformular
   impressum.html            § 5 DDG
   datenschutz.html
@@ -20,11 +25,17 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   assets/css/style.css      gemeinsames Stylesheet
   assets/js/enterprise.js   Canvas-Animation
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
+  assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
 src/
   index.ts                  Routing, www-Redirect, Fehlerfälle
   headers.ts                Security-Header inkl. CSP
   site-config.ts            setzt site.config.json per HTMLRewriter ein
+  strukturierte-daten.ts    JSON-LD je Seite und der Hash für die CSP
+  glossar.ts                die Begriffe, als Daten
+  fragen.ts                 die häufigen Fragen, als Daten
+  html.ts                   Maskierung und Sprungmarken
   sitemap.ts                erzeugt /sitemap.xml
+  llms.ts                   erzeugt /llms.txt
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
   anschrift.ts              zeichnet /anschrift.svg
   anschrift-glyphen.ts      Zeichenumrisse dafür (erzeugt)
@@ -34,18 +45,22 @@ src/
   env.d.ts                  Typen der Secrets
 scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
+  og-image.mjs              rendert das Standbild (läuft selten)
   glyphs.py                 erzeugt anschrift-glyphen.ts (läuft selten)
-site.config.json            Name, Anschrift, E-Mail, Seitenliste, IndexNow-Key
+docs/superpowers/specs/     Entwürfe, aus denen größere Umbauten kamen
+site.config.json            Name, Anschrift, E-Mail, Steckbrief, Seitenliste
 wrangler.jsonc              Worker-Konfiguration
 ```
 
-`sitemap.xml` liegt bewusst **nicht** in `public/`: sie wird aus
-`site.config.json` erzeugt, siehe unten.
+`sitemap.xml` und `llms.txt` liegen bewusst **nicht** in `public/`: sie
+werden aus `site.config.json` erzeugt, siehe unten. Dasselbe gilt für
+Glossar und FAQ, deren Text in `src/` steht — warum, steht im Abschnitt
+über die Inhaltsseiten.
 
 ### Warum ein Worker vor den Assets
 
 `run_worker_first` steht auf `true`. Dadurch läuft der Worker vor jeder
-Auslieferung und kann vier Dinge tun, die rein statisch nicht gingen:
+Auslieferung und kann sechs Dinge tun, die rein statisch nicht gingen:
 
 1. **Security-Header** auf jede Antwort legen, auch auf CSS, JS und Bilder.
 2. **`www.mondlift.de`** dauerhaft auf die Apex-Domain umleiten.
@@ -55,8 +70,10 @@ Auslieferung und kann vier Dinge tun, die rein statisch nicht gingen:
    füllt. Es läuft also kein Client-JavaScript dafür — das Impressum ist
    auch mit abgeschaltetem JavaScript vollständig.
 4. **Die Rückmeldung des Formulars rendern**, ebenfalls ohne JavaScript.
-5. **`sitemap.xml`, die IndexNow-Schlüsseldatei und das Anschrift-Bild
-   erzeugen**, alle drei aus derselben `site.config.json`.
+5. **`sitemap.xml`, `llms.txt`, die IndexNow-Schlüsseldatei und das
+   Anschrift-Bild erzeugen**, alle aus derselben `site.config.json`.
+6. **Strukturierte Daten einsetzen** und den dazu passenden sha256-Hash in
+   die CSP schreiben — beides aus derselben Zeichenkette.
 
 Wer die Anschrift ändern will, ändert `site.config.json` und sonst nichts.
 Für eine neue Seite gilt dasselbe: ein Eintrag in `pages`, und Sitemap wie
@@ -125,6 +142,152 @@ Das Rate-Limiting-Binding kennt nur Zeitfenster von 10 oder 60 Sekunden.
 Längere Fenster, etwa „fünf pro Stunde", bräuchten KV oder ein Durable
 Object — für diese Seite wäre das überdimensioniert.
 
+## Die Inhaltsseiten
+
+Bis vor kurzem hatte die Seite vier Seiten, davon zwei rechtliche, und auf
+der Startseite stand außer Titel und Tagline kein Satz. Für eine Hommage
+reicht das; für etwas, das gefunden und zitiert werden kann, nicht. Dazu
+kamen deshalb vier Seiten:
+
+| Pfad | Inhalt |
+|------|--------|
+| `/mondlift` | Das Gerät: Steckbrief, Besitzergeschichte, Ablauf der Fahrt |
+| `/enterprise` | Die Bauform: Herkunft bei Schwarzkopf und Huss, Technik, Hersteller, Varianten |
+| `/glossar` | Zwanzig Begriffe von Radkranz bis Beschickung |
+| `/fragen` | Häufige Fragen, die Quellenlage und die strittigen Angaben |
+
+### Die Regel für den Inhalt
+
+Bei der Recherche kam heraus, dass sich die zugänglichen Quellen an
+mehreren Stellen widersprechen: das Baujahr des Mondlifts (1976 oder 1978),
+die Stückzahl der gebauten Enterprise (74, rund 50, über 75 oder etwa 64),
+die Drehzahl, die Wiesn-Teilnahme nach dem Besitzerwechsel.
+
+Daraus folgt die Regel, nach der alle Inhaltsseiten geschrieben sind:
+**jede Zahl nennt ihre Quelle, und strittige Zahlen bleiben strittig.** Wo
+die Quellen auseinandergehen, stehen beide Werte, und am Ende jeder Seite
+steht, welche Quelle welche Angabe trägt.
+
+Das ist keine Koketterie mit der eigenen Unsicherheit, sondern der Grund,
+warum die Seite überhaupt als Quelle taugen kann. Eine Fanseite, die sich
+sicherer gibt als ihre Quellen, ist für niemanden zitierfähig — für ein
+Sprachmodell so wenig wie für einen Menschen.
+
+### Warum Glossar und FAQ in `src/` stehen
+
+Von diesen beiden Listen gibt es jeweils zwei Fassungen: die sichtbare und
+die maschinenlesbare (`DefinedTermSet` und `FAQPage`). Zwei Fassungen
+desselben Textes laufen auseinander, sobald jemand nur eine davon anfasst —
+und bei FAQ-Daten verlangt Google ausdrücklich, dass beide übereinstimmen.
+
+Deshalb steht der Text einmal als Daten in `src/glossar.ts` und
+`src/fragen.ts`, und beide Fassungen entstehen daraus: das HTML
+serverseitig über die Platzhalter `<div data-glossar>` und
+`<div data-fragen>`, die strukturierten Daten in
+`src/strukturierte-daten.ts`. Wer einen Begriff ändert, ändert eine Zeile.
+
+Prosaseiten bleiben dagegen normales HTML in `public/`. Dort gibt es nichts
+zu synchronisieren, und eine Textseite, die man nur noch über einen
+Generator lesen kann, wäre ein schlechter Tausch.
+
+### Der Steckbrief steht in der Config
+
+Die Daten des Geräts — Hersteller, Baujahr, Maße, Gondeln, Betreiber —
+stehen unter `ride` in `site.config.json` und werden an zwei Stellen
+eingesetzt: in die Tabelle auf `/mondlift` über die vorhandenen
+`data-site`-Platzhalter (`<dd data-site="ride.height">`) und in die
+strukturierten Daten. Eine Zahl, zwei Ausgaben. Es ist dieselbe Regel, nach
+der Anschrift und Sitemap schon arbeiten.
+
+## Strukturierte Daten
+
+`GET` auf eine Inhaltsseite liefert im Kopf einen Block
+`<script type="application/ld+json">` mit `WebSite`, `Person`, `WebPage`,
+`BreadcrumbList` und — je nach Seite — dem Steckbrief des Geräts, der
+Bauform, dem Glossar als `DefinedTermSet` oder den Fragen als `FAQPage`.
+
+### Wie das mit der engen CSP zusammengeht
+
+Im BACKLOG stand lange, dass das nicht geht, und die Begründung war
+richtig: `script-src 'self'` erlaubt keine Inline-Skripte, und JSON-LD ist
+technisch eines. Erlauben ließe es sich über einen sha256-Hash in der CSP —
+aber der müsste bei jeder Änderung des Blocks von Hand nachgezogen werden,
+und wenn das jemand vergisst, verschwinden die Daten stillschweigend.
+
+Der Schluss daraus war nicht nötig. Der Worker erzeugt den Block **und**
+rechnet den Hash über genau die Zeichenkette, die er ausliefert:
+
+```
+const daten = await strukturierteDaten(url.pathname);   // { json, hash }
+injectSiteConfig(asset, { jsonLd: daten?.json });       // in den <head>
+withSecurityHeaders(body, url, [daten.hash]);           // in die CSP
+```
+
+Beide kommen aus derselben Quelle, also kann der Hash nicht veralten, und
+von Hand steht er nirgends im Repo. Die CSP bleibt eng: kein
+`'unsafe-inline'`, pro Seite genau ein zusätzlicher Hash — und Seiten ohne
+Block, etwa Impressum und Datenschutz, bekommen auch keinen.
+
+Zwei Kleinigkeiten, die daran hängen:
+
+- Der Block wird mit `element.append(..., { html: true })` eingefügt, nicht
+  mit `setInnerContent` als Text. Maskierter Text wäre eine andere
+  Zeichenkette als die, über die der Hash gerechnet wurde — der Browser
+  würde den Block dann verwerfen.
+- Im JSON wird jedes `<` als `\u003c` geschrieben. Sonst könnte ein Text
+  darin die Folge `</script>` bilden und das Element vorzeitig schließen.
+
+Gerechnet wird einmal je Isolate und Pfad; danach kommen Block und Hash aus
+einer Map.
+
+## llms.txt und die KI-Crawler
+
+Die Seite möchte als Quelle benutzt werden — von Suchmaschinen und von
+Sprachmodellen. Zwei kleine Dinge sagen das ausdrücklich.
+
+**`robots.txt`** nennt GPTBot, ClaudeBot, PerplexityBot, Google-Extended und
+die übrigen namentlich und erlaubt ihnen alles. Erlaubt waren sie durch
+`User-agent: *` schon vorher; der Unterschied ist, dass es jetzt dasteht —
+bei diesen Crawlern wird eine fehlende Erlaubnis oft als Verbot gelesen.
+
+**`GET /llms.txt`** liefert ein kurzes Inhaltsverzeichnis in Markdown, nach
+der Konvention von llmstxt.org und aus derselben Seitenliste erzeugt wie
+die Sitemap: Titel, ein Satz zur Seite, die Seiten mit je einer Zeile, der
+Steckbrief, die strittigen Angaben — und ein letzter Abschnitt, der der
+eigentliche Grund für die Datei ist: **wofür diese Seite keine Quelle
+ist.** Kein Terminkalender, keine Preise, keine Herstellerunterlagen. Ein
+Modell, das daraus sonst einen Termin für das nächste Volksfest ableitet,
+hätte ein Datum erfunden und diese Seite als Beleg genannt.
+
+## Link-Vorschau
+
+`og:image` zeigt auf `/assets/og/mondlift.png`, ein Standbild von 1200×630
+Pixeln. Erzeugt wird es mit `scripts/og-image.mjs`:
+
+```bash
+node scripts/og-image.mjs
+```
+
+Das Skript startet einen kleinen Server auf `public/`, öffnet darin eine
+Seite mit der Animation und dem Schriftzug und lässt Chromium davon einen
+Screenshot machen. Playwright oder eine Bibliothek braucht es dafür nicht —
+`--screenshot` kann Chromium allein. Gezeigt wird dieselbe Stellung, die
+`enterprise.js` bei `prefers-reduced-motion: reduce` zeichnet; dadurch sieht
+das Bild nach jedem Lauf gleich aus.
+
+Der Weg über eine Datei ist Absicht: `og:image` braucht ein Rasterbild, SVG
+nimmt dort fast niemand an, und ein PNG-Encoder im Worker hätte keinen
+zweiten Verwendungszweck. Das Bild ist damit die eine Stelle, an der die
+Regel „alles aus `site.config.json`" nicht trägt — neu gebaut werden muss
+es, wenn sich die Animation oder der Schriftzug darauf ändert.
+
+## Reichweite
+
+Wie sich messen lässt, ob das alles etwas bringt — und warum die Empfehlung
+nicht Google Analytics heißt —, steht in [BACKLOG.md](BACKLOG.md). Kurz:
+Search Console und Bing Webmaster Tools kosten keine Zeile Code und keinen
+Cookie-Banner, und sie beantworten die Fragen, um die es hier geht.
+
 ## Sitemap
 
 `GET /sitemap.xml` wird vom Worker aus `site.config.json` erzeugt. Die
@@ -152,13 +315,14 @@ andere Suchmaschinen sie weiterhin lesen und sie nichts kosten.
 
 ### Warum das Datum pro Seite steht
 
-Hier stand vorher ein Datum für alle vier Seiten, `site.lastUpdated`, mit
-der Begründung: vier Seiten werden gemeinsam deployt, ein zweites Datum je
-Seite wäre Buchhaltung ohne Nutzen. Die Annahme stimmt nicht. Die vier
-Seiten ändern sich nicht gemeinsam — Startseite und Kontakt zuletzt am
-7.10., Impressum und Datenschutz am 8.10. Mit einem gemeinsamen Datum
-behauptet die Sitemap bei jeder Textänderung irgendwo, alle vier Seiten
-seien neu.
+Hier stand vorher ein Datum für alle Seiten, `site.lastUpdated`, mit der
+Begründung: die Seiten werden gemeinsam deployt, ein zweites Datum je Seite
+wäre Buchhaltung ohne Nutzen. Die Annahme stimmt nicht. Die Seiten ändern
+sich nicht gemeinsam — der Kontakt stand zuletzt am 7.10. an, die
+Inhaltsseiten am 8.10. Mit einem gemeinsamen Datum behauptet die Sitemap
+bei jeder Textänderung irgendwo, alle Seiten seien neu. Seit das
+Nachschlagewerk dazugekommen ist, gilt das erst recht: an einem Glossar
+ändert sich etwas, ohne dass das Impressum davon weiß.
 
 Das ist nicht nur ungenau, es kostet die Angabe ihre Wirkung: Google
 benutzt `lastmod` nur so lange, wie es dem Verhalten der Seiten entspricht,
@@ -240,7 +404,8 @@ Seite erneut zu melden bringt nichts.
 Deshalb gibt es auch keinen Cron im Worker: ein Cron ohne Gedächtnis kann
 nicht wissen, ob sich seit dem letzten Lauf etwas geändert hat, und würde
 entweder immer melden oder nie. Ein Zustand dafür bräuchte KV oder ein
-Durable Object — für vier Seiten wäre das überdimensioniert. Der Deploy
+Durable Object — für eine Seite dieser Größe wäre das überdimensioniert.
+Der Deploy
 weiß es, also hängt die Meldung daran.
 
 ### Die Alternative ohne Code
@@ -364,7 +529,8 @@ geheim, und gehört er zum Inhalt oder zum Betrieb?*
 |------|-----|-----------|
 | `site.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel |
 | `owner.*` | `site.config.json` | Impressum und das Anschrift-Bild |
-| `pages` | `site.config.json` | Sitemap und IndexNow-Meldung |
+| `ride.*` | `site.config.json` | Steckbrief auf `/mondlift`, strukturierte Daten, `llms.txt` |
+| `pages` | `site.config.json` | Sitemap, IndexNow-Meldung, `llms.txt`, Brotkrumen |
 | `indexNow.key` | `site.config.json` | Schlüsseldatei, öffentlich |
 | `TURNSTILE_SITE_KEY` | `wrangler.jsonc` → `vars` | Turnstile-Widget im Formular |
 | `TURNSTILE_SECRET_KEY` | `wrangler secret put` | Prüfung des Turnstile-Tokens |

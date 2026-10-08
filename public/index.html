@@ -3,21 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mondlift</title>
+    <title>Mondlift — das letzte reisende Huss Enterprise</title>
     <meta
       name="description"
-      content="Private Fan-Hommage an den Mondlift, ein Huss Enterprise auf Reisen. Inoffiziell und ohne Verbindung zum Betreiber des Fahrgeschäfts."
+      content="Private Fan-Hommage an den Mondlift, ein reisendes Fahrgeschäft vom Typ Huss Enterprise: Steckbrief, Geschichte, Technik und ein Glossar — mit Quellen und einer Animation des Geräts."
     />
     <link rel="canonical" href="https://mondlift.de/" />
     <meta name="theme-color" content="#070a12" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Mondlift" />
+    <meta property="og:title" content="Mondlift — das letzte reisende Huss Enterprise" />
     <meta
       property="og:description"
-      content="Private Fan-Hommage an ein Fahrgeschäft auf Reisen."
+      content="Steckbrief, Geschichte und Technik eines Fahrgeschäfts auf Reisen — mit Quellen."
     />
     <meta property="og:url" content="https://mondlift.de/" />
     <meta property="og:locale" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Gezeichnetes Fahrgeschäft vom Typ Enterprise mit beleuchtetem Rad bei Nacht."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/css/style.css" />
   </head>
@@ -28,26 +36,126 @@
     <canvas id="ride" aria-hidden="true"></canvas>
 
     <div class="hero">
-      <header class="hero__head" id="inhalt">
+      <header class="hero__head">
         <h1 class="hero__title" data-site="site.name">Mondlift</h1>
         <p class="hero__sub" data-site="site.tagline">
           Eine Fan-Hommage an ein Fahrgeschäft auf Reisen
         </p>
       </header>
 
-      <footer class="foot">
-        <ul class="foot__nav">
-          <li><a href="/impressum">Impressum</a></li>
-          <li><a href="/datenschutz">Datenschutz</a></li>
-          <li><a href="/kontakt">Kontakt</a></li>
-        </ul>
-        <p class="disclaimer">
-          <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
-          Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
-          des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
-        </p>
-      </footer>
+      <p class="hero__more">
+        <a href="#inhalt">Was der Mondlift ist <span aria-hidden="true">↓</span></a>
+      </p>
     </div>
+
+    <main class="sheet" id="inhalt">
+      <div class="wrap">
+        <nav class="nav nav--sheet" aria-label="Seiten">
+          <a href="/mondlift">Das Gerät</a>
+          <a href="/enterprise">Der Typ</a>
+          <a href="/glossar">Glossar</a>
+          <a href="/fragen">Fragen</a>
+        </nav>
+
+        <h2>Ein Rad, das sich aufrichtet</h2>
+
+        <p class="lead">
+          Der <strong>Mondlift</strong> ist ein reisendes Fahrgeschäft vom Typ
+          <a href="/enterprise">Enterprise</a> des Bremer Herstellers Huss:
+          zwanzig frei schwenkende Gondeln an einem Rad von etwa zweiundzwanzig
+          Metern, das sich während der Fahrt aus der Waagerechten in die
+          Senkrechte hebt und seine Fahrgäste über Kopf führt — ohne Bügel und
+          ohne Gurt. Nach allem, was öffentlich bekannt ist, ist er das letzte
+          Exemplar dieser Bauart, das in Deutschland noch von Volksfest zu
+          Volksfest zieht.
+        </p>
+
+        <p>
+          Seit 1981 war das Geschäft in der Hand der Münchener
+          Schaustellerfamilie Zehle, davor lief es in den Niederlanden unter
+          dem Namen <em>Moonlift</em>; seit dem Saisonende 2023 gehört es der
+          Zettl Enterprises KG. Das Baujahr ist nicht eindeutig belegt — die
+          Quellen nennen 1976 oder 1978, und hier bleibt das so stehen.
+        </p>
+
+        <p>
+          Diese Seite ist ein privates Nachschlagewerk: ein
+          <a href="/mondlift">Steckbrief des Geräts</a> mit seiner Geschichte,
+          die <a href="/enterprise">Bauform Enterprise</a> von Anton
+          Schwarzkopf 1972 bis zu den heutigen Ausführungen, ein
+          <a href="/glossar">Glossar</a> der Begriffe und eine Seite mit
+          <a href="/fragen">Fragen und Quellen</a>. Jede Zahl nennt, woher sie
+          kommt; wo sich die Quellen widersprechen, stehen beide Werte.
+        </p>
+
+        <ul class="karten">
+          <li>
+            <a href="/mondlift"><strong>Der Mondlift</strong></a>
+            <p>
+              Steckbrief, Besitzergeschichte von Ropers über Zehle zu Zettl,
+              Ablauf der Fahrt und die offene Frage nach dem Baujahr.
+            </p>
+          </li>
+          <li>
+            <a href="/enterprise"><strong>Enterprise</strong></a>
+            <p>
+              Die Bauform: Herkunft bei Schwarzkopf und Huss, Technik des
+              Kippens, Varianten, Stückzahlen und der Hersteller.
+            </p>
+          </li>
+          <li>
+            <a href="/glossar"><strong>Glossar</strong></a>
+            <p>
+              Zwanzig Begriffe vom Radkranz über die resultierende Kraft bis
+              zur Beschickung — jeder einzeln verlinkbar.
+            </p>
+          </li>
+          <li>
+            <a href="/fragen"><strong>Fragen und Quellen</strong></a>
+            <p>
+              Wie hoch, wie schnell, wer betreibt es — und an welchen Stellen
+              sich die Quellen nicht einig sind.
+            </p>
+          </li>
+        </ul>
+
+        <h2>Zur Animation oben</h2>
+
+        <p>
+          Das Bild im Hintergrund ist gerechnet, nicht gefilmt: Das Rad kippt
+          um seine hintere Felgenkante, wie es das echte Gerät tut, und jede
+          Gondel zeigt in die Richtung der
+          <a href="/glossar#resultierende-kraft">resultierenden Kraft</a> aus
+          Fliehkraft und Schwerkraft. Flach und langsam hängen die Gondeln
+          nach unten, steil und schnell stehen sie radial ab — ohne einen
+          einzigen Sonderfall im Code.
+        </p>
+
+        <p>
+          Wer sich für die Technik dahinter interessiert: Die Seite kommt ohne
+          Framework, ohne Cookies und ohne Tracking aus. Was bei einem Besuch
+          verarbeitet wird, steht in der
+          <a href="/datenschutz">Datenschutzerklärung</a>.
+        </p>
+      </div>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/mondlift">Das Gerät</a></li>
+        <li><a href="/enterprise">Der Typ</a></li>
+        <li><a href="/glossar">Glossar</a></li>
+        <li><a href="/fragen">Fragen</a></li>
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/datenschutz">Datenschutz</a></li>
+        <li><a href="/kontakt">Kontakt</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
+        Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
+        des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
+      </p>
+    </footer>
 
     <script src="/assets/js/enterprise.js" defer></script>
   </body>

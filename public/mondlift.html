@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Der Mondlift — Huss Enterprise auf Reisen</title>
+    <meta
+      name="description"
+      content="Der Mondlift: reisendes Fahrgeschäft vom Typ Huss Enterprise, 20 Gondeln, rund 22 Meter hoch. Steckbrief, Besitzergeschichte von Ropers über Zehle zu Zettl, und was an den Angaben strittig ist."
+    />
+    <link rel="canonical" href="https://mondlift.de/mondlift" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Der Mondlift — Huss Enterprise auf Reisen" />
+    <meta
+      property="og:description"
+      content="Steckbrief, Geschichte und Technik des letzten reisenden Huss Enterprise in Deutschland."
+    />
+    <meta property="og:url" content="https://mondlift.de/mondlift" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Gezeichnetes Fahrgeschäft vom Typ Enterprise mit beleuchtetem Rad bei Nacht."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body class="page">
+    <nav class="nav" aria-label="Seiten">
+      <a href="/">Start</a>
+      <a href="/mondlift" aria-current="page">Das Gerät</a>
+      <a href="/enterprise">Der Typ</a>
+      <a href="/glossar">Glossar</a>
+      <a href="/fragen">Fragen</a>
+    </nav>
+
+    <main class="wrap">
+      <h1>Der Mondlift</h1>
+
+      <p class="lead">
+        Ein Rad von zweiundzwanzig Metern, zwanzig Gondeln daran, und eine
+        Bewegung, die erst flach und harmlos aussieht: Der Mondlift ist ein
+        reisendes Fahrgeschäft vom Typ <a href="/enterprise">Enterprise</a>
+        des Bremer Herstellers Huss — und nach allem, was öffentlich bekannt
+        ist, das einzige transportable Exemplar dieser Bauart, das in
+        Deutschland noch unterwegs ist.
+      </p>
+
+      <h2>Steckbrief</h2>
+
+      <!-- Alle Werte kommen aus site.config.json unter `ride` und werden
+           vom Worker eingesetzt. Dieselben Zahlen stehen damit auch in den
+           strukturierten Daten der Seite - siehe src/strukturierte-daten.ts. -->
+      <dl class="steckbrief">
+        <dt>Hersteller</dt>
+        <dd data-site="ride.manufacturer">—</dd>
+        <dt>Typ</dt>
+        <dd data-site="ride.type">—</dd>
+        <dt>Baujahr</dt>
+        <dd data-site="ride.built">—</dd>
+        <dt>Seriennummer</dt>
+        <dd data-site="ride.serial">—</dd>
+        <dt>Höhe aufgerichtet</dt>
+        <dd data-site="ride.height">—</dd>
+        <dt>Raddurchmesser</dt>
+        <dd data-site="ride.diameter">—</dd>
+        <dt>Gondeln</dt>
+        <dd data-site="ride.gondolas">—</dd>
+        <dt>Plätze</dt>
+        <dd data-site="ride.seats">—</dd>
+        <dt>Kapazität</dt>
+        <dd data-site="ride.capacity">—</dd>
+        <dt>Drehzahl</dt>
+        <dd data-site="ride.rpm">—</dd>
+        <dt>Anschlusswert</dt>
+        <dd data-site="ride.power">—</dd>
+        <dt>Betreiber</dt>
+        <dd data-site="ride.operator">—</dd>
+      </dl>
+
+      <p>
+        Der Platzbedarf wird mit 22 mal 22 Metern angegeben — das Geschäft
+        braucht also ein Quadrat von fast einem halben Fußballfeld und einen
+        Anschluss, der eine Reihenhauszeile versorgen würde.
+      </p>
+
+      <h2>Wie die Fahrt abläuft</h2>
+
+      <p>
+        Die Reihenfolge ist keine Dramaturgie, sondern Technik. Das Rad liegt
+        beim Einsteigen fast waagerecht; die Gondeln hängen nach unten wie bei
+        einem Karussell. Dann läuft es an und kommt auf Drehzahl — für den
+        Mondlift werden bis zu vierzehn Umdrehungen in der Minute genannt. Bei
+        zweiundzwanzig Metern Durchmesser legt eine Gondel damit gut sechzehn
+        Meter in der Sekunde zurück, also knapp sechzig Kilometer in der
+        Stunde.
+      </p>
+
+      <p>
+        Erst danach hebt sich der <a href="/glossar#ausleger">Ausleger</a> und
+        kippt das Rad bis nahe an die Senkrechte. Die Nabe steigt dabei von
+        gut zweieinhalb auf etwa zehn Meter, und die Gondeln werden über Kopf
+        geführt. Dass dabei niemand herausfällt, liegt nicht an einem Bügel —
+        es gibt keinen —, sondern daran, dass die
+        <a href="/glossar#zentrifugalkraft">Fliehkraft</a> am obersten Punkt
+        größer ist als die Schwerkraft. Deshalb muss das Rad erst drehen und
+        darf erst dann kippen. Beim Anhalten läuft es in umgekehrter
+        Reihenfolge.
+      </p>
+
+      <p>
+        Was die Gondeln dabei tun, muss niemand steuern: Jede stellt sich in
+        die Richtung der
+        <a href="/glossar#resultierende-kraft">resultierenden Kraft</a> aus
+        Fliehkraft und Schwerkraft. Flach und langsam hängen sie nach unten,
+        steil und schnell stehen sie radial ab —
+        <a href="/">die Animation auf der Startseite</a> rechnet genau das und
+        braucht dafür keinen Sonderfall.
+      </p>
+
+      <h2>Vom Moonlift zum Mondlift</h2>
+
+      <p>
+        Das Geschäft hat in fast fünfzig Jahren drei Besitzerkreise gesehen,
+        und einen Namenswechsel gleich am Anfang.
+      </p>
+
+      <dl class="verlauf">
+        <dt>ab 1976 oder 1978</dt>
+        <dd>
+          Erstbesitzer ist der niederländische Schausteller Michel Ropers. Die
+          Anlage läuft unter dem englischen Namen <em>Moonlift</em>.
+        </dd>
+        <dt>ab 1981</dt>
+        <dd>
+          Das Geschäft geht an die Münchener Schaustellerfamilie Zehle und
+          wird als <em>Mondlift</em> bekannt — zunächst bei Manfred Zehle, ab
+          2014 bei Petra Zehle beziehungsweise der Mondlift GmbH.
+        </dd>
+        <dt>seit Oktober 2023</dt>
+        <dd>
+          Eigentümerin ist die Zettl Enterprises KG aus München. Der Wechsel
+          fiel auf das Saisonende 2023.
+        </dd>
+      </dl>
+
+      <h2>Das Baujahr ist nicht geklärt</h2>
+
+      <p>
+        Hier gehen die Quellen auseinander, und das bleibt in diesem
+        Nachschlagewerk so stehen, statt sich auf eine Zahl festzulegen: Die
+        Datenbank ride-index nennt <strong>1976</strong>, andere Verzeichnisse
+        und Berichte <strong>1978</strong>. Dieselbe Unsicherheit zieht sich
+        durch die erste Besitzzeit, die mal mit 1976 bis 1981 und mal mit 1978
+        bis 1981 angegeben wird. In Sammlerkreisen wird die Seriennummer
+        31&nbsp;053 genannt; wirklich klären ließe sich die Frage nur über die
+        Unterlagen des Herstellers.
+      </p>
+
+      <div class="note">
+        <span class="note__label">Hinweis</span>
+        <p>
+          Wer das Baujahr belegen kann — mit einem Typenschild, einem
+          Prüfbuch, einer Herstellerunterlage —, möge sich
+          <a href="/kontakt">melden</a>. Die Angabe wird dann mit Beleg
+          ergänzt, nicht ersetzt.
+        </p>
+      </div>
+
+      <h2>Zwei Besonderheiten</h2>
+
+      <h3>Das letzte reisende Enterprise in Deutschland</h3>
+      <p>
+        In Freizeitparks steht die Bauform weiterhin an mehreren Orten, dort
+        aber fest montiert. Als transportables Geschäft, das von Volksfest zu
+        Volksfest zieht, ist der Mondlift nach Angabe der deutschen Wikipedia
+        das einzige noch betriebene Huss Enterprise in Deutschland. Das macht
+        ihn für Kirmesfreunde zu einem der meistfotografierten Geräte
+        überhaupt.
+      </p>
+
+      <h3>Er kann rückwärts</h3>
+      <p>
+        Anders als die meisten Geräte dieser Bauart kann der Mondlift die
+        Drehrichtung umkehren. Für die Fahrgäste ändert das die Reihenfolge
+        der Kräfte und damit den ganzen Eindruck der Fahrt.
+      </p>
+
+      <h2>Wo er zu sehen war</h2>
+
+      <p>
+        Diese Seite führt bewusst keinen Terminkalender: Wo ein
+        <a href="/glossar#reisegeschaeft">Reisegeschäft</a> in der nächsten
+        Saison steht, entscheidet sich über die
+        <a href="/glossar#beschickung">Beschickung</a>, also über Bewerbung und
+        Zuteilung durch den Veranstalter — verlässlich ist das immer erst kurz
+        vorher. Belegt ist dagegen die Vergangenheit:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Münchener Oktoberfest:</strong> ab 1990 regelmäßig, dann eine
+          Pause von rund zehn Jahren ohne Enterprise auf der Wiesn, danach
+          wieder ab 2005. Ob das Geschäft nach dem Besitzerwechsel
+          zurückkehrt, berichten die Quellen widersprüchlich.
+        </li>
+        <li>
+          <strong>Hamburger Dom:</strong> mehrfach, unter anderem auf dem
+          Frühlingsdom.
+        </li>
+      </ul>
+
+      <p>
+        Auskunft über den aktuellen Standort gibt der Veranstalter des
+        jeweiligen Volksfestes, nicht diese Seite.
+      </p>
+
+      <h2>Quellen</h2>
+
+      <p>
+        Die Angaben stammen aus öffentlich zugänglichen Verzeichnissen,
+        Fanseiten und Wikipedia — nicht aus Unterlagen des Herstellers oder
+        des Betreibers. Was welche Quelle trägt:
+      </p>
+
+      <ul class="quellen">
+        <li>
+          <a href="https://de.wikipedia.org/wiki/Enterprise_(Fahrgesch%C3%A4ft)"
+            >Wikipedia: Enterprise (Fahrgeschäft)</a
+          >
+          — Bauform, Drehzahlbereich, Mondlift als einziges reisendes
+          Exemplar in Deutschland, Rückwärtsfahrt.
+        </li>
+        <li>
+          <a href="https://kuestenkirmes.de/mondlift-zettl/">Küstenkirmes</a>
+          — Besitzergeschichte seit Ropers, Namenswechsel, Übernahme durch
+          Zettl.
+        </li>
+        <li>
+          <a href="https://ride-index.de/2019/02/13/mondlift-3/">ride-index</a>
+          — technische Daten, Besitzzeiten mit Monatsangabe, Baujahr 1976.
+        </li>
+        <li>
+          <a
+            href="https://www.parkwelt.info/fahrgesch%C3%A4fte-volksfest/mondlift-petra-zehle/"
+            >Parkwelt</a
+          >
+          — Maße, Kapazität, Anschlusswert.
+        </li>
+        <li>
+          <a
+            href="https://www.ganz-muenchen.de/oktoberfest/fahrgeschaefte/modern/mondlift/info.html"
+            >ganz-muenchen.de</a
+          >
+          — Wiesn-Teilnahme ab 1990, Pause, Rückkehr 2005.
+        </li>
+        <li>
+          <a href="https://wiesn-inside.de/article/28-mehrere-wiesn-klassiker-haben-den-besitzer-gewechselt/"
+            >Wiesn-Inside</a
+          >
+          — Besitzerwechsel 2023, Baujahr 1978.
+        </li>
+      </ul>
+
+      <p class="meta">
+        Stand: <span data-site="site.lastUpdated">—</span>. Angaben ohne
+        Gewähr; Korrekturen gern über das
+        <a href="/kontakt">Kontaktformular</a>.
+      </p>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/datenschutz">Datenschutz</a></li>
+        <li><a href="/kontakt">Kontakt</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
+        Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
+        des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
+      </p>
+    </footer>
+  </body>
+</html>
