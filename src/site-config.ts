@@ -14,10 +14,18 @@
  *   <div data-turnstile>                       bekommt data-sitekey
  *   <script data-turnstile-script>             entfällt ohne Site Key
  *   <p data-status="ok" hidden>                sichtbar bei ?status=ok
+ *   <div data-glossar>                         bekommt die Begriffsliste
+ *   <div data-fragen>                          bekommt die Fragenliste
+ *
+ * Glossar und Fragen stehen als Daten in src/, weil es von beiden zwei
+ * Fassungen gibt - die sichtbare und die strukturierte. Eine Quelle, zwei
+ * Ausgaben; siehe src/glossar.ts und src/strukturierte-daten.ts.
  */
 
 import config from "../site.config.json";
 import { MESSAGES } from "./contact";
+import { glossarHtml } from "./glossar";
+import { fragenHtml } from "./fragen";
 
 /** Flache Nachschlagetabelle inklusive abgeleiteter Werte. */
 const VALUES: Record<string, string> = {
@@ -34,6 +42,11 @@ const VALUES: Record<string, string> = {
   "owner.cityLine": `${config.owner.postalCode} ${config.owner.city}`,
   "contact.email": config.contact.email,
   "contact.mailto": `mailto:${config.contact.email}`,
+  // Der Steckbrief des Geräts. Flach eingehängt als ride.*, damit die
+  // Tabelle im HTML und die strukturierten Daten dieselbe Zahl benutzen.
+  ...Object.fromEntries(
+    Object.entries(config.ride).map(([key, value]) => [`ride.${key}`, value]),
+  ),
 };
 
 export interface PageContext {
@@ -41,6 +54,11 @@ export interface PageContext {
   turnstileSiteKey?: string;
   /** Wert von ?status= nach dem Absenden ohne JavaScript. */
   status?: string | null;
+  /**
+   * JSON-LD für diese Seite. Kommt aus strukturierte-daten.ts, zusammen
+   * mit dem sha256-Hash, den die CSP dafür braucht.
+   */
+  jsonLd?: string;
 }
 
 /** ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ. */
@@ -64,6 +82,32 @@ export function injectSiteConfig(
       : null;
 
   return new HTMLRewriter()
+    .on("head", {
+      element(element) {
+        // Als rohes HTML angehängt, nicht als Text: der Inhalt eines
+        // script-Elements wird nicht maskiert, und der Hash in der CSP gilt
+        // für genau diese Zeichenkette. Dass darin kein `<` vorkommt,
+        // stellt strukturierte-daten.ts sicher.
+        if (context.jsonLd) {
+          element.append(
+            `<script type="application/ld+json">${context.jsonLd}</script>`,
+            { html: true },
+          );
+        }
+      },
+    })
+    .on("[data-glossar]", {
+      element(element) {
+        element.setInnerContent(glossarHtml(), { html: true });
+        element.removeAttribute("data-glossar");
+      },
+    })
+    .on("[data-fragen]", {
+      element(element) {
+        element.setInnerContent(fragenHtml(), { html: true });
+        element.removeAttribute("data-fragen");
+      },
+    })
     .on("[data-site]", {
       element(element) {
         const key = element.getAttribute("data-site");

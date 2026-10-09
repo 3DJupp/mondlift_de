@@ -509,3 +509,294 @@ address {
 .status__msg--warn {
   border-left-color: var(--amber);
 }
+
+/* --------------------------------------------------------- Navigation */
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.3rem;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.6rem) clamp(1.1rem, 4vw, 1.6rem) 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav a {
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 182, 77, 0.3);
+  padding-bottom: 1px;
+}
+
+.nav a:hover {
+  border-bottom-color: currentColor;
+}
+
+/* Die Seite, auf der man steht, ist kein Link ins Nirgendwo - sie bleibt
+   anklickbar, wird aber als aktuell gekennzeichnet. */
+.nav a[aria-current="page"] {
+  color: var(--ink-soft);
+  border-bottom-color: var(--line);
+}
+
+/* In der Inhaltsflaeche der Startseite sitzt die Navigation schon im
+   .wrap, braucht also keine eigene Breite und keinen Seitenabstand. */
+.nav--sheet {
+  max-width: none;
+  margin: 0 0 2.4rem;
+  padding: 0;
+}
+
+.nav--mitte {
+  justify-content: center;
+  margin-top: 2.4rem;
+  padding: 0;
+}
+
+/* ------------------------------------------------- Startseite, Inhalt */
+
+/* Der Hinweis am Fuss des Heros, der nach unten zeigt. */
+.hero__more {
+  margin: 0;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero__more a {
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 182, 77, 0.3);
+  padding-bottom: 2px;
+}
+
+/* Die Textflaeche unter dem Hero. Sie schiebt sich beim Scrollen ueber die
+   Animation, die fest im Hintergrund stehen bleibt - deshalb oben ein
+   Verlauf und darunter deckend, sonst waere der Text vor dem bewegten
+   Bild nicht zu lesen. */
+.sheet {
+  position: relative;
+  z-index: 2;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(7, 10, 18, 0.82) 0%,
+      rgba(7, 10, 18, 0.97) 12%,
+      #070a12 30%
+    );
+}
+
+.sheet h2 {
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  line-height: 1.25;
+  margin: 2.8rem 0 0.8rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.sheet .nav--sheet + h2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.sheet p {
+  color: var(--ink-soft);
+}
+
+/* Die vier Wege in die Sammlung */
+.karten {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 38rem) {
+  .karten {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.karten li {
+  margin: 0;
+  padding: 1rem 1.2rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.karten li + li {
+  margin-top: 0;
+}
+
+.karten a {
+  text-decoration: none;
+}
+
+.karten a strong {
+  font-weight: 600;
+}
+
+.karten p {
+  margin: 0.35rem 0 0;
+  font-size: 0.9em;
+  color: var(--ink-dim);
+}
+
+/* Footer ausserhalb des Heros, auf den Inhaltsseiten und der Startseite */
+.foot--page {
+  position: relative;
+  z-index: 2;
+  background: #070a12;
+  padding: 2rem clamp(1.1rem, 4vw, 1.6rem) 2.6rem;
+  border-top: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------- Nachschlagewerk */
+
+/* Steckbrief: Merkmal und Wert, auf breiten Schirmen zweispaltig. Die
+   Werte setzt der Worker aus site.config.json ein. */
+.steckbrief,
+.verlauf {
+  margin: 1.4rem 0 0;
+  padding: 0;
+}
+
+.steckbrief dt,
+.verlauf dt {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.steckbrief dd,
+.verlauf dd {
+  margin: 0.15rem 0 0.9rem;
+  color: var(--ink);
+}
+
+@media (min-width: 34rem) {
+  .steckbrief {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    gap: 0.1rem 1.2rem;
+    align-items: baseline;
+  }
+
+  .steckbrief dt,
+  .steckbrief dd {
+    margin: 0;
+    padding: 0.42rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .steckbrief dt {
+    padding-top: 0.5rem;
+  }
+}
+
+/* Glossar: Stichwort und Erklaerung, Stichwort hervorgehoben */
+.glossar {
+  margin: 1.6rem 0 0;
+  padding: 0;
+}
+
+.glossar dt {
+  margin-top: 1.7rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  scroll-margin-top: 1.5rem;
+}
+
+.glossar dd {
+  margin: 0.4rem 0 0;
+  color: var(--ink-soft);
+}
+
+.begriff__mehr,
+.frage__mehr a {
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+
+/* Fragen: jede mit eigener Sprungmarke */
+.frage h3 {
+  margin: 2rem 0 0.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--ink);
+  scroll-margin-top: 1.5rem;
+}
+
+.frage p {
+  margin: 0.3rem 0 0;
+  color: var(--ink-soft);
+}
+
+.frage__mehr {
+  margin-top: 0.5rem !important;
+}
+
+/* Tabellen fuer strittige Angaben und Stueckzahlen */
+.tabelle {
+  width: 100%;
+  margin: 1.4rem 0;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  text-align: left;
+  color: var(--ink-soft);
+}
+
+.tabelle th,
+.tabelle td {
+  padding: 0.5rem 0.7rem 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.tabelle th {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 400;
+}
+
+.tabelle td:last-child,
+.tabelle th:last-child {
+  padding-right: 0;
+}
+
+/* Quellenlisten: Angabe und wofuer sie steht */
+.quellen {
+  padding-left: 0;
+  list-style: none;
+}
+
+.quellen li {
+  padding-left: 1.1rem;
+  position: relative;
+  margin-top: 0.6rem;
+  font-size: 0.94em;
+}
+
+.quellen li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--ink-dim);
+}

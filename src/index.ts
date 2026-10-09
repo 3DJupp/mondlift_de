@@ -4,10 +4,11 @@
  * Aufgaben:
  *  - www.* auf die Apex-Domain umleiten
  *  - POST /api/contact entgegennehmen
- *  - sitemap.xml aus site.config.json erzeugen
+ *  - sitemap.xml und llms.txt aus site.config.json erzeugen
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
  *  - Daten aus site.config.json in die HTML-Seiten einsetzen
+ *  - strukturierte Daten einsetzen und ihren Hash in die CSP schreiben
  *  - Security-Header auf jede Antwort legen
  *
  * Alles andere ist statisch und kommt aus ./public via Asset-Binding.
@@ -17,6 +18,8 @@ import { withSecurityHeaders } from "./headers";
 import { injectSiteConfig, isHtml } from "./site-config";
 import { handleContact, contactJson, contactRedirect } from "./contact";
 import { handleSitemap } from "./sitemap";
+import { LLMS_PATH, handleLlms } from "./llms";
+import { strukturierteDaten } from "./strukturierte-daten";
 import { INDEXNOW_KEY_PATH, handleIndexNowKey } from "./indexnow";
 import { handleAnschrift } from "./anschrift";
 
@@ -92,6 +95,10 @@ export default {
       return withSecurityHeaders(handleSitemap(request), url);
     }
 
+    if (url.pathname === LLMS_PATH) {
+      return withSecurityHeaders(handleLlms(request), url);
+    }
+
     if (url.pathname === ANSCHRIFT_PATH) {
       return withSecurityHeaders(handleAnschrift(request), url);
     }
@@ -109,13 +116,18 @@ export default {
       assetUrl.search = "";
       const asset = await env.ASSETS.fetch(new Request(assetUrl, request));
 
-      const body = isHtml(asset)
-        ? injectSiteConfig(asset, {
-            turnstileSiteKey: env.TURNSTILE_SITE_KEY,
-            status: url.searchParams.get("status"),
-          })
-        : asset;
-      return withSecurityHeaders(body, url);
+      if (!isHtml(asset)) return withSecurityHeaders(asset, url);
+
+      // Die strukturierten Daten und der Hash dafuer gehoeren zusammen:
+      // der Block kommt in den Kopf der Seite, der Hash in die CSP. Beide
+      // aus derselben Zeichenkette, siehe src/strukturierte-daten.ts.
+      const daten = await strukturierteDaten(url.pathname);
+      const body = injectSiteConfig(asset, {
+        turnstileSiteKey: env.TURNSTILE_SITE_KEY,
+        status: url.searchParams.get("status"),
+        jsonLd: daten?.json,
+      });
+      return withSecurityHeaders(body, url, daten ? [daten.hash] : []);
     } catch (error) {
       // Strukturiert loggen, nach aussen nichts Internes preisgeben.
       console.error(

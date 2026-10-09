@@ -4,7 +4,7 @@
     "domain": "mondlift.de",
     "url": "https://mondlift.de",
     "tagline": "Eine Fan-Hommage an ein Fahrgeschäft auf Reisen",
-    "lastUpdated": "2026-10-07"
+    "lastUpdated": "2026-10-08"
   },
   "owner": {
     "name": "Dominic Spatz",
@@ -16,30 +16,87 @@
   "contact": {
     "email": "kontakt@mondlift.de"
   },
+  "ride": {
+    "name": "Mondlift",
+    "firstName": "Moonlift",
+    "manufacturer": "Huss",
+    "type": "Enterprise",
+    "built": "1976 oder 1978 (Quellen weichen ab)",
+    "serial": "31 053",
+    "height": "ca. 22 m",
+    "diameter": "ca. 22 m",
+    "gondolas": "20",
+    "seats": "40",
+    "capacity": "ca. 1.400 Personen je Stunde",
+    "rpm": "bis 14 U/min",
+    "power": "90 kW",
+    "operator": "Zettl Enterprises KG, München",
+    "operatorSince": "Oktober 2023"
+  },
   "indexNow": {
     "key": "366baf56aa87ec95c4bb8fcf1da73011"
   },
   "pages": [
     {
       "path": "/",
-      "lastmod": "2026-10-07",
+      "title": "Mondlift",
+      "summary": "Startseite mit der Animation des Fahrgeschäfts und dem Einstieg in die Sammlung.",
+      "lastmod": "2026-10-08",
       "changefreq": "monthly",
       "priority": "1.0"
     },
     {
+      "path": "/mondlift",
+      "title": "Der Mondlift",
+      "summary": "Steckbrief, Besitzergeschichte und Besonderheiten des Geräts: Huss Enterprise, 20 Gondeln, rund 22 Meter hoch.",
+      "lastmod": "2026-10-08",
+      "changefreq": "monthly",
+      "priority": "0.9"
+    },
+    {
+      "path": "/enterprise",
+      "title": "Enterprise — der Fahrgeschäfttyp",
+      "summary": "Herkunft bei Schwarzkopf und Huss, Funktionsweise, Varianten, Stückzahlen und wo die Quellen auseinandergehen.",
+      "lastmod": "2026-10-08",
+      "changefreq": "monthly",
+      "priority": "0.9"
+    },
+    {
+      "path": "/glossar",
+      "title": "Glossar",
+      "summary": "Begriffe rund um Fahrgeschäft und Volksfest, von Radkranz über resultierende Kraft bis Beschickung.",
+      "lastmod": "2026-10-08",
+      "changefreq": "monthly",
+      "priority": "0.7"
+    },
+    {
+      "path": "/fragen",
+      "title": "Fragen und Quellen",
+      "summary": "Häufige Fragen zum Mondlift und zum Typ Enterprise, dazu die Quellenlage und die strittigen Angaben.",
+      "lastmod": "2026-10-08",
+      "changefreq": "monthly",
+      "priority": "0.8"
+    },
+    {
       "path": "/kontakt",
+      "title": "Kontakt",
+      "summary": "Nachricht an den Betreiber der Seite, etwa für Korrekturen oder Fotos.",
       "lastmod": "2026-10-07",
       "changefreq": "yearly",
       "priority": "0.5"
     },
     {
       "path": "/impressum",
+      "title": "Impressum",
+      "summary": "Anbieterkennzeichnung nach § 5 DDG.",
       "lastmod": "2026-10-08",
       "changefreq": "yearly",
       "priority": "0.3"
     },
     {
       "path": "/datenschutz",
+      "title": "Datenschutz",
+      "summary": "Was bei einem Besuch verarbeitet wird und was nicht.",
       "lastmod": "2026-10-08",
       "changefreq": "yearly",
       "priority": "0.3"

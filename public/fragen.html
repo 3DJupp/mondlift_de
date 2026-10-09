@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fragen und Quellen — Mondlift</title>
+    <meta
+      name="description"
+      content="Häufige Fragen zum Mondlift und zum Typ Enterprise: Höhe, Baujahr, Betreiber, Drehzahl, Rückhaltesysteme. Dazu die Quellenlage und eine Liste der Angaben, bei denen sich die Quellen widersprechen."
+    />
+    <link rel="canonical" href="https://mondlift.de/fragen" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Fragen und Quellen — Mondlift" />
+    <meta
+      property="og:description"
+      content="Antworten mit Quelle — und die Angaben, bei denen sich die Quellen widersprechen."
+    />
+    <meta property="og:url" content="https://mondlift.de/fragen" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Gezeichnetes Fahrgeschäft vom Typ Enterprise mit beleuchtetem Rad bei Nacht."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body class="page">
+    <nav class="nav" aria-label="Seiten">
+      <a href="/">Start</a>
+      <a href="/mondlift">Das Gerät</a>
+      <a href="/enterprise">Der Typ</a>
+      <a href="/glossar">Glossar</a>
+      <a href="/fragen" aria-current="page">Fragen</a>
+    </nav>
+
+    <main class="wrap">
+      <h1>Fragen und Quellen</h1>
+
+      <p class="lead">
+        Die Fragen, die zum Mondlift und zur Bauform Enterprise am häufigsten
+        gestellt werden — mit Antworten, die sagen, woher sie kommen. Darunter
+        steht, wie diese Seite arbeitet und an welchen Stellen sich die
+        Quellen widersprechen.
+      </p>
+
+      <h2>Häufige Fragen</h2>
+
+      <!-- Die Fragen erzeugt der Worker aus src/fragen.ts. Aus derselben
+           Liste entstehen die strukturierten Daten als FAQPage - deshalb
+           können sichtbare und ausgezeichnete Fassung nicht auseinander
+           laufen, was Google für FAQ-Daten ausdrücklich verlangt. -->
+      <div data-fragen>
+        <p>
+          Die Fragenliste konnte nicht geladen werden. Fragen gern direkt über
+          das <a href="/kontakt">Kontaktformular</a>.
+        </p>
+      </div>
+
+      <h2 id="streit">Wo die Quellen auseinandergehen</h2>
+
+      <p>
+        Über ein einzelnes Reisegeschäft gibt es keine amtliche Datenbank. Was
+        öffentlich steht, stammt aus Verzeichnissen von Kirmesfreunden, aus
+        Berichten und aus Wikipedia — und diese Quellen sind sich an vier
+        Stellen nicht einig. Statt eine Zahl auszuwählen, stehen hier beide:
+      </p>
+
+      <table class="tabelle">
+        <thead>
+          <tr>
+            <th scope="col">Angabe</th>
+            <th scope="col">Die Varianten</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Baujahr des Mondlifts</td>
+            <td>1976 oder 1978</td>
+          </tr>
+          <tr>
+            <td>Drehzahl</td>
+            <td>bis 14 U/min für dieses Gerät, 14 bis 17 U/min für die Bauform</td>
+          </tr>
+          <tr>
+            <td>Gebaute Enterprise</td>
+            <td>
+              74, rund 50, über 75 oder etwa 64 — je nachdem, ob gebaute,
+              ausgelieferte, verkaufte oder installierte Geräte gezählt werden
+            </td>
+          </tr>
+          <tr>
+            <td>Rückkehr auf die Wiesn nach 2023</td>
+            <td>offen; eine Quelle hält es für fraglich, eine schließt es aus</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Wie diese Seite arbeitet</h2>
+
+      <p>
+        Drei Regeln, nach denen die Angaben hier zusammengetragen sind:
+      </p>
+
+      <ol>
+        <li>
+          <strong>Jede Zahl nennt ihre Quelle.</strong> Am Ende jeder
+          Inhaltsseite steht, welche Quelle welche Angabe trägt — nicht als
+          pauschale Liste, sondern Angabe für Angabe.
+        </li>
+        <li>
+          <strong>Strittiges bleibt strittig.</strong> Wo sich Quellen
+          widersprechen, stehen beide Werte. Eine Fanseite, die sicherer
+          klingt als ihre Quellen, ist als Quelle nichts wert.
+        </li>
+        <li>
+          <strong>Was fehlt, fehlt sichtbar.</strong> Diese Seite führt keinen
+          Terminkalender, nennt keine Preise und hat keine Unterlagen des
+          Herstellers. Wo etwas nicht belegt ist, steht das da.
+        </li>
+      </ol>
+
+      <div class="note">
+        <span class="note__label">Korrekturen</span>
+        <p>
+          Wer eine Angabe belegen oder widerlegen kann — mit Foto, Typenschild,
+          Prüfbuch oder Herstellerunterlage — ist ausdrücklich eingeladen,
+          sich zu <a href="/kontakt">melden</a>. Belegte Hinweise werden
+          eingearbeitet und die Quelle genannt.
+        </p>
+      </div>
+
+      <h2>Die Quellen im Überblick</h2>
+
+      <p>
+        Für maschinelle Auswertung gibt es zusätzlich
+        <a href="/llms.txt">/llms.txt</a>: ein kurzes Verzeichnis der Seite mit
+        Steckbrief, strittigen Angaben und dem, wofür diese Seite
+        ausdrücklich <em>keine</em> Quelle ist.
+      </p>
+
+      <ul class="quellen">
+        <li>
+          <a href="https://de.wikipedia.org/wiki/Enterprise_(Fahrgesch%C3%A4ft)"
+            >Wikipedia: Enterprise (Fahrgeschäft)</a
+          >
+        </li>
+        <li>
+          <a href="https://en.wikipedia.org/wiki/Enterprise_(ride)"
+            >Wikipedia (englisch): Enterprise (ride)</a
+          >
+        </li>
+        <li>
+          <a href="https://en.wikipedia.org/wiki/HUSS_Park_Attractions"
+            >Wikipedia (englisch): HUSS Park Attractions</a
+          >
+        </li>
+        <li><a href="https://hussrides.com/">Huss Park Attractions (Hersteller)</a></li>
+        <li>
+          <a href="https://kulturgut-volksfest.de/enzyklopaedie/enterprise-huss/"
+            >Kulturgut Volksfest: Enterprise (Huss)</a
+          >
+        </li>
+        <li><a href="https://kuestenkirmes.de/mondlift-zettl/">Küstenkirmes: Mondlift</a></li>
+        <li><a href="https://ride-index.de/2019/02/13/mondlift-3/">ride-index: Mondlift</a></li>
+        <li>
+          <a href="https://www.parkwelt.info/fahrgesch%C3%A4fte-volksfest/mondlift-petra-zehle/"
+            >Parkwelt: Mondlift</a
+          >
+        </li>
+        <li>
+          <a href="https://www.ganz-muenchen.de/oktoberfest/fahrgeschaefte/modern/mondlift/info.html"
+            >ganz-muenchen.de: Mondlift auf dem Oktoberfest</a
+          >
+        </li>
+        <li>
+          <a href="https://commons.wikimedia.org/wiki/Category:Enterprise_(ride)"
+            >Wikimedia Commons: Fotos der Bauform</a
+          >
+        </li>
+      </ul>
+
+      <p class="meta">
+        Stand: <span data-site="site.lastUpdated">—</span>. Angaben ohne
+        Gewähr.
+      </p>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/datenschutz">Datenschutz</a></li>
+        <li><a href="/kontakt">Kontakt</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
+        Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
+        des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
+      </p>
+    </footer>
+  </body>
+</html>
