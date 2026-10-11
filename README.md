@@ -388,6 +388,7 @@ Erlaubt sind 8 bis 128 Zeichen aus `a-z`, `A-Z`, `0-9` und Bindestrich.
 npm run indexnow                      # alle Seiten aus der Config
 npm run indexnow -- /kontakt          # nur diese Seite
 npm run indexnow -- --dry-run         # nur zeigen, was gesendet würde
+npm run indexnow -- --curl            # dieselbe Meldung als curl-Befehle
 ```
 
 Das Skript prüft zuerst, ob die Schlüsseldatei live erreichbar ist und den
@@ -407,6 +408,62 @@ entweder immer melden oder nie. Ein Zustand dafür bräuchte KV oder ein
 Durable Object — für eine Seite dieser Größe wäre das überdimensioniert.
 Der Deploy
 weiß es, also hängt die Meldung daran.
+
+### Von Hand mit curl
+
+Das Skript braucht dieses Repo. Wer die Meldung von einem anderen Rechner
+aus abschicken will, aus einer Pipeline heraus, oder nach einer abgelehnten
+Meldung selbst nachsehen will, was der Endpunkt antwortet, lässt sich die
+Aufrufe ausgeben:
+
+```bash
+npm run indexnow -- --curl            # alle Seiten
+npm run indexnow -- --curl /glossar   # nur diese
+```
+
+Ausgegeben wird, was unten steht — aus derselben Seitenliste wie die
+Sitemap, also ohne Gefahr, dass beides auseinanderläuft.
+
+**Erst prüfen, ob die Schlüsseldatei live ist.** Fehlt sie, antwortet jede
+Suchmaschine mit `403`:
+
+```bash
+curl -sS https://mondlift.de/366baf56aa87ec95c4bb8fcf1da73011.txt; echo
+```
+
+**Alle Seiten in einer Anfrage** (`POST`, bis 10 000 Adressen erlaubt):
+
+```bash
+curl -sS -i -X POST https://api.indexnow.org/indexnow \
+  -H 'content-type: application/json; charset=utf-8' \
+  --data '{"host":"mondlift.de","key":"366baf56aa87ec95c4bb8fcf1da73011","keyLocation":"https://mondlift.de/366baf56aa87ec95c4bb8fcf1da73011.txt","urlList":["https://mondlift.de/","https://mondlift.de/mondlift","https://mondlift.de/enterprise","https://mondlift.de/glossar","https://mondlift.de/fragen","https://mondlift.de/kontakt","https://mondlift.de/impressum","https://mondlift.de/datenschutz"]}'
+```
+
+**Eine einzelne Seite** geht auch als `GET` — der kürzeste Weg, wenn sich
+nur eine Adresse geändert hat:
+
+```bash
+curl -sS -i 'https://api.indexnow.org/indexnow?url=https%3A%2F%2Fmondlift.de%2Fglossar&key=366baf56aa87ec95c4bb8fcf1da73011&keyLocation=https%3A%2F%2Fmondlift.de%2F366baf56aa87ec95c4bb8fcf1da73011.txt'
+```
+
+Der Schlüssel darf im Klartext in einem Befehl stehen: er ist öffentlich,
+die Schlüsseldatei liefert ihn an jeden aus. Was er beweist, ist nur, dass
+wer meldet auch auf dem Server schreiben darf.
+
+**Ein Endpunkt genügt** — `api.indexnow.org` verteilt an alle teilnehmenden
+Suchmaschinen. Dieselben Anfragen nehmen auch die einzelnen Dienste direkt
+an, falls einer davon einmal nicht antwortet:
+
+| Dienst | Endpunkt |
+|--------|----------|
+| alle zusammen | `https://api.indexnow.org/indexnow` |
+| Bing | `https://www.bing.com/indexnow` |
+| Yandex | `https://yandex.com/indexnow` |
+| Seznam | `https://search.seznam.cz/indexnow` |
+| Naver | `https://searchadvisor.naver.com/indexnow` |
+
+Google steht nicht in der Liste und wird dort auch nicht auftauchen; für
+Google zählt die Sitemap, eingereicht in der Search Console.
 
 ### Die Alternative ohne Code
 
