@@ -5,6 +5,7 @@
  *   npm run indexnow                      alle Seiten aus der Config
  *   npm run indexnow -- /kontakt          nur diese, Pfad oder vollstaendige URL
  *   npm run indexnow -- --dry-run         nur zeigen, was gesendet wuerde
+ *   npm run indexnow -- --curl            dieselbe Meldung als curl-Befehle
  *   npm run indexnow -- --endpoint=<url>  andere Suchmaschine direkt
  *
  * Der richtige Zeitpunkt ist nach einem Deploy, der Inhalte geaendert hat -
@@ -32,6 +33,19 @@ const CONFIG_PATH = join(HERE, "..", "site.config.json");
  * laesst sich hier nicht erreichen - fuer Google zaehlt die Sitemap.
  */
 const DEFAULT_ENDPOINT = "https://api.indexnow.org/indexnow";
+
+/**
+ * Die uebrigen Endpunkte der Spezifikation. Einer genuegt - wer an einen
+ * meldet, hat an alle gemeldet. Sie stehen hier, damit `--curl` sie nennen
+ * kann, falls api.indexnow.org einmal nicht antwortet.
+ */
+const ENDPOINTS = [
+  ["alle zusammen", DEFAULT_ENDPOINT],
+  ["Bing", "https://www.bing.com/indexnow"],
+  ["Yandex", "https://yandex.com/indexnow"],
+  ["Seznam", "https://search.seznam.cz/indexnow"],
+  ["Naver", "https://searchadvisor.naver.com/indexnow"],
+];
 
 /** Was die Antwortcodes des Protokolls bedeuten. */
 const MEANINGS = {
@@ -111,6 +125,49 @@ const payload = { host, key, keyLocation, urlList };
 if (flags["dry-run"]) {
   console.log(`POST ${endpoint}`);
   console.log(JSON.stringify(payload, null, 2));
+  process.exit(0);
+}
+
+// --- Befehle zum Kopieren -------------------------------------------------
+
+// Dasselbe als curl-Aufrufe, fuer eine Shell ohne dieses Repo: von einem
+// anderen Rechner aus, aus einer Deploy-Pipeline heraus, oder um nach einer
+// abgelehnten Meldung von Hand nachzusehen, was der Endpunkt antwortet.
+if (flags.curl) {
+  const q = encodeURIComponent;
+  const out = [];
+
+  out.push("# 1. Schluesseldatei - muss genau den Schluessel enthalten,");
+  out.push("#    sonst lehnt jede Suchmaschine mit 403 ab.");
+  out.push(`curl -sS ${keyLocation}; echo`);
+  out.push("");
+
+  const menge =
+    urlList.length === 1 ? "die Adresse" : `alle ${urlList.length} Adressen`;
+  out.push(`# 2. Melden - ${menge} in einer Anfrage.`);
+  out.push("#    200 heisst angenommen, 202 angenommen und Schluessel wird geprueft.");
+  out.push(`curl -sS -i -X POST ${endpoint} \\`);
+  out.push("  -H 'content-type: application/json; charset=utf-8' \\");
+  out.push(`  --data '${JSON.stringify(payload)}'`);
+  out.push("");
+
+  out.push("# 3. Oder als GET, eine Adresse je Aufruf - ausgegeben wird nur");
+  out.push("#    der Statuscode und die gemeldete Adresse.");
+  for (const url of urlList) {
+    out.push(
+      `curl -sS -o /dev/null -w '%{http_code}  ${url}\\n' \\
+` +
+        `  '${endpoint}?url=${q(url)}&key=${key}&keyLocation=${q(keyLocation)}'`,
+    );
+  }
+  out.push("");
+
+  out.push("# Ein Endpunkt genuegt, er verteilt an die teilnehmenden Suchmaschinen.");
+  out.push("# Falls einer nicht antwortet, nimmt dieselben Anfragen auch:");
+  for (const [name, url] of ENDPOINTS.slice(1)) out.push(`#   ${url}  (${name})`);
+  out.push("# Google nimmt nicht teil - dort zaehlt die Sitemap.");
+
+  console.log(out.join("\n"));
   process.exit(0);
 }
 
