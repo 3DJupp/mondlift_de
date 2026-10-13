@@ -4,16 +4,34 @@
  *
  *   npm run indexnow                      alle Seiten aus der Config
  *   npm run indexnow -- /kontakt          nur diese, Pfad oder vollstaendige URL
+ *   npm run indexnow -- --changed         nur was dieser Commit geaendert hat
  *   npm run indexnow -- --recent          nur kuerzlich geaenderte (Standard 7 Tage)
  *   npm run indexnow -- --recent=30       dasselbe mit anderem Fenster
  *   npm run indexnow -- --since=2026-10-01  alles ab diesem Datum
+ *   npm run indexnow -- --wait-live       erst warten, bis der Deploy live ist
  *   npm run indexnow -- --dry-run         nur zeigen, was gesendet wuerde
  *   npm run indexnow -- --curl            dieselbe Meldung als curl-Befehle
  *   npm run indexnow -- --endpoint=<url>  andere Suchmaschine direkt
+ *   npm run indexnow -- --base=<url>      andere Basisadresse (nur zum Testen)
  *
- * Das laeuft automatisch mit: `npm run deploy` ruft ueber den npm-Hook
- * `postdeploy` dieses Skript mit `--recent` auf. Zwei Gruende fuer genau
- * diese Form:
+ * **Wer ruft das auf.** Zwei Wege, und der zweite ist der, der hier zaehlt:
+ *
+ *  - `npm run deploy` ruft es ueber den npm-Hook `postdeploy` auf. Das greift
+ *    aber nur, wenn jemand von Hand deployt.
+ *  - `.github/workflows/indexnow.yml` ruft es nach jedem Push auf `main` auf,
+ *    mit `--wait-live`. Das ist der Weg, der zaehlt, wenn Cloudflare selbst
+ *    aus dem Git-Repository deployt: Workers Builds fuehrt seinen eigenen
+ *    Deploy-Befehl aus (`npx wrangler deploy`), also ist npm am Deploy gar
+ *    nicht beteiligt - und ein npm-Hook, den niemand ausloest, laeuft nie.
+ *
+ * `--wait-live` ist der Grund, warum der zweite Weg nicht ins Leere meldet:
+ * die Github-Action startet gleichzeitig mit dem Cloudflare-Build, nicht
+ * danach. Das Skript sieht deshalb erst in der live ausgelieferten
+ * sitemap.xml nach, ob die Seiten mit dem erwarteten `lastmod` schon dort
+ * stehen, und meldet erst dann. Es meldet also nie eine Aenderung, die noch
+ * gar nicht ausgeliefert wird.
+ *
+ * Zwei Gruende fuer `--recent`:
  *
  *  1. **Automatisch, weil es sonst vergessen wird.** Ein Deploy, dessen
  *     Meldung an die Suchmaschinen ein zweiter, von Hand zu tippender Schritt
@@ -34,6 +52,7 @@
  * Ohne Abhaengigkeiten, laeuft mit dem fetch() von Node 20 und neuer.
  */
 
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -104,10 +123,16 @@ try {
   fail(`site.config.json nicht lesbar: ${error.message}`);
 }
 
-const siteUrl = config.site?.url;
+// --base ersetzt die Basisadresse. Gedacht ist das fuer Tests gegen
+// `wrangler dev`; fuer eine echte Meldung muss die Adresse die Domain sein,
+// fuer die der Schluessel gilt.
+const siteUrl = typeof flags.base === "string" ? flags.base : config.site?.url;
 const key = config.indexNow?.key;
 
 if (!siteUrl) fail("site.url fehlt in site.config.json");
+if (typeof flags.base === "string") {
+  console.log(`indexnow: Basisadresse ueberschrieben auf ${siteUrl}`);
+}
 if (!key) fail("indexNow.key fehlt in site.config.json");
 if (!KEY_PATTERN.test(key)) {
   fail(
@@ -118,6 +143,35 @@ if (!KEY_PATTERN.test(key)) {
 
 const host = new URL(siteUrl).hostname;
 const keyLocation = new URL(`/${key}.txt`, siteUrl).toString();
+
+/**
+ * Die Seiten, deren `lastmod` sich gegenueber `ref` geaendert hat, oder die
+ * dort noch nicht standen. `null`, wenn sich die alte Fassung nicht lesen
+ * laesst - dann faellt der Aufrufer auf das Zeitfenster zurueck.
+ *
+ * Warum nicht einfach `--recent`: das Zeitfenster meldet eine Seite bei
+ * jedem Push erneut, solange ihr Datum jung ist. Fuenf Deploys in einer
+ * Woche heissen fuenf Meldungen fuer dieselbe unveraenderte Seite - genau
+ * das, was IndexNow nicht haben will. Der Vergleich gegen den vorigen Stand
+ * nennt dagegen genau die Seiten, die dieser Deploy wirklich aendert.
+ */
+function geaendertGegen(ref, pages, fallback) {
+  let alt;
+  try {
+    const roh = execFileSync("git", ["show", `${ref}:site.config.json`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    alt = JSON.parse(roh);
+  } catch {
+    return null;
+  }
+
+  const vorher = new Map(
+    (alt.pages ?? []).map((p) => [p.path, p.lastmod ?? alt.site?.lastUpdated]),
+  );
+  return pages.filter((p) => vorher.get(p.path) !== (p.lastmod ?? fallback));
+}
 
 /** Tage in Millisekunden. */
 const TAG = 24 * 60 * 60 * 1000;
@@ -155,16 +209,59 @@ function untergrenze() {
 const grenze = untergrenze();
 let paths;
 
+/**
+ * Die gewaehlten Seiten mit dem `lastmod`, das nach dem Deploy live stehen
+ * muss. Leer, wenn Adressen von Hand genannt wurden - dann gibt es nichts
+ * zu vergleichen, denn die Config sagt ueber eine beliebige Adresse nichts.
+ */
+let erwartet = [];
+
 if (rest.length > 0) {
   // Ausdruecklich genannte Adressen werden gemeldet, Datum hin oder her.
+  // Steht eine davon in der Config, kann --wait-live sie trotzdem pruefen.
   paths = rest;
+  const bekannt = new Map(
+    (config.pages ?? []).map((p) => [
+      p.path,
+      p.lastmod ?? config.site?.lastUpdated ?? "",
+    ]),
+  );
+  erwartet = rest
+    .map((pfad) => {
+      const url = new URL(pfad, siteUrl);
+      const lastmod = bekannt.get(url.pathname);
+      return lastmod === undefined
+        ? null
+        : { url: url.toString(), pfad: url.pathname, lastmod };
+    })
+    .filter(Boolean);
 } else {
   const pages = config.pages ?? [];
   const fallback = config.site?.lastUpdated ?? "";
-  const gewaehlt =
-    grenze === null
-      ? pages
-      : pages.filter((p) => (p.lastmod ?? fallback) >= grenze);
+
+  let gewaehlt = null;
+  let begruendung = "";
+
+  if (flags.changed) {
+    const ref = typeof flags.changed === "string" ? flags.changed : "HEAD~1";
+    gewaehlt = geaendertGegen(ref, pages, fallback);
+    if (gewaehlt === null) {
+      console.log(
+        `indexnow: ${ref}:site.config.json nicht lesbar - zurueck auf das ` +
+          "Zeitfenster.",
+      );
+    } else {
+      begruendung = `gegenueber ${ref} geaendert`;
+    }
+  }
+
+  if (gewaehlt === null) {
+    gewaehlt =
+      grenze === null
+        ? pages
+        : pages.filter((p) => (p.lastmod ?? fallback) >= grenze);
+    if (grenze !== null) begruendung = `lastmod ab ${grenze}`;
+  }
 
   // Nichts Neues ist kein Fehler: der haeufigste Deploy aendert Code und
   // keine Inhalte. Dann ist "nichts zu melden" die richtige Antwort, und
@@ -172,16 +269,21 @@ if (rest.length > 0) {
   // ausgeben.
   if (gewaehlt.length === 0) {
     console.log(
-      `indexnow: keine Seite mit lastmod ab ${grenze} - nichts zu melden.`,
+      `indexnow: keine Seite ${begruendung || "ausgewaehlt"} - nichts zu melden.`,
     );
     process.exit(0);
   }
 
   paths = gewaehlt.map((p) => p.path);
-  if (grenze !== null) {
+  erwartet = gewaehlt.map((p) => ({
+    url: new URL(p.path, siteUrl).toString(),
+    pfad: new URL(p.path, siteUrl).pathname,
+    lastmod: p.lastmod ?? fallback,
+  }));
+  if (begruendung) {
     console.log(
-      `indexnow: ${gewaehlt.length} von ${pages.length} Seiten haben ` +
-        `lastmod ab ${grenze}.`,
+      `indexnow: ${gewaehlt.length} von ${pages.length} Seiten ` +
+        `(${begruendung}).`,
     );
   }
 }
@@ -247,6 +349,89 @@ if (flags.curl) {
 
   console.log(out.join("\n"));
   process.exit(0);
+}
+
+// --- Auf den Deploy warten ------------------------------------------------
+
+/**
+ * Wartet, bis die live ausgelieferte sitemap.xml die gewaehlten Seiten mit
+ * dem erwarteten `lastmod` enthaelt.
+ *
+ * Der Grund steht oben: die Github-Action startet gleichzeitig mit dem
+ * Cloudflare-Build. Ohne diese Schleife wuerde sie melden, waehrend noch die
+ * alte Fassung ausgeliefert wird - die Suchmaschine kaeme vorbei, faende
+ * nichts Neues und haette gelernt, dass die Meldungen dieser Domain nichts
+ * bedeuten.
+ *
+ * Verglichen wird gegen die Sitemap und nicht gegen den Seiteninhalt, weil
+ * die Sitemap aus derselben Config kommt wie diese Meldung: steht dort das
+ * neue Datum, ist der neue Worker live.
+ */
+const WARTE_MINUTEN = 10;
+const WARTE_ABSTAND_MS = 15000;
+
+/**
+ * Pfad und lastmod aus einer Sitemap. Ein eigener XML-Parser waere hier
+ * verfehlt - es ist die eigene Datei, in bekanntem Format.
+ *
+ * Verglichen wird der Pfad und nicht die volle Adresse: so laesst sich mit
+ * --base gegen `wrangler dev` pruefen, dessen Sitemap die Produktionsdomain
+ * nennt. Strenger waere der Vergleich der vollen Adresse nicht - eine
+ * Sitemap, die fremde Hosts auffuehrt, waere ohnehin kaputt.
+ */
+function sitemapLesen(xml) {
+  const eintraege = new Map();
+  for (const block of xml.match(/<url>[\s\S]*?<\/url>/g) ?? []) {
+    const loc = block.match(/<loc>([^<]*)<\/loc>/)?.[1];
+    const lastmod = block.match(/<lastmod>([^<]*)<\/lastmod>/)?.[1];
+    if (!loc) continue;
+    try {
+      eintraege.set(new URL(loc.trim()).pathname, (lastmod ?? "").trim());
+    } catch {
+      // Eine Adresse, die keine ist, ignorieren statt daran zu scheitern.
+    }
+  }
+  return eintraege;
+}
+
+if (flags["wait-live"] && erwartet.length > 0) {
+  const minuten =
+    flags["wait-live"] === true ? WARTE_MINUTEN : Number(flags["wait-live"]);
+  if (!Number.isFinite(minuten) || minuten <= 0) {
+    fail(`--wait-live=${flags["wait-live"]} ist keine Anzahl von Minuten`);
+  }
+
+  const sitemapUrl = new URL("/sitemap.xml", siteUrl).toString();
+  const frist = Date.now() + minuten * 60 * 1000;
+  let offen = erwartet;
+
+  console.log(`indexnow: warte auf den Deploy, hoechstens ${minuten} Minuten.`);
+
+  while (true) {
+    try {
+      const response = await fetch(sitemapUrl, { cache: "no-store" });
+      if (response.ok) {
+        const live = sitemapLesen(await response.text());
+        offen = erwartet.filter((e) => live.get(e.pfad) !== e.lastmod);
+        if (offen.length === 0) break;
+      }
+    } catch {
+      // Netzfehler sind waehrend eines Deploys normal - weiter warten.
+    }
+
+    if (Date.now() >= frist) {
+      console.error(
+        `indexnow: nach ${minuten} Minuten steht in ${sitemapUrl} noch nicht, ` +
+          "was erwartet wurde:",
+      );
+      for (const e of offen) console.error(`  ${e.url} (erwartet ${e.lastmod})`);
+      fail("Deploy nicht live - nichts gemeldet");
+    }
+
+    await new Promise((weiter) => setTimeout(weiter, WARTE_ABSTAND_MS));
+  }
+
+  console.log(`indexnow: Deploy ist live (${sitemapUrl}).`);
 }
 
 // --- Schluesseldatei pruefen ---------------------------------------------

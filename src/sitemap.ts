@@ -6,18 +6,19 @@
  * site.config.json die einzige Quelle, und dieselbe Liste benutzt auch
  * scripts/indexnow.mjs fuer die Einreichung bei den Suchmaschinen.
  *
- * Diese Datei ist fuer Maschinen und sieht im Browser entsprechend aus. Der
- * uebliche Gegenentwurf war ein XSLT-Stylesheet, auf das ein
- * `<?xml-stylesheet?>` oben in der Datei zeigt - der Browser legt dann eine
- * HTML-Ansicht darueber. Das ist hier bewusst *nicht* gemacht: Chrome
- * entfernt XSLT mit Version 158 (17. November 2026), Firefox und WebKit
- * haben dasselbe angekuendigt. Eine Sitemap, die ihre Lesbarkeit an XSLT
- * haengt, waere also wenige Wochen huebsch und danach wieder nicht.
+ * Diese Datei ist fuer Maschinen. Damit sie im Browser trotzdem lesbar ist,
+ * zeigt die zweite Zeile mit `<?xml-stylesheet?>` auf /sitemap.xsl: der
+ * Browser wandelt das XML beim Anzeigen in HTML um, waehrend jede
+ * Suchmaschine weiterhin das unveraenderte XML liest. Fuer den Crawler ist
+ * die Anweisung ein Kommentar - an der Datei selbst aendert sie nichts.
  *
- * Lesbar ist deshalb /sitemap - eine normale Seite, aus derselben Liste
- * erzeugt (siehe src/seitenliste.ts). Der Hinweis darauf steht als
- * Kommentar oben in dieser Datei, denn mehr als einen Kommentar erlaubt das
- * Sitemap-Format nicht.
+ * Dazu gehoert ein Verfallsdatum: Chrome entfernt XSLT mit Version 158 (17.
+ * November 2026), Firefox und WebKit haben dasselbe angekuendigt. Danach
+ * zeigt ein Browser hier wieder rohes XML - kein Schaden, nur der Zustand
+ * von vorher. Fuer die Zeit danach gibt es /sitemap: dieselbe Liste als
+ * gewoehnliche Seite, ohne XSLT (siehe src/seitenliste.ts). Der Hinweis
+ * darauf steht als Kommentar in dieser Datei, denn mehr als einen Kommentar
+ * erlaubt das Sitemap-Format nicht.
  *
  * `lastmod` ist der einzige Hinweis aus dieser Datei, auf den Google noch
  * hoert; `changefreq` und `priority` werden dort seit Jahren ignoriert. Sie
@@ -33,6 +34,7 @@
 
 import config from "../site.config.json";
 import { generatedFile } from "./cache";
+import { SITEMAP_XSL_PATH } from "./sitemap-xsl";
 
 /** Eine Stunde. Der Inhalt aendert sich nur mit einem Deploy. */
 const MAX_AGE = 3600;
@@ -83,7 +85,8 @@ function sitemapXml(): string {
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<!-- Dieselbe Liste fuer Menschen: ${lesbar} -->`,
+    `<?xml-stylesheet type="text/xsl" href="${SITEMAP_XSL_PATH}"?>`,
+    `<!-- Dieselbe Liste fuer Menschen, auch ohne XSLT: ${lesbar} -->`,
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...entries,
     "</urlset>",
