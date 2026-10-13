@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Übersicht — alle Seiten von mondlift.de</title>
+    <meta
+      name="description"
+      content="Alle Seiten von mondlift.de auf einen Blick: Gerät, Bauform, Glossar, Fragen und Quellen, Kontakt und Rechtliches — mit je einem Satz dazu und dem Stand der letzten Änderung."
+    />
+    <link rel="canonical" href="https://mondlift.de/sitemap" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mondlift" />
+    <meta property="og:title" content="Übersicht — alle Seiten von mondlift.de" />
+    <meta
+      property="og:description"
+      content="Alle Seiten dieser Seite auf einen Blick, mit je einem Satz dazu."
+    />
+    <meta property="og:url" content="https://mondlift.de/sitemap" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Gezeichnetes Fahrgeschäft vom Typ Enterprise mit beleuchtetem Rad bei Nacht."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body class="page">
+    <nav class="nav" aria-label="Seiten">
+      <a href="/">Start</a>
+      <a href="/mondlift">Das Gerät</a>
+      <a href="/enterprise">Der Typ</a>
+      <a href="/glossar">Glossar</a>
+      <a href="/fragen">Fragen</a>
+    </nav>
+
+    <main class="wrap">
+      <h1>Übersicht</h1>
+
+      <p class="lead">
+        Diese Seite hat keine verschachtelten Ebenen — alles, was es gibt,
+        steht hier. Die Liste entsteht aus derselben Quelle wie die
+        <a href="/sitemap.xml">Sitemap für Suchmaschinen</a>, kann also nicht
+        davon abweichen.
+      </p>
+
+      <!-- Die Liste erzeugt der Worker aus `pages` in site.config.json,
+           siehe src/seitenliste.ts. -->
+      <div data-seitenliste>
+        <p>
+          Die Seitenliste konnte nicht geladen werden. Über die
+          <a href="/">Startseite</a> sind alle Seiten erreichbar.
+        </p>
+      </div>
+
+      <h2>Für Maschinen</h2>
+
+      <ul>
+        <li>
+          <a href="/sitemap.xml">sitemap.xml</a> — dieselbe Liste als XML, wie
+          Suchmaschinen sie lesen.
+        </li>
+        <li>
+          <a href="/llms.txt">llms.txt</a> — ein kurzes Inhaltsverzeichnis für
+          Sprachmodelle, dazu der Steckbrief des Geräts und der Hinweis,
+          wofür diese Seite <em>keine</em> Quelle ist.
+        </li>
+        <li>
+          <a href="/robots.txt">robots.txt</a> — alles offen, für
+          Suchmaschinen und für KI-Crawler.
+        </li>
+      </ul>
+
+      <p class="meta">
+        Stand: <span data-site="site.lastUpdated">—</span>. Fehlt etwas oder
+        führt ein Link ins Leere?
+        <a href="/kontakt">Hinweis schicken</a>.
+      </p>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/datenschutz">Datenschutz</a></li>
+        <li><a href="/kontakt">Kontakt</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Inoffizielle Fan-Seite.</strong> Diese Seite ist ein privates
+        Hobbyprojekt und hat keine Verbindung zum Betreiber oder Hersteller
+        des Fahrgeschäfts. Namen und Marken gehören den jeweiligen Inhabern.
+      </p>
+    </footer>
+  </body>
+</html>

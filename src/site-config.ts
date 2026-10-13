@@ -26,6 +26,7 @@ import config from "../site.config.json";
 import { MESSAGES } from "./contact";
 import { glossarHtml } from "./glossar";
 import { fragenHtml } from "./fragen";
+import { seitenlisteHtml } from "./seitenliste";
 
 /** Flache Nachschlagetabelle inklusive abgeleiteter Werte. */
 const VALUES: Record<string, string> = {
@@ -106,6 +107,12 @@ export function injectSiteConfig(
       element(element) {
         element.setInnerContent(fragenHtml(), { html: true });
         element.removeAttribute("data-fragen");
+      },
+    })
+    .on("[data-seitenliste]", {
+      element(element) {
+        element.setInnerContent(seitenlisteHtml(), { html: true });
+        element.removeAttribute("data-seitenliste");
       },
     })
     .on("[data-site]", {

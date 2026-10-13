@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "postdeploy": "node scripts/indexnow.mjs --recent",
     "types": "wrangler types --strict-vars=false",
     "indexnow": "node scripts/indexnow.mjs",
     "pretypecheck": "wrangler types --strict-vars=false",

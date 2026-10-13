@@ -139,6 +139,16 @@ Hinweis, wo die Begründung nachzulesen ist.
   `scripts/og-image.mjs`. Die Annahme von damals — „der Worker kann kein
   PNG erzeugen" — stimmt weiter; erzeugt wird es nicht im Worker, sondern
   einmalig beim Entwickeln.
+- **Lesbare Sitemap.** `/sitemap.xml` bleibt reines XML, daneben steht
+  `/sitemap` als normale Seite aus derselben Liste. Der übliche Weg über
+  ein XSLT-Stylesheet fällt weg, weil Chrome XSLT am 17. November 2026
+  entfernt — Begründung im README.
+- **Altlasten der Domain.** Die Adressen des WordPress, das vor dieser
+  Seite unter der Domain lief, beantwortet der Worker mit `410 Gone` statt
+  `404`, damit sie schneller aus dem Index fallen. Siehe
+  `src/altlasten.ts` und den Abschnitt im README.
+- **IndexNow beim Deploy.** `npm run deploy` meldet über den npm-Hook
+  `postdeploy` die kürzlich geänderten Seiten selbst.
 - **Strukturierte Daten (JSON-LD).** Der Einwand war die CSP und ein Hash,
   der von Hand nachgezogen werden müsste. Der Worker rechnet ihn jetzt
   selbst über denselben Block, den er ausliefert — siehe
