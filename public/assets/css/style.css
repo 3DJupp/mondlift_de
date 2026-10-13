@@ -835,3 +835,39 @@ address {
   display: block;
   margin-top: 0.2rem;
 }
+
+/* Die Browser-Ansicht der sitemap.xml (src/sitemap-xsl.ts). Eine Tabelle mit
+   vier Spalten braucht mehr Breite als eine Textspalte, sonst bricht die
+   Adresse um. Nur deshalb gibt es die breite Variante - Farben, Schrift und
+   Abstaende kommen unveraendert aus den Klassen darueber. */
+.wrap--breit,
+.nav--breit {
+  max-width: 54rem;
+}
+
+.tabelle--sitemap {
+  font-size: 0.88em;
+}
+
+/* Datum, Haeufigkeit und Prioritaet sind kurz und sollen nicht umbrechen -
+   die Adresse bekommt den Rest der Zeile. */
+.tabelle--sitemap .zelle--schmal {
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.86em;
+  color: var(--ink-dim);
+}
+
+.tabelle--sitemap .zahl {
+  text-align: right;
+}
+
+.tabelle--sitemap td a {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 182, 77, 0.3);
+}
+
+.tabelle--sitemap td a:hover {
+  border-bottom-color: currentColor;
+}

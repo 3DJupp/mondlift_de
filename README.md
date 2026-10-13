@@ -36,6 +36,7 @@ src/
   fragen.ts                 die häufigen Fragen, als Daten
   html.ts                   Maskierung und Sprungmarken
   sitemap.ts                erzeugt /sitemap.xml
+  sitemap-xsl.ts            die Browser-Ansicht darauf, /sitemap.xsl
   seitenliste.ts            erzeugt die lesbare Liste unter /sitemap
   robots.ts                 erzeugt /robots.txt
   altlasten.ts              410 Gone für die Adressen des Vorbesitzers
@@ -47,6 +48,8 @@ src/
   turnstile.ts              serverseitige Token-Prüfung
   validation.ts             Feldprüfung und Längengrenzen
   env.d.ts                  Typen der Secrets
+.github/workflows/
+  indexnow.yml              meldet nach jedem Push auf main
 scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
   og-image.mjs              rendert das Standbild (läuft selten)
@@ -317,32 +320,45 @@ Von den drei Angaben je Seite wertet Google nur `lastmod` aus; `changefreq`
 und `priority` ignoriert es seit Jahren. Sie stehen trotzdem drin, weil
 andere Suchmaschinen sie weiterhin lesen und sie nichts kosten.
 
-### Die lesbare Fassung unter `/sitemap`
+### Lesbar im Browser
 
-Eine `sitemap.xml` ist eine Datei für Maschinen und sieht im Browser
-entsprechend aus. Der übliche Gegenentwurf ist ein XSLT-Stylesheet: oben in
-der XML-Datei steht ein `<?xml-stylesheet?>`, und der Browser legt daraus
-eine HTML-Ansicht über das XML.
+`sitemap.xml` ist eine Datei für Maschinen. Damit sie trotzdem lesbar ist,
+steht in Zeile zwei eine Verarbeitungsanweisung:
 
-Dieser Weg ist **bewusst nicht** gewählt, weil er gerade endet. Chrome
-entfernt XSLT mit Version 158 am 17. November 2026; Firefox und WebKit haben
-dasselbe angekündigt. Eine Sitemap, die ihre Lesbarkeit an XSLT hängt, wäre
-also ein paar Wochen hübsch und danach wieder genau so wie vorher. Siehe die
-[Ankündigung von Chrome](https://developer.chrome.com/docs/web-platform/deprecating-xslt).
+```xml
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+```
 
-Stattdessen sind die beiden Zwecke getrennt:
+Der Browser wandelt das XML damit beim Anzeigen in HTML um — eine Tabelle
+mit Adresse, Datum, Häufigkeit und Priorität, im Seitenlayout. Für
+Suchmaschinen ändert sich nichts: sie lesen das unveränderte XML, die
+Anweisung ist für sie ein Kommentar.
+
+Das Aussehen kommt aus `/assets/css/style.css`, mit denselben Klassen wie
+jede andere Seite (`page`, `nav`, `wrap`, `tabelle`, `foot`). Deshalb steht
+in `src/sitemap-xsl.ts` kein eigenes Farbschema, das beim nächsten Umbau des
+Stylesheets zurückbliebe — die Ansicht erbt die CI, statt sie nachzubauen.
+Ein `<style>`-Block wäre ohnehin nicht möglich: die CSP dieser Antwort
+erlaubt keine Inline-Styles, und sie gilt auch für das Ergebnis der
+Umwandlung.
+
+**Mit Verfallsdatum.** Chrome entfernt XSLT mit Version 158 am 17. November
+2026, Firefox und WebKit haben dasselbe angekündigt
+([Ankündigung](https://developer.chrome.com/docs/web-platform/deprecating-xslt)).
+Danach zeigt ein Browser hier wieder rohes XML — kein Schaden, nur der
+Zustand von vorher, und die Sitemap funktioniert davon unabhängig weiter.
+
+Für die Zeit danach gibt es `/sitemap`: dieselbe Liste als gewöhnliche
+Seite, aus derselben `pages`-Liste erzeugt (`src/seitenliste.ts`), mit dem
+Satz zu jeder Seite und dem Stand der letzten Änderung. Die braucht kein
+XSLT. Beide Fassungen sind in der XSLT-Ansicht verlinkt, und in der
+`sitemap.xml` steht ein Kommentar mit dem Hinweis.
 
 | Adresse | für | Form |
 |---------|-----|------|
-| `/sitemap.xml` | Suchmaschinen | reines XML, kein Stylesheet |
-| `/sitemap` | Menschen | eine normale Seite dieser Seite |
-
-Beide entstehen aus derselben `pages`-Liste, können also nicht auseinander
-laufen. `/sitemap` zeigt zusätzlich den Satz, der zu jeder Seite in der
-Config steht, und den Stand der letzten Änderung — und ist damit nebenbei
-ein Verzeichnis, über das eine Suchmaschine jede Seite in einem Schritt
-erreicht. In `sitemap.xml` steht ein XML-Kommentar mit dem Hinweis darauf;
-mehr erlaubt das Format nicht.
+| `/sitemap.xml` | Suchmaschinen | XML, mit Stylesheet-Anweisung |
+| `/sitemap.xsl` | Browser | die Ansicht darüber, solange es XSLT gibt |
+| `/sitemap` | Menschen | eine normale Seite, dauerhaft |
 
 ## robots.txt
 
@@ -478,12 +494,18 @@ Skript. Geheim muss er nicht sein, nur schwer zu erraten; deshalb eine
 Zufallsfolge. Wechseln heißt: neuen Wert eintragen, deployen, neu melden.
 Erlaubt sind 8 bis 128 Zeichen aus `a-z`, `A-Z`, `0-9` und Bindestrich.
 
-**Die Meldung.** Die läuft beim Deploy automatisch mit — `npm run deploy`
-ruft über den npm-Hook `postdeploy` das Skript mit `--recent` auf:
+**Die Meldung.** Die hängt am Push auf `main`, nicht am Deploy — warum,
+steht gleich unten. `.github/workflows/indexnow.yml`:
+
+```yaml
+- run: node scripts/indexnow.mjs --changed --recent --wait-live
+```
+
+Dazu bleibt der npm-Hook für den Fall, dass jemand von Hand deployt:
 
 ```json
 "deploy":     "wrangler deploy",
-"postdeploy": "node scripts/indexnow.mjs --recent"
+"postdeploy": "node scripts/indexnow.mjs --changed --recent"
 ```
 
 Von Hand geht natürlich weiter alles:
@@ -491,6 +513,7 @@ Von Hand geht natürlich weiter alles:
 ```bash
 npm run indexnow                        # alle Seiten aus der Config
 npm run indexnow -- /kontakt            # nur diese Seite
+npm run indexnow -- --changed           # nur was dieser Commit ändert
 npm run indexnow -- --recent            # nur kürzlich geänderte (7 Tage)
 npm run indexnow -- --recent=30         # dasselbe mit anderem Fenster
 npm run indexnow -- --since=2026-10-01  # alles ab diesem Datum
@@ -505,30 +528,68 @@ Suchmaschine. Danach geht eine Anfrage an `api.indexnow.org`, die an alle
 teilnehmenden Suchmaschinen verteilt. `200` heißt angenommen, `202` heißt
 angenommen und der Schlüssel wird noch geprüft — beides ist Erfolg.
 
-### Warum automatisch, aber nur `--recent`
+### Warum am Push und nicht am Deploy
 
-Zwei Dinge, die sich auf den ersten Blick widersprechen, und beide stimmen:
+Der naheliegende Ort war der npm-Hook `postdeploy`: `npm run deploy` deployt
+und meldet. Nur deployt hier niemand von Hand. Dieses Repo ist über
+**Workers Builds** mit Cloudflare verbunden, und das führt bei einem Push
+seinen eigenen Befehl aus — voreingestellt `npx wrangler deploy`
+([Cloudflare-Doku](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)).
 
-**Automatisch, weil es sonst vergessen wird.** Ein Deploy, dessen Meldung an
-die Suchmaschinen ein zweiter, von Hand zu tippender Schritt ist, wird
-irgendwann ohne diesen Schritt gemacht — und zwar genau bei der Änderung,
-auf die es ankam.
+Daran ist npm gar nicht beteiligt. Ein npm-Hook löst nur aus, wenn jemand
+das zugehörige npm-Skript startet:
 
-**Nur die kürzlich geänderten Seiten, nicht alle.** IndexNow ist dafür
-gedacht, Änderungen zu melden. Bei jedem Deploy alle neun Seiten zu melden —
-auch nach einer Änderung, die nur den Worker betrifft — macht aus dem Signal
-Rauschen. `--recent` nimmt die Seiten, deren `lastmod` in `site.config.json`
-nicht älter als sieben Tage ist. Dieses Feld muss man beim Bearbeiten einer
-Seite ohnehin nachziehen, sonst stimmt die Sitemap nicht; die Meldung hängt
-sich also an eine Angabe, die schon gepflegt wird.
+```
+npm run deploy      ->  deploy, danach postdeploy
+npx wrangler deploy ->  nur wrangler, npm sieht davon nichts
+```
+
+Die Meldung unterblieb deshalb stillschweigend — kein Fehler, keine
+Warnung, nur nichts.
+
+Der Workflow hängt sie stattdessen an den Push, der den Deploy auslöst.
+Damit ist es egal, wer deployt. Die Alternative wäre, im Dashboard unter
+*Settings → Build* den Deploy-Befehl auf `npm run deploy` zu setzen; dann
+liefe der Hook wieder. Das steht aber nur im Cloudflare-Dashboard, also an
+einer Stelle, die niemand im Repo sieht und die beim nächsten Neuverbinden
+der Git-Anbindung auf die Voreinstellung zurückfällt. Genau so ist die
+Meldung schon einmal ausgefallen.
+
+### Was gemeldet wird: `--changed`
+
+IndexNow ist dafür gedacht, **Änderungen** zu melden. Alle neun Seiten bei
+jedem Push zu melden macht aus dem Signal Rauschen.
+
+`--changed` liest `site.config.json` aus dem vorigen Commit (`HEAD~1`) und
+nimmt die Seiten, deren `lastmod` sich geändert hat oder die neu sind. Das
+Feld muss man beim Bearbeiten einer Seite ohnehin nachziehen, sonst stimmt
+die Sitemap nicht — die Meldung hängt sich also an eine Angabe, die schon
+gepflegt wird.
+
+Das Zeitfenster `--recent` steht im Workflow als Rückfall dahinter, falls
+der Vergleich mit git einmal nicht möglich ist. Es allein wäre zu grob: eine
+Seite mit jungem Datum würde bei jedem Push der folgenden Woche erneut
+gemeldet, obwohl sich nichts geändert hat.
 
 Ändert sich keine Seite, meldet das Skript nichts und endet erfolgreich —
 ein Deploy ohne Inhaltsänderung soll nicht als Fehlschlag aussehen.
 
-Weil das Skript direkt hinter `wrangler deploy` läuft, prüft es die
-Schlüsseldatei mit bis zu vier Versuchen und wachsendem Abstand. Die neue
-Fassung ist meist sofort da, aber „meist" ist hier zu wenig: ein Fehler, der
-nur manchmal auftritt, lässt sich entsprechend schlecht suchen.
+### Wann gemeldet wird: `--wait-live`
+
+Der Workflow startet **gleichzeitig** mit dem Cloudflare-Build, nicht
+danach. Ohne Vorkehrung würde er melden, während noch die alte Fassung
+ausgeliefert wird; die Suchmaschine käme vorbei, fände nichts Neues und
+hätte gelernt, dass die Meldungen dieser Domain nichts bedeuten.
+
+`--wait-live` sieht deshalb erst in der live ausgelieferten `sitemap.xml`
+nach, ob die gemeldeten Seiten dort schon mit dem erwarteten `lastmod`
+stehen, und meldet erst dann — höchstens zehn Minuten lang, danach bricht
+es mit der Liste der Seiten ab, die noch fehlen. Verglichen wird gegen die
+Sitemap, weil die aus derselben Config kommt wie die Meldung: steht dort das
+neue Datum, ist der neue Worker live.
+
+Danach prüft es wie bisher die Schlüsseldatei, mit bis zu vier Versuchen und
+wachsendem Abstand.
 
 Einen Cron im Worker gibt es aus demselben Grund nicht: ein Cron ohne Gedächtnis kann
 nicht wissen, ob sich seit dem letzten Lauf etwas geändert hat, und würde

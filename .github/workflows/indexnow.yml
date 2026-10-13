@@ -1,0 +1,60 @@
+# Meldet geaenderte Seiten bei IndexNow, nach jedem Push auf main.
+#
+# Warum hier und nicht am Deploy: dieses Repo wird von Cloudflare selbst
+# deployt (Workers Builds, Git-Anbindung). Workers Builds fuehrt dafuer
+# seinen eigenen Befehl aus - voreingestellt `npx wrangler deploy`. npm ist
+# daran nicht beteiligt, also loest nichts den npm-Hook `postdeploy` aus,
+# und die Meldung unterblieb stillschweigend. Dieser Workflow haengt sie
+# stattdessen an den Push, der den Deploy ausloest.
+#
+# Die Alternative waere, in den Build-Einstellungen des Workers den
+# Deploy-Befehl auf `npm run deploy` zu setzen - dann liefe der Hook wieder.
+# Das steht aber nur im Cloudflare-Dashboard, also an einer Stelle, die kein
+# Mensch im Repo sieht und die beim naechsten Neuverbinden der Git-Anbindung
+# auf die Voreinstellung zurueckfaellt. Genau so ist die Meldung schon
+# einmal ausgefallen. Hier ist sie sichtbar und versioniert.
+#
+# Secrets braucht der Job keine: der IndexNow-Schluessel ist oeffentlich und
+# steht in site.config.json.
+
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+  # Von Hand ausloesbar, etwa nachdem ein Deploy fehlgeschlagen war.
+  workflow_dispatch:
+
+# Zwei Meldungen gleichzeitig waeren Unsinn; die spaetere soll warten statt
+# die fruehere abzubrechen.
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  melden:
+    runs-on: ubuntu-latest
+    # --wait-live wartet hoechstens zehn Minuten auf den Cloudflare-Build.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # --changed vergleicht site.config.json mit HEAD~1, der Commit
+          # davor muss also mit ausgecheckt sein.
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Keine Abhaengigkeiten, kein npm install: das Skript kommt mit dem
+      # fetch() von Node aus.
+      #
+      # --changed      nur Seiten, deren lastmod sich in diesem Push geaendert hat
+      # --recent       Rueckfall, falls der Vergleich mit git nicht moeglich ist
+      # --wait-live    erst melden, wenn die Aenderung live ausgeliefert wird
+      - name: Geaenderte Seiten melden
+        run: node scripts/indexnow.mjs --changed --recent --wait-live

@@ -4,7 +4,7 @@
  * Aufgaben:
  *  - www.* auf die Apex-Domain umleiten
  *  - POST /api/contact entgegennehmen
- *  - sitemap.xml, robots.txt und llms.txt aus site.config.json erzeugen
+ *  - sitemap.xml samt Browser-Ansicht, robots.txt und llms.txt erzeugen
  *  - Adressen des Vorbesitzers mit 410 Gone beantworten
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
@@ -23,6 +23,7 @@ import { LLMS_PATH, handleLlms } from "./llms";
 import { strukturierteDaten } from "./strukturierte-daten";
 import { INDEXNOW_KEY_PATH, handleIndexNowKey } from "./indexnow";
 import { ROBOTS_PATH, handleRobots } from "./robots";
+import { SITEMAP_XSL_PATH, handleSitemapXsl } from "./sitemap-xsl";
 import { handleAnschrift } from "./anschrift";
 import { altlast, goneResponse } from "./altlasten";
 
@@ -104,6 +105,12 @@ export default {
 
     if (url.pathname === ANSCHRIFT_PATH) {
       return withSecurityHeaders(handleAnschrift(request), url);
+    }
+
+    // Die Browser-Ansicht der Sitemap. Muss vor den Altlasten stehen, aber
+    // das tut sie als erzeugte Datei ohnehin.
+    if (url.pathname === SITEMAP_XSL_PATH) {
+      return withSecurityHeaders(handleSitemapXsl(request), url);
     }
 
     if (url.pathname === ROBOTS_PATH) {
