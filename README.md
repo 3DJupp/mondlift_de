@@ -21,7 +21,8 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   kontakt.html              Kontaktformular
   impressum.html            § 5 DDG
   datenschutz.html
-  404.html  robots.txt  favicon.svg
+  sitemap.html              Hülle für die erzeugte Seitenübersicht
+  404.html  favicon.svg
   assets/css/style.css      gemeinsames Stylesheet
   assets/js/enterprise.js   Canvas-Animation
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
@@ -35,6 +36,9 @@ src/
   fragen.ts                 die häufigen Fragen, als Daten
   html.ts                   Maskierung und Sprungmarken
   sitemap.ts                erzeugt /sitemap.xml
+  seitenliste.ts            erzeugt die lesbare Liste unter /sitemap
+  robots.ts                 erzeugt /robots.txt
+  altlasten.ts              410 Gone für die Adressen des Vorbesitzers
   llms.ts                   erzeugt /llms.txt
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
   anschrift.ts              zeichnet /anschrift.svg
@@ -52,8 +56,8 @@ site.config.json            Name, Anschrift, E-Mail, Steckbrief, Seitenliste
 wrangler.jsonc              Worker-Konfiguration
 ```
 
-`sitemap.xml` und `llms.txt` liegen bewusst **nicht** in `public/`: sie
-werden aus `site.config.json` erzeugt, siehe unten. Dasselbe gilt für
+`sitemap.xml`, `robots.txt` und `llms.txt` liegen bewusst **nicht** in
+`public/`: sie werden aus `site.config.json` erzeugt, siehe unten. Dasselbe gilt für
 Glossar und FAQ, deren Text in `src/` steht — warum, steht im Abschnitt
 über die Inhaltsseiten.
 
@@ -313,6 +317,98 @@ Von den drei Angaben je Seite wertet Google nur `lastmod` aus; `changefreq`
 und `priority` ignoriert es seit Jahren. Sie stehen trotzdem drin, weil
 andere Suchmaschinen sie weiterhin lesen und sie nichts kosten.
 
+### Die lesbare Fassung unter `/sitemap`
+
+Eine `sitemap.xml` ist eine Datei für Maschinen und sieht im Browser
+entsprechend aus. Der übliche Gegenentwurf ist ein XSLT-Stylesheet: oben in
+der XML-Datei steht ein `<?xml-stylesheet?>`, und der Browser legt daraus
+eine HTML-Ansicht über das XML.
+
+Dieser Weg ist **bewusst nicht** gewählt, weil er gerade endet. Chrome
+entfernt XSLT mit Version 158 am 17. November 2026; Firefox und WebKit haben
+dasselbe angekündigt. Eine Sitemap, die ihre Lesbarkeit an XSLT hängt, wäre
+also ein paar Wochen hübsch und danach wieder genau so wie vorher. Siehe die
+[Ankündigung von Chrome](https://developer.chrome.com/docs/web-platform/deprecating-xslt).
+
+Stattdessen sind die beiden Zwecke getrennt:
+
+| Adresse | für | Form |
+|---------|-----|------|
+| `/sitemap.xml` | Suchmaschinen | reines XML, kein Stylesheet |
+| `/sitemap` | Menschen | eine normale Seite dieser Seite |
+
+Beide entstehen aus derselben `pages`-Liste, können also nicht auseinander
+laufen. `/sitemap` zeigt zusätzlich den Satz, der zu jeder Seite in der
+Config steht, und den Stand der letzten Änderung — und ist damit nebenbei
+ein Verzeichnis, über das eine Suchmaschine jede Seite in einem Schritt
+erreicht. In `sitemap.xml` steht ein XML-Kommentar mit dem Hinweis darauf;
+mehr erlaubt das Format nicht.
+
+## robots.txt
+
+Wird ebenfalls vom Worker aus `site.config.json` erzeugt (`src/robots.ts`).
+Vorher lag die Datei in `public/` und trug die Sitemap-Adresse
+ausgeschrieben — damit stand die Domain an einer zweiten Stelle, die
+niemand anfasst, wenn sie sich ändert.
+
+Inhaltlich: alles offen, für Suchmaschinen und für KI-Crawler. Die
+einzelnen KI-Crawler stehen ausdrücklich mit `Allow: /` da, weil bei ihnen
+sonst oft angenommen wird, eine fehlende Erlaubnis sei ein Verbot.
+
+Nicht gesperrt sind die Adressen des Vorbesitzers — warum, steht im
+nächsten Abschnitt.
+
+## Die Altlasten der Domain
+
+Vor dieser Seite lief unter `mondlift.de` ein WordPress mit völlig anderem
+Inhalt. Google kennt diese Adressen noch und ruft sie weiter ab; in der
+Search Console tauchen sie als Beispiele auf:
+
+```
+/zwillingsseelen-und-sexualitat/
+/page/2/
+/wp-content/plugins/*
+```
+
+Das ist normal für eine übernommene Domain und schadet dem Ranking nicht —
+es sind Fehler auf Adressen, die es nicht gibt, keine Mängel auf Seiten,
+die es gibt. Es verschwindet aber nur, wenn die Antwort stimmt.
+
+**Was nicht hilft:**
+
+- *Auf die Startseite weiterleiten.* Eine Weiterleitung auf etwas
+  thematisch Fremdes wertet Google als „Soft 404" und behandelt sie
+  schlechter als einen klaren Fehler.
+- *In `robots.txt` sperren.* Eine gesperrte Adresse darf nicht abgerufen
+  werden — also erfährt die Suchmaschine nie, dass es sie nicht mehr gibt.
+  Gesperrte Altlasten bleiben länger stehen als offene. Sie müssen abrufbar
+  bleiben, um sterben zu können.
+- *Das Entfernen-Werkzeug der Search Console.* Blendet eine Adresse ein
+  halbes Jahr aus und löscht nichts.
+
+**Was hilft**, ist die genauere Antwort: `410 Gone` statt `404 Not Found`.
+Beides nimmt die Adresse mit der Zeit aus dem Index, `410` sagt dabei
+„endgültig weg" statt „gerade nicht da" und wird schneller verarbeitet.
+
+`src/altlasten.ts` erkennt zwei Gruppen:
+
+1. **WordPress-Spuren.** `/wp-*`, `/xmlrpc.php`, `*.php`, `/page/2/`,
+   `/category/…`, `/2021/07/`, `/feed/`, dazu Query-Parameter wie `?p=123`
+   auf der Startseite. Das kann es hier nie geben — dieses Projekt ist ein
+   Worker mit neun statischen Seiten.
+2. **Adressen mit Schrägstrich am Ende.** Keine Adresse dieser Seite endet
+   so, WordPress-Permalinks dagegen immer. Ist es sonst eine echte Seite
+   (`/glossar/`), wird auf die kanonische Form umgeleitet; sonst `410`.
+
+Alles andere bleibt `404`: ein Tippfehler in einem fremden Link soll ein
+weicher Fehler bleiben, kein Grabstein. Die eigenen Seiten werden vor allen
+Mustern geprüft, damit ein fremder Zählparameter am Link nie eine Seite
+beerdigt, die es gibt.
+
+Nebeneffekt, nicht der Zweck: ein großer Teil der automatischen
+Angriffsversuche sucht genau diese Pfade und bekommt jetzt eine kurze
+Antwort, ohne das Asset-Binding zu beschäftigen.
+
 ### Warum das Datum pro Seite steht
 
 Hier stand vorher ein Datum für alle Seiten, `site.lastUpdated`, mit der
@@ -382,13 +478,24 @@ Skript. Geheim muss er nicht sein, nur schwer zu erraten; deshalb eine
 Zufallsfolge. Wechseln heißt: neuen Wert eintragen, deployen, neu melden.
 Erlaubt sind 8 bis 128 Zeichen aus `a-z`, `A-Z`, `0-9` und Bindestrich.
 
-**Die Meldung.** Nach einem Deploy, der Inhalte geändert hat:
+**Die Meldung.** Die läuft beim Deploy automatisch mit — `npm run deploy`
+ruft über den npm-Hook `postdeploy` das Skript mit `--recent` auf:
+
+```json
+"deploy":     "wrangler deploy",
+"postdeploy": "node scripts/indexnow.mjs --recent"
+```
+
+Von Hand geht natürlich weiter alles:
 
 ```bash
-npm run indexnow                      # alle Seiten aus der Config
-npm run indexnow -- /kontakt          # nur diese Seite
-npm run indexnow -- --dry-run         # nur zeigen, was gesendet würde
-npm run indexnow -- --curl            # dieselbe Meldung als curl-Befehle
+npm run indexnow                        # alle Seiten aus der Config
+npm run indexnow -- /kontakt            # nur diese Seite
+npm run indexnow -- --recent            # nur kürzlich geänderte (7 Tage)
+npm run indexnow -- --recent=30         # dasselbe mit anderem Fenster
+npm run indexnow -- --since=2026-10-01  # alles ab diesem Datum
+npm run indexnow -- --dry-run           # nur zeigen, was gesendet würde
+npm run indexnow -- --curl              # dieselbe Meldung als curl-Befehle
 ```
 
 Das Skript prüft zuerst, ob die Schlüsseldatei live erreichbar ist und den
@@ -398,11 +505,32 @@ Suchmaschine. Danach geht eine Anfrage an `api.indexnow.org`, die an alle
 teilnehmenden Suchmaschinen verteilt. `200` heißt angenommen, `202` heißt
 angenommen und der Schlüssel wird noch geprüft — beides ist Erfolg.
 
-Der richtige Zeitpunkt ist ein Deploy **mit** Inhaltsänderung, nicht jeder
-Deploy. IndexNow ist dafür gedacht, Änderungen zu melden; eine unveränderte
-Seite erneut zu melden bringt nichts.
+### Warum automatisch, aber nur `--recent`
 
-Deshalb gibt es auch keinen Cron im Worker: ein Cron ohne Gedächtnis kann
+Zwei Dinge, die sich auf den ersten Blick widersprechen, und beide stimmen:
+
+**Automatisch, weil es sonst vergessen wird.** Ein Deploy, dessen Meldung an
+die Suchmaschinen ein zweiter, von Hand zu tippender Schritt ist, wird
+irgendwann ohne diesen Schritt gemacht — und zwar genau bei der Änderung,
+auf die es ankam.
+
+**Nur die kürzlich geänderten Seiten, nicht alle.** IndexNow ist dafür
+gedacht, Änderungen zu melden. Bei jedem Deploy alle neun Seiten zu melden —
+auch nach einer Änderung, die nur den Worker betrifft — macht aus dem Signal
+Rauschen. `--recent` nimmt die Seiten, deren `lastmod` in `site.config.json`
+nicht älter als sieben Tage ist. Dieses Feld muss man beim Bearbeiten einer
+Seite ohnehin nachziehen, sonst stimmt die Sitemap nicht; die Meldung hängt
+sich also an eine Angabe, die schon gepflegt wird.
+
+Ändert sich keine Seite, meldet das Skript nichts und endet erfolgreich —
+ein Deploy ohne Inhaltsänderung soll nicht als Fehlschlag aussehen.
+
+Weil das Skript direkt hinter `wrangler deploy` läuft, prüft es die
+Schlüsseldatei mit bis zu vier Versuchen und wachsendem Abstand. Die neue
+Fassung ist meist sofort da, aber „meist" ist hier zu wenig: ein Fehler, der
+nur manchmal auftritt, lässt sich entsprechend schlecht suchen.
+
+Einen Cron im Worker gibt es aus demselben Grund nicht: ein Cron ohne Gedächtnis kann
 nicht wissen, ob sich seit dem letzten Lauf etwas geändert hat, und würde
 entweder immer melden oder nie. Ein Zustand dafür bräuchte KV oder ein
 Durable Object — für eine Seite dieser Größe wäre das überdimensioniert.
@@ -567,6 +695,10 @@ Site Key `1x00000000000000000000AA` und Secret Key
 ```bash
 npm run deploy
 ```
+
+Das deployt den Worker **und** meldet anschließend die kürzlich geänderten
+Seiten bei IndexNow — siehe den Abschnitt dort. Nur deployen, ohne Meldung:
+`npx wrangler deploy`.
 
 Einmalig im Cloudflare-Dashboard nötig:
 

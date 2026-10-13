@@ -6,13 +6,26 @@
  * site.config.json die einzige Quelle, und dieselbe Liste benutzt auch
  * scripts/indexnow.mjs fuer die Einreichung bei den Suchmaschinen.
  *
+ * Diese Datei ist fuer Maschinen und sieht im Browser entsprechend aus. Der
+ * uebliche Gegenentwurf war ein XSLT-Stylesheet, auf das ein
+ * `<?xml-stylesheet?>` oben in der Datei zeigt - der Browser legt dann eine
+ * HTML-Ansicht darueber. Das ist hier bewusst *nicht* gemacht: Chrome
+ * entfernt XSLT mit Version 158 (17. November 2026), Firefox und WebKit
+ * haben dasselbe angekuendigt. Eine Sitemap, die ihre Lesbarkeit an XSLT
+ * haengt, waere also wenige Wochen huebsch und danach wieder nicht.
+ *
+ * Lesbar ist deshalb /sitemap - eine normale Seite, aus derselben Liste
+ * erzeugt (siehe src/seitenliste.ts). Der Hinweis darauf steht als
+ * Kommentar oben in dieser Datei, denn mehr als einen Kommentar erlaubt das
+ * Sitemap-Format nicht.
+ *
  * `lastmod` ist der einzige Hinweis aus dieser Datei, auf den Google noch
  * hoert; `changefreq` und `priority` werden dort seit Jahren ignoriert. Sie
  * stehen trotzdem drin, weil sie andere Suchmaschinen weiterhin lesen und
  * nichts kosten.
  *
  * Deshalb steht das Datum pro Seite in der Config und nicht einmal fuer alle
- * vier. Ein `lastmod`, das sich bei jedem Deploy fuer jede Seite aendert, ist
+ * zusammen. Ein `lastmod`, das sich bei jedem Deploy fuer jede Seite aendert, ist
  * fuer Google kein Signal, sondern Rauschen - und Google traut dem Feld dann
  * gar nicht mehr. `site.lastUpdated` bleibt der Rueckfall fuer Seiten ohne
  * eigenes Datum und bleibt der "Stand" im Seitenfuss.
@@ -66,8 +79,11 @@ function sitemapXml(): string {
     ].join("\n");
   });
 
+  const lesbar = new URL("/sitemap", config.site.url).toString();
+
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
+    `<!-- Dieselbe Liste fuer Menschen: ${lesbar} -->`,
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...entries,
     "</urlset>",

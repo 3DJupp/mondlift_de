@@ -78,6 +78,14 @@
       "priority": "0.8"
     },
     {
+      "path": "/sitemap",
+      "title": "Übersicht",
+      "summary": "Alle Seiten dieser Seite auf einen Blick, mit je einem Satz dazu und dem Stand der letzten Änderung.",
+      "lastmod": "2026-10-13",
+      "changefreq": "monthly",
+      "priority": "0.4"
+    },
+    {
       "path": "/kontakt",
       "title": "Kontakt",
       "summary": "Nachricht an den Betreiber der Seite, etwa für Korrekturen oder Fotos.",

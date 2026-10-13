@@ -4,7 +4,8 @@
  * Aufgaben:
  *  - www.* auf die Apex-Domain umleiten
  *  - POST /api/contact entgegennehmen
- *  - sitemap.xml und llms.txt aus site.config.json erzeugen
+ *  - sitemap.xml, robots.txt und llms.txt aus site.config.json erzeugen
+ *  - Adressen des Vorbesitzers mit 410 Gone beantworten
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
  *  - Daten aus site.config.json in die HTML-Seiten einsetzen
@@ -21,7 +22,9 @@ import { handleSitemap } from "./sitemap";
 import { LLMS_PATH, handleLlms } from "./llms";
 import { strukturierteDaten } from "./strukturierte-daten";
 import { INDEXNOW_KEY_PATH, handleIndexNowKey } from "./indexnow";
+import { ROBOTS_PATH, handleRobots } from "./robots";
 import { handleAnschrift } from "./anschrift";
+import { altlast, goneResponse } from "./altlasten";
 
 const CONTACT_ENDPOINT = "/api/contact";
 const SITEMAP_PATH = "/sitemap.xml";
@@ -103,8 +106,28 @@ export default {
       return withSecurityHeaders(handleAnschrift(request), url);
     }
 
+    if (url.pathname === ROBOTS_PATH) {
+      return withSecurityHeaders(handleRobots(request), url);
+    }
+
     if (INDEXNOW_KEY_PATH !== null && url.pathname === INDEXNOW_KEY_PATH) {
       return withSecurityHeaders(handleIndexNowKey(request), url);
+    }
+
+    // --- Altlasten der Domain --------------------------------------------
+    // Vor dieser Seite lief hier ein WordPress. Seine Adressen ruft Google
+    // weiter ab; sie bekommen 410 Gone statt 404, damit sie schneller aus
+    // dem Index fallen. Steht hinter den erzeugten Dateien, damit kein
+    // Muster versehentlich eine davon trifft. Siehe src/altlasten.ts.
+    const alt = altlast(url);
+    if (alt?.art === "gone") {
+      return withSecurityHeaders(goneResponse(), url);
+    }
+    if (alt?.art === "redirect") {
+      return withSecurityHeaders(
+        new Response(null, { status: 301, headers: { location: alt.ziel } }),
+        url,
+      );
     }
 
     // --- Auslieferung ----------------------------------------------------

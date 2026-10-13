@@ -236,6 +236,14 @@ function graphFor(seite: Seite): unknown[] {
       ];
     case "/fragen":
       return [WEBSITE, PERSON, webPage(seite), fragenKnoten()];
+    // Die Uebersicht ist eine Sammlung von Verweisen auf die eigenen
+    // Seiten - CollectionPage sagt das, WebPage waere ungenauer.
+    case "/sitemap":
+      return [
+        WEBSITE,
+        PERSON,
+        { ...(webPage(seite) as object), "@type": "CollectionPage" },
+      ];
     case "/kontakt":
       return [
         WEBSITE,
