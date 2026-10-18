@@ -5,6 +5,7 @@
  *  - www.* auf die Apex-Domain umleiten
  *  - POST /api/contact entgegennehmen
  *  - sitemap.xml samt Browser-Ansicht, robots.txt und llms.txt erzeugen
+ *  - Markdown-Fassungen der Inhaltsseiten und llms-full.txt ausliefern
  *  - Adressen des Vorbesitzers mit 410 Gone beantworten
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
@@ -26,6 +27,13 @@ import { ROBOTS_PATH, handleRobots } from "./robots";
 import { SITEMAP_XSL_PATH, handleSitemapXsl } from "./sitemap-xsl";
 import { handleAnschrift } from "./anschrift";
 import { altlast, goneResponse } from "./altlasten";
+import {
+  LLMS_FULL_PATH,
+  handleLlmsFull,
+  handleMarkdown,
+  markdownFuer,
+  zitiervorschlag,
+} from "./markdown";
 
 const CONTACT_ENDPOINT = "/api/contact";
 const SITEMAP_PATH = "/sitemap.xml";
@@ -103,6 +111,17 @@ export default {
       return withSecurityHeaders(handleLlms(request), url);
     }
 
+    // Volltext und Markdown-Fassungen lesen die HTML-Seiten aus dem
+    // Asset-Binding, siehe src/markdown.ts.
+    if (url.pathname === LLMS_FULL_PATH) {
+      return withSecurityHeaders(await handleLlmsFull(request, url, env), url);
+    }
+
+    if (url.pathname.endsWith(".md")) {
+      const markdown = await handleMarkdown(request, url, env);
+      if (markdown) return withSecurityHeaders(markdown, url);
+    }
+
     if (url.pathname === ANSCHRIFT_PATH) {
       return withSecurityHeaders(handleAnschrift(request), url);
     }
@@ -156,6 +175,8 @@ export default {
         turnstileSiteKey: env.TURNSTILE_SITE_KEY,
         status: url.searchParams.get("status"),
         jsonLd: daten?.json,
+        markdownHref: markdownFuer(url.pathname),
+        zitat: zitiervorschlag(url.pathname),
       });
       return withSecurityHeaders(body, url, daten ? [daten.hash] : []);
     } catch (error) {

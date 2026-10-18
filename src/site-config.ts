@@ -16,6 +16,7 @@
  *   <p data-status="ok" hidden>                sichtbar bei ?status=ok
  *   <div data-glossar>                         bekommt die Begriffsliste
  *   <div data-fragen>                          bekommt die Fragenliste
+ *   <p data-zitat>                             bekommt den Zitiervorschlag
  *
  * Glossar und Fragen stehen als Daten in src/, weil es von beiden zwei
  * Fassungen gibt - die sichtbare und die strukturierte. Eine Quelle, zwei
@@ -27,6 +28,7 @@ import { MESSAGES } from "./contact";
 import { glossarHtml } from "./glossar";
 import { fragenHtml } from "./fragen";
 import { seitenlisteHtml } from "./seitenliste";
+import { escapeHtml } from "./html";
 
 /** Flache Nachschlagetabelle inklusive abgeleiteter Werte. */
 const VALUES: Record<string, string> = {
@@ -60,6 +62,10 @@ export interface PageContext {
    * mit dem sha256-Hash, den die CSP dafür braucht.
    */
   jsonLd?: string;
+  /** Adresse der Markdown-Fassung, wenn die Seite eine hat. */
+  markdownHref?: string;
+  /** Text für den Zitiervorschlag unter `<p data-zitat>`. */
+  zitat?: string;
 }
 
 /** ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ. */
@@ -94,6 +100,28 @@ export function injectSiteConfig(
             `<script type="application/ld+json">${context.jsonLd}</script>`,
             { html: true },
           );
+        }
+        // Verweis auf die Markdown-Fassung, siehe src/markdown.ts. Modelle
+        // und Werkzeuge, die eine Seite fuer ein Zitat abholen, finden so
+        // die kurze Fassung ohne Navigation.
+        if (context.markdownHref) {
+          element.append(
+            `<link rel="alternate" type="text/markdown" href="${context.markdownHref}" title="Markdown" />`,
+            { html: true },
+          );
+        }
+      },
+    })
+    .on("[data-zitat]", {
+      element(element) {
+        if (context.zitat) {
+          element.setInnerContent(
+            `<span class="zitat__label">Zitiervorschlag</span> ${escapeHtml(context.zitat)}`,
+            { html: true },
+          );
+          element.removeAttribute("data-zitat");
+        } else {
+          element.remove();
         }
       },
     })

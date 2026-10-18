@@ -340,6 +340,33 @@ address {
   color: var(--amber);
 }
 
+/* Zitiervorschlag unter den Inhaltsseiten, vom Worker eingesetzt. Wie die
+   Fusszeile der Seite gesetzt, damit er nicht mit dem Text konkurriert. */
+.zitat {
+  margin: 3rem 0 0;
+  padding: 0.8rem 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.zitat__label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.zitat + .meta {
+  margin-top: 1.4rem;
+}
+
 .meta {
   margin-top: 3rem;
   padding-top: 1.2rem;

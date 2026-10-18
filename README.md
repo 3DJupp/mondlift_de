@@ -41,6 +41,7 @@ src/
   robots.ts                 erzeugt /robots.txt
   altlasten.ts              410 Gone für die Adressen des Vorbesitzers
   llms.ts                   erzeugt /llms.txt
+  markdown.ts               Markdown-Fassungen der Seiten, /llms-full.txt
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
   anschrift.ts              zeichnet /anschrift.svg
   anschrift-glyphen.ts      Zeichenumrisse dafür (erzeugt)
@@ -92,6 +93,10 @@ IndexNow-Meldung kennen sie.
 ohne Libraries. Gerechnet wird in Metern im Weltsystem, projiziert mit einer
 leichten Zentralprojektion und einer Kamera, die etwas von oben schaut.
 
+Die Kamera steht auf der Seite der Kippachse. Man sieht das aufgerichtete
+Rad also von vorn, und der Träger liegt dahinter — so, wie man das Geschäft
+vom Platz davor kennt.
+
 Zwei Dinge sind bewusst physikalisch statt nach Gefühl gelöst:
 
 - **Das Kippen.** Das Rad dreht sich um eine waagerechte Achse an seiner
@@ -103,6 +108,28 @@ Zwei Dinge sind bewusst physikalisch statt nach Gefühl gelöst:
   das richtige Bild: flach und langsam hängen die Gondeln nach unten, steil
   und schnell stehen sie radial ab. Es gibt dafür keine Sonderfälle im Code.
 
+Das Aussehen folgt Referenzfotos eines Huss Enterprise:
+
+- **Rad als Fachwerk.** Zwanzig Hauptträger, ein innerer Ring auf halbem
+  Radius, dazwischen Dreiecke, die zusammen Rauten um den Ring bilden, und
+  außen eine doppelte Felge mit Zickzack-Streben.
+- **Gondeln als Käfige.** Dach, farbige Außenschale mit Zierband, offene
+  Seiten mit Gitterstäben, Sitzschale innen. Die Schale ist der Rücken der
+  Fahrgäste und dreht sich mit der Gondel: hängt sie, zeigt die Schale
+  nach außen, steht sie radial ab, zeigt die Schale gegen die Achse.
+- **Nabenkappe, Träger, Trailer.** Eine große glatte Kappe mit Lampenkranz,
+  ein Kastenträger von der Kippachse zur Nabe mit zwei Hydraulikzylindern,
+  darunter Trailer, Lagerböcke und ein Podest mit Lampen an der Kante.
+- **Lampen dicht an dicht** auf der Felge, zwei auf jedem Träger, ein Kranz
+  um die Kappe und je eine am Gondeldach.
+
+Körper werden als Flächen mit einfacher Lambert-Schattierung gezeichnet,
+und welche Seite einer Fläche zu sehen ist, entscheidet ihre Normale gegen
+die echte Kameraposition. Der Bildausschnitt wird nicht geschätzt, sondern
+aus der projizierten Hülle aller Gondelstellungen berechnet
+(`fitScene()`), damit das Rad in jeder Neigung ins Bild passt und oben Platz
+für den Titel bleibt.
+
 Rücksicht auf das Gerät: Auflösung skaliert mit `devicePixelRatio` (gedeckelt
 bei 2), bei dauerhaft langsamen Bildern wird die Zeichenfläche eine Stufe
 kleiner, im versteckten Tab läuft keine Schleife, und bei
@@ -113,7 +140,8 @@ Ein Hinweis für alle, die daran weiterbauen: Die Glühbirnen werden
 `drawImage` lässt den Browser jedes Mal neu filtern und kostete in der
 Messung rund 50 ms pro Bild — bei über 140 Lampen ist das der Unterschied
 zwischen 12 und 60 Bildern pro Sekunde. Deshalb gibt es die Größenleiter in
-`buildGlowSprites()`. Offene Punkte zur Optik stehen in [BACKLOG.md](BACKLOG.md).
+`buildGlowSprites()`. Das Fachwerk dagegen ist billig: Linien kosten fast
+nichts, und die Streben eines Feldes gehen in drei Pfaden auf einmal raus.
 
 ### Das Kontaktformular
 
@@ -265,6 +293,44 @@ eigentliche Grund für die Datei ist: **wofür diese Seite keine Quelle
 ist.** Kein Terminkalender, keine Preise, keine Herstellerunterlagen. Ein
 Modell, das daraus sonst einen Termin für das nächste Volksfest ableitet,
 hätte ein Datum erfunden und diese Seite als Beleg genannt.
+
+Die Datei zeigt auf die **Markdown-Fassungen** der Inhaltsseiten und nennt
+zu jeder die HTML-Adresse, unter der zu zitieren ist. Dazu kommt ein
+Abschnitt „Kurz gesagt" mit den fünf Sätzen, die ein Modell am ehesten
+braucht, jeder mit einer Angabe, die auf den Seiten belegt ist.
+
+### Markdown-Fassungen und llms-full.txt
+
+Jede Inhaltsseite gibt es zusätzlich als Markdown unter derselben Adresse
+mit `.md`: `/index.md`, `/mondlift.md`, `/enterprise.md`, `/fragen.md`,
+`/glossar.md`. `/llms-full.txt` enthält alle fünf in einer Datei.
+
+Gedacht ist das für Modelle und Werkzeuge, die eine Seite zur Laufzeit
+abholen, um eine Antwort zu belegen: ohne Navigation und Fußzeile, mit
+Adresse, Stand und Herausgeber im Kopf, damit ein Zitat beides trägt.
+
+Erzeugt werden die Fassungen aus dem ausgelieferten HTML selbst, nach dem
+Einsetzen von Config-Werten, Glossar und FAQ (`src/markdown.ts`). Es gibt
+also keinen zweiten Text im Repo, der auseinanderlaufen könnte. Gelesen
+wird nur `<main>`; der Umwandler kennt genau die Elemente, die in `public/`
+vorkommen. Wer dort ein neues Element einführt, sollte einen Blick auf die
+`.md`-Fassung werfen.
+
+Für Suchmaschinen bleibt die HTML-Seite maßgeblich: jede Markdown-Antwort
+trägt `Link: <…>; rel="canonical"` auf sie, es entsteht kein doppelter
+Inhalt. Umgekehrt verweist jede Inhaltsseite im Kopf mit
+`<link rel="alternate" type="text/markdown">` auf ihre Fassung.
+
+### Zitiervorschlag
+
+Unter jeder Inhaltsseite steht ein fertiger Zitiervorschlag: Titel, Seite,
+Stand, Adresse. Der Worker setzt ihn über `<p data-zitat>` aus der
+Seitenliste ein, das Datum ist das `lastmod` der Seite. Personennamen
+stehen bewusst nicht darin; wer hinter der Seite steht, sagt das Impressum.
+
+In den strukturierten Daten trägt jede Seite dazu `author`,
+`datePublished` und `dateModified`, und die Fragen-Seite ist mit dem Gerät
+und der Bauform verknüpft.
 
 ## Link-Vorschau
 

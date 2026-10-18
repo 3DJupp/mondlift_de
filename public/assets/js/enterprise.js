@@ -3,7 +3,7 @@
  *
  * Modell
  * ------
- * Ein Rad mit 20 Auslegern dreht sich um seine Achse. Das ganze Rad kippt um
+ * Ein Rad mit 20 Gondeln dreht sich um seine Achse. Das ganze Rad kippt um
  * eine waagerechte Achse, die an seiner hinteren Felgenkante liegt - genau so
  * hebt sich das echte Fahrgeschaeft aus der Horizontalen in die Senkrechte.
  *
@@ -16,6 +16,22 @@
  * resultierenden Kraft aus Zentrifugalkraft (radial nach aussen) und
  * Schwerkraft. Dadurch ergibt sich von selbst das richtige Bild: flach und
  * langsam haengen sie nach unten, steil und schnell stehen sie radial ab.
+ *
+ * Aussehen
+ * --------
+ * Nach Referenzfotos eines Huss Enterprise, siehe BACKLOG.md:
+ *  - das Rad ist ein Fachwerk: Haupttraeger, ein innerer Ring, dazwischen
+ *    Dreiecke und Rauten, aussen eine doppelte Felge mit Querstreben
+ *  - die Gondeln sind Kaefige: Dach, farbige Aussenschale, offene Seiten
+ *    mit Gitterstaeben, Sitzschale innen; sie oeffnen sich zur Nabe hin
+ *  - in der Mitte eine grosse glatte Nabenkappe mit Lampenkranz
+ *  - getragen wird das Rad von einem kraeftigen Kastentraeger, den zwei
+ *    Hydraulikzylinder vom Trailer aus heben
+ *  - die Lampen sitzen dicht an dicht auf Felge, Traegern und Kappe
+ *
+ * Koerper werden als Flaechen mit einfacher Lambert-Schattierung gezeichnet.
+ * Welche Flaeche sichtbar ist, entscheidet ihre Normale gegen die echte
+ * Kameraposition - nicht die Reihenfolge der Zeichenbefehle.
  *
  * Keine Libraries.
  */
@@ -37,10 +53,15 @@
   const DEG = Math.PI / 180;
   const G = 9.81; // m/s^2
 
-  const ARMS = 20; // Ausleger / Gondeln
-  const R = 8.0; // Radradius in m
+  const ARMS = 20; // Haupttraeger / Gondeln
+  const R = 8.0; // Radradius bis zur aeusseren Felge, in m
+  const R_RIM_IN = R - 0.62; // zweite, innere Felge
+  const R_RING = R * 0.5; // innerer Ring des Fachwerks
+  const R_CAP = 1.85; // Nabenkappe
   const PIVOT_Y = 2.6; // Hoehe der Kippachse ueber Grund in m
-  const BULBS_PER_ARM = 5;
+
+  const BULBS_PER_RIM = 3; // je Feld zwischen zwei Traegern
+  const BULBS_PER_ARM = 2; // je Haupttraeger
 
   const TILT_MIN = 10 * DEG; // nahezu waagerecht
   const TILT_MAX = 84 * DEG; // fast senkrecht
@@ -51,14 +72,25 @@
   const CAM_PITCH = 19 * DEG; // Blick von oben
   const FOV = 62; // Brennweite in Metern, groesser = flacher
 
-  // Platzbedarf der ganzen Szene in Metern, bei voller Neigung gemessen.
-  const SCENE_W = 21.5;
-  const SCENE_H = 21.5;
+  // Gondel in m. Laenge laeuft vom Drehpunkt an der Felge weg, Breite
+  // tangential zum Rad, Tiefe von der Gitterseite zur Aussenschale.
+  const HANGER_LEN = 0.5; // Drehpunkt bis Dach
+  const CAR_LEN = 1.7; // Dach bis Boden
+  const CAR_HALF_W = 0.66;
+  const CAR_HALF_D = 0.55;
 
-  // Gondelkoerper in m
-  const HANGER_LEN = 0.85;
-  const CAR_LEN = 1.85;
-  const CAR_HALF_W = 0.68;
+  // Farben. Dunkles Schema; Farbe gibt es nur auf den Gondelschalen, und
+  // auch dort gedeckt. Die Reihe wiederholt sich um das Rad.
+  const SHELLS = [
+    [168, 46, 56], // rot
+    [44, 98, 166], // blau
+    [36, 128, 92], // gruen
+    [190, 140, 40], // gelb
+    [150, 62, 140], // pink
+  ];
+  const STEEL = [96, 116, 156]; // blauer Stahl
+  const METAL = [196, 204, 220]; // helles Metall der Gitter und Daecher
+  const DARK = [22, 26, 38];
 
   // ------------------------------------------------------------------- Zustand
 
@@ -113,10 +145,14 @@
    * z ist die Kameratiefe, groesser bedeutet naeher am Betrachter.
    */
   function project(x, y, z) {
-    const yc = y * cosCam - z * sinCam;
-    const zc = y * sinCam + z * cosCam;
+    // Die Kamera steht auf der Seite der Kippachse und schaut in Richtung
+    // -Z, also um die Hochachse gedreht: X und Z wechseln das Vorzeichen.
+    // So sieht man das aufgerichtete Rad von vorn, und der Traeger liegt
+    // dahinter - wie auf den Fotos vom Platz vor dem Geschaeft.
+    const yc = y * cosCam + z * sinCam;
+    const zc = y * sinCam - z * cosCam;
     const p = (FOV / (FOV - zc)) * pxPerM;
-    return { x: originX + x * p, y: originY - yc * p, p, z: zc };
+    return { x: originX - x * p, y: originY - yc * p, p, z: zc };
   }
 
   // -------------------------------------------------------------- Himmelsebene
@@ -216,7 +252,7 @@
     g.globalAlpha = 1;
 
     // Horizont: eine dunkle Baumreihe, mehr nicht.
-    const horizon = project(0, 0, -34);
+    const horizon = project(0, 0, 34);
     const hy = horizon.y;
     g.fillStyle = "#070a12";
     g.beginPath();
@@ -361,7 +397,97 @@
     return lerp(TILT_MIN, TILT_MAX, smoothstep(smoothstep(triangle)));
   }
 
+
+  // ---------------------------------------------------------- Vektoren, Licht
+
+  const vec = (x, y, z) => ({ x, y, z });
+  /** p + d * s */
+  const along = (p, d, s) => vec(p.x + d.x * s, p.y + d.y * s, p.z + d.z * s);
+  const sub = (a, b) => vec(a.x - b.x, a.y - b.y, a.z - b.z);
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) =>
+    vec(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const unit = (a) => {
+    const l = Math.hypot(a.x, a.y, a.z) || 1;
+    return vec(a.x / l, a.y / l, a.z / l);
+  };
+  const projectV = (p) => project(p.x, p.y, p.z);
+
+  // Kameraposition im Weltsystem: der Punkt, den project() auf Tiefe FOV
+  // legt. Gebraucht, um zu entscheiden, welche Seite einer Flaeche man sieht.
+  const CAM = vec(0, FOV * sinCam, -FOV * cosCam);
+
+  // Mondlicht von rechts oben, etwas von vorn.
+  const LIGHT = unit(vec(-0.5, 0.75, -0.45));
+
+  /** Helligkeit einer Flaeche mit Normale n: Grundlicht plus Mondlicht. */
+  const lambert = (n) => 0.3 + 0.7 * Math.max(0, dot(n, LIGHT));
+
+  /** Farbe als CSS-String, mit Helligkeit k und Deckkraft a. */
+  const rgb = (c, k, a = 1) =>
+    `rgba(${Math.min(255, c[0] * k) | 0},${Math.min(255, c[1] * k) | 0},${Math.min(255, c[2] * k) | 0},${a})`;
+
+  /** Pfad durch projizierte Punkte, geschlossen. */
+  function polygon(points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let k = 1; k < points.length; k++) ctx.lineTo(points[k].x, points[k].y);
+    ctx.closePath();
+  }
+
+  /**
+   * Eine ebene Flaeche aus Weltpunkten. Die Normale wird von `inside`
+   * weg ausgerichtet; sichtbar ist die Flaeche, wenn diese Normale zur
+   * Kamera zeigt. Gibt die Normale und die Sichtbarkeit zurueck, damit der
+   * Aufrufer entscheiden kann, was er mit verdeckten Flaechen macht.
+   */
+  function faceInfo(world, inside) {
+    let n = unit(cross(sub(world[1], world[0]), sub(world[3], world[0])));
+    const c = world[0];
+    if (dot(n, sub(c, inside)) < 0) n = vec(-n.x, -n.y, -n.z);
+    return { n, visible: dot(n, sub(CAM, c)) > 0 };
+  }
+
+  /**
+   * Quader aus Mittelpunkt, drei Achsen und halben Kantenlaengen. Gezeichnet
+   * werden nur die sichtbaren Seiten - bei einem konvexen Koerper
+   * ueberlappen die sich nicht, die Reihenfolge ist also egal.
+   */
+  function drawBox(c, a, b, d, ha, hb, hd, color, edge) {
+    const P = (sa, sb, sd) =>
+      along(along(along(c, a, sa * ha), b, sb * hb), d, sd * hd);
+    const faces = [
+      [P(1, -1, -1), P(1, 1, -1), P(1, 1, 1), P(1, -1, 1)],
+      [P(-1, -1, -1), P(-1, 1, -1), P(-1, 1, 1), P(-1, -1, 1)],
+      [P(-1, 1, -1), P(1, 1, -1), P(1, 1, 1), P(-1, 1, 1)],
+      [P(-1, -1, -1), P(1, -1, -1), P(1, -1, 1), P(-1, -1, 1)],
+      [P(-1, -1, 1), P(1, -1, 1), P(1, 1, 1), P(-1, 1, 1)],
+      [P(-1, -1, -1), P(1, -1, -1), P(1, 1, -1), P(-1, 1, -1)],
+    ];
+    for (const world of faces) {
+      const info = faceInfo(world, c);
+      if (!info.visible) continue;
+      polygon(world.map(projectV));
+      ctx.fillStyle = rgb(color, lambert(info.n));
+      ctx.fill();
+      if (edge) {
+        ctx.strokeStyle = edge;
+        ctx.stroke();
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ Zeichnen
+
+  /** Was pro Bild fuer alle Teile gleich ist: Lage des Rades. */
+  const frame = {
+    hub: vec(0, 0, 0),
+    pHub: null,
+    ex: vec(1, 0, 0),
+    ey: vec(0, 1, 0),
+    axis: vec(0, 0, 1),
+    facing: 1, // +1: die Kamera sieht die Seite, zu der axis zeigt
+  };
 
   function drawFrame() {
     if (backdrop) {
@@ -404,52 +530,45 @@
     const sb = Math.sin(beta);
 
     // Einheitsvektoren der Radebene im Weltsystem
-    const ex = { x: 1, y: 0, z: 0 };
-    const ey = { x: 0, y: cb, z: sb };
-    // Achsrichtung, die bei waagerechtem Rad nach unten zeigt
-    const axis = { x: 0, y: -sb, z: cb };
+    const ex = vec(1, 0, 0);
+    const ey = vec(0, cb, sb);
+    // Achsrichtung, die bei waagerechtem Rad nach unten zeigt. Zu dieser
+    // Seite schwingen die Gondeln aus, und dort sitzt der Traeger.
+    const axis = vec(0, -sb, cb);
 
     // Die Kippachse liegt an der hinteren Felgenkante, also bei Radkoordinate
     // (0, -R). Daraus folgt die Nabenposition.
-    const hub = {
-      x: 0,
-      y: PIVOT_Y + R * ey.y,
-      z: -R + R * ey.z,
-    };
-    const pHub = project(hub.x, hub.y, hub.z);
+    const hub = vec(0, PIVOT_Y + R * ey.y, -R + R * ey.z);
+    const pHub = projectV(hub);
 
-    /** Radkoordinate (lx, ly) -> Weltpunkt. */
-    const wheelPoint = (lx, ly) => ({
-      x: hub.x + lx * ex.x + ly * ey.x,
-      y: hub.y + lx * ex.y + ly * ey.y,
-      z: hub.z + lx * ex.z + ly * ey.z,
-    });
+    frame.hub = hub;
+    frame.pHub = pHub;
+    frame.ex = ex;
+    frame.ey = ey;
+    frame.axis = axis;
+    // Bei flachem Rad sieht die Kamera von oben auf die Gegenseite der
+    // Achse, bei steilem Rad auf die Achsseite. Dazwischen steht es einmal
+    // genau auf der Kante.
+    frame.facing = dot(sub(CAM, hub), axis) >= 0 ? 1 : -1;
 
-    // --- Ausleger zu Einheiten buendeln und nach Tiefe sortieren -------------
+    // --- Je Traeger: Richtungen, Fachwerkknoten, Gondelrichtung ----------
 
+    const half = Math.PI / ARMS;
     const units = [];
     for (let i = 0; i < ARMS; i++) {
       const theta = spin + (i / ARMS) * Math.PI * 2;
       const ct = Math.cos(theta);
       const st = Math.sin(theta);
+      const ch = Math.cos(theta + half);
+      const sh = Math.sin(theta + half);
 
-      // Radialrichtung und Tangente in der Radebene
-      const rad = {
-        x: ct * ex.x + st * ey.x,
-        y: ct * ex.y + st * ey.y,
-        z: ct * ex.z + st * ey.z,
-      };
-      const tan = {
-        x: -st * ex.x + ct * ey.x,
-        y: -st * ex.y + ct * ey.y,
-        z: -st * ex.z + ct * ey.z,
-      };
+      // Radialrichtung und Tangente in der Radebene, dazu die Richtung
+      // genau zwischen diesem und dem naechsten Traeger.
+      const rad = vec(ct * ex.x + st * ey.x, ct * ex.y + st * ey.y, ct * ex.z + st * ey.z);
+      const tan = vec(-st * ex.x + ct * ey.x, -st * ex.y + ct * ey.y, -st * ex.z + ct * ey.z);
+      const radH = vec(ch * ex.x + sh * ey.x, ch * ex.y + sh * ey.y, ch * ex.z + sh * ey.z);
 
-      const rim = {
-        x: hub.x + R * rad.x,
-        y: hub.y + R * rad.y,
-        z: hub.z + R * rad.z,
-      };
+      const rim = along(hub, rad, R);
 
       // Gondelrichtung aus der Resultierenden. Die Schwerkraft (0,-G,0) wird
       // in die Schwingebene projiziert, die von der Achsrichtung und der
@@ -458,289 +577,384 @@
       const alongRad = -G * rad.y; // Anteil entlang radial
       // Untergrenze gegen das Umklappen nach innen bei sehr langsamer Fahrt.
       const radComp = Math.max(centrifugal + alongRad, centrifugal * 0.12);
-      let dx = alongAxis * axis.x + radComp * rad.x;
-      let dy = alongAxis * axis.y + radComp * rad.y;
-      let dz = alongAxis * axis.z + radComp * rad.z;
-      const dLen = Math.hypot(dx, dy, dz) || 1;
-      dx /= dLen;
-      dy /= dLen;
-      dz /= dLen;
+      const d = unit(
+        vec(
+          alongAxis * axis.x + radComp * rad.x,
+          alongAxis * axis.y + radComp * rad.y,
+          alongAxis * axis.z + radComp * rad.z,
+        ),
+      );
 
-      units.push({ theta, rim, rad, tan, d: { x: dx, y: dy, z: dz }, i });
+      units.push({
+        i,
+        rad,
+        tan,
+        rim,
+        d,
+        pRim: projectV(rim),
+        pRimIn: projectV(along(hub, rad, R_RIM_IN)),
+        pRing: projectV(along(hub, rad, R_RING)),
+        pCap: projectV(along(hub, rad, R_CAP)),
+        pRimH: projectV(along(hub, radH, R)),
+        pRimInH: projectV(along(hub, radH, R_RIM_IN)),
+        pCapH: projectV(along(hub, radH, R_CAP)),
+        pArm: [0.5, 0.78].map((f) => projectV(along(hub, rad, R * f))),
+      });
     }
 
-    // Projektionen vorberechnen und nach Kameratiefe sortieren
-    for (const u of units) {
-      u.pRim = project(u.rim.x, u.rim.y, u.rim.z);
-    }
-    units.sort((a, b) => a.pRim.z - b.pRim.z);
+    // Nach Kameratiefe der Felge sortieren und in hintere und vordere
+    // Haelfte teilen. Die Gondeln der hinteren Haelfte liegen hinter dem
+    // Rad, die der vorderen davor.
+    const order = units.slice().sort((a, b) => a.pRim.z - b.pRim.z);
+    let split = order.findIndex((u) => u.pRim.z >= pHub.z);
+    if (split < 0) split = order.length;
 
-    // --- Hintere Haelfte, Struktur, vordere Haelfte --------------------------
+    // --- Zeichenreihenfolge -------------------------------------------------
+    // Boden und Trailer, hintere Gondeln, Rad, vordere Gondeln. Der Traeger
+    // sitzt auf der Achsseite: sieht die Kamera diese Seite, liegt er vor
+    // dem Rad, sonst dahinter.
 
-    const byIndex = new Map(units.map((u) => [u.i, u]));
-    const drawUnit = (u) => {
-      const next = byIndex.get((u.i + 1) % ARMS);
-      if (next) drawRimSegment(u, next);
-      drawArm(u, pHub);
-      drawGondola(u, clock);
-    };
+    drawGround();
 
-    let split = units.findIndex((u) => u.pRim.z >= pHub.z);
-    if (split < 0) split = units.length;
+    for (let k = 0; k < split; k++) drawGondola(order[k], clock);
 
-    // Hintere Haelfte samt ihrer Lampen ...
-    for (let k = 0; k < split; k++) drawUnit(units[k]);
+    const boomInFront = frame.facing > 0;
+    if (!boomInFront) drawBoom();
+
+    // Fachwerk in einem Zug, hinten zuerst, damit vordere Streben oben liegen.
+    for (const u of order) drawSector(u, units[(u.i + 1) % ARMS]);
+    drawHubCap();
     flushBulbs();
 
-    // ... dann der Unterbau, der sie verdeckt ...
-    drawStructure(hub, pHub, wheelPoint, tiltNorm);
+    if (boomInFront) drawBoom();
 
-    // ... dann die vordere Haelfte. Deren Lampen gehen zusammen mit dem
-    // Bodenlicht in einen letzten additiven Durchgang.
-    for (let k = split; k < units.length; k++) drawUnit(units[k]);
+    for (let k = split; k < order.length; k++) drawGondola(order[k], clock);
+
+    // Zentrallampe und Bodenlicht gehen zusammen mit den restlichen Lampen
+    // in einen letzten additiven Durchgang.
     ctx.globalCompositeOperation = "lighter";
-    drawGroundGlow(pHub, tiltNorm);
+    drawHubGlow(tiltNorm);
+    drawGroundGlow(tiltNorm);
     ctx.globalCompositeOperation = "source-over";
     flushBulbs();
   }
 
-  /** Felgensegment zwischen zwei Auslegern, mit Lampe am Knoten. */
-  function drawRimSegment(a, b) {
-    ctx.strokeStyle = "rgba(126,138,162,0.75)";
-    ctx.lineWidth = Math.max(0.8, 0.09 * a.pRim.p);
+  /**
+   * Ein Feld des Rades zwischen Traeger a und dem naechsten, b: der
+   * Haupttraeger von a, beide Felgen, der innere Ring und das Fachwerk
+   * dazwischen. Die Lampen des Feldes werden vorgemerkt.
+   */
+  function drawSector(a, b) {
+    const { pHub } = frame;
+    const p = a.pRim.p;
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+
+    // Haupttraeger, von der Kappe zur aeusseren Felge
+    ctx.strokeStyle = rgb(STEEL, 1.0, 0.95);
+    ctx.lineWidth = Math.max(1.1, 0.2 * p);
+    ctx.beginPath();
+    ctx.moveTo(a.pCap.x, a.pCap.y);
+    ctx.lineTo(a.pRim.x, a.pRim.y);
+    ctx.stroke();
+
+    // Doppelte Felge und innerer Ring
+    ctx.lineWidth = Math.max(0.9, 0.12 * p);
     ctx.beginPath();
     ctx.moveTo(a.pRim.x, a.pRim.y);
+    ctx.lineTo(a.pRimH.x, a.pRimH.y);
     ctx.lineTo(b.pRim.x, b.pRim.y);
+    ctx.moveTo(a.pRimIn.x, a.pRimIn.y);
+    ctx.lineTo(a.pRimInH.x, a.pRimInH.y);
+    ctx.lineTo(b.pRimIn.x, b.pRimIn.y);
+    ctx.moveTo(a.pRing.x, a.pRing.y);
+    ctx.lineTo(b.pRing.x, b.pRing.y);
     ctx.stroke();
 
-    // Lauflicht um die Felge
-    const u = a.i / ARMS - clock * 0.3;
-    queueBulb(a.pRim.x, a.pRim.y, Math.max(0.9, 0.1 * a.pRim.p), chase(u));
-  }
-
-  /** Ausleger von der Nabe zur Felge, plus Lampenkette darauf. */
-  function drawArm(u, pHub) {
-    const grad = ctx.createLinearGradient(pHub.x, pHub.y, u.pRim.x, u.pRim.y);
-    grad.addColorStop(0, "rgba(150,162,186,0.95)");
-    grad.addColorStop(1, "rgba(96,106,128,0.8)");
-    ctx.strokeStyle = grad;
-    ctx.lineCap = "round";
-    ctx.lineWidth = Math.max(1, 0.16 * u.pRim.p);
+    // Fachwerk: innen ein Dreieck von der Kappe zum Ring, aussen eines vom
+    // Ring zur Felge - zusammen eine Raute um den Ring. Zwischen den Felgen
+    // ein Zickzack.
+    ctx.strokeStyle = rgb(STEEL, 1.25, 0.7);
+    ctx.lineWidth = Math.max(0.6, 0.06 * p);
     ctx.beginPath();
-    ctx.moveTo(pHub.x, pHub.y);
-    ctx.lineTo(u.pRim.x, u.pRim.y);
+    ctx.moveTo(a.pRing.x, a.pRing.y);
+    ctx.lineTo(a.pCapH.x, a.pCapH.y);
+    ctx.lineTo(b.pRing.x, b.pRing.y);
+    ctx.lineTo(a.pRimInH.x, a.pRimInH.y);
+    ctx.lineTo(a.pRing.x, a.pRing.y);
+    ctx.moveTo(a.pRimIn.x, a.pRimIn.y);
+    ctx.lineTo(a.pRimH.x, a.pRimH.y);
+    ctx.lineTo(b.pRimIn.x, b.pRimIn.y);
+    ctx.moveTo(a.pRimInH.x, a.pRimInH.y);
+    ctx.lineTo(a.pRimH.x, a.pRimH.y);
     ctx.stroke();
 
-    // Lampen laufen von innen nach aussen. f ist der Anteil des Radius.
+    // Lampen: dicht auf der Felge, zwei auf dem Traeger, zwei am Kranz der
+    // Kappe. Das Lauflicht laeuft auf Felge und Kappe gegenlaeufig.
+    for (let k = 0; k < BULBS_PER_RIM; k++) {
+      const t = k / BULBS_PER_RIM;
+      const from = t < 0.5 ? a.pRim : a.pRimH;
+      const to = t < 0.5 ? a.pRimH : b.pRim;
+      const s = t < 0.5 ? t * 2 : t * 2 - 1;
+      const u = (a.i + t) / ARMS - clock * 0.3;
+      queueBulb(
+        lerp(from.x, to.x, s),
+        lerp(from.y, to.y, s),
+        Math.max(0.9, 0.085 * p),
+        chase(u * 2),
+      );
+    }
     for (let k = 0; k < BULBS_PER_ARM; k++) {
-      const f = 0.34 + (k / (BULBS_PER_ARM - 1)) * 0.6;
-      const p = project(
-        u.rim.x - (1 - f) * R * u.rad.x,
-        u.rim.y - (1 - f) * R * u.rad.y,
-        u.rim.z - (1 - f) * R * u.rad.z,
-      );
-      const phase = u.i / ARMS - k / (BULBS_PER_ARM * 1.6) - clock * 0.55;
-      queueBulb(p.x, p.y, Math.max(0.8, 0.075 * p.p), chase(phase));
+      const q = a.pArm[k];
+      const phase = a.i / ARMS - k * 0.2 - clock * 0.55;
+      queueBulb(q.x, q.y, Math.max(0.8, 0.07 * q.p), chase(phase));
     }
+    const capPhase = a.i / ARMS + clock * 0.4;
+    queueBulb(a.pCap.x, a.pCap.y, Math.max(0.8, 0.075 * pHub.p), chase(capPhase * 2));
+    queueBulb(a.pCapH.x, a.pCapH.y, Math.max(0.8, 0.075 * pHub.p), chase(capPhase * 2 + 0.5 / ARMS));
   }
 
-  /** Gondel: Haenger, Wagenkasten, Fensterband. */
-  function drawGondola(u, time) {
-    const { rim, d, tan, i } = u;
-
-    // Leichtes Nachschwingen, damit die Gondeln nicht starr wirken
-    const wob = Math.sin(time * 1.9 + i * 1.7) * 0.025;
-    const wx = d.x + tan.x * wob;
-    const wy = d.y + tan.y * wob;
-    const wz = d.z + tan.z * wob;
-    const wl = Math.hypot(wx, wy, wz) || 1;
-    const ux = wx / wl;
-    const uy = wy / wl;
-    const uz = wz / wl;
-
-    const pRim = u.pRim;
-
-    // Haenger: zwei Streben, die sich zum Wagen hin verjuengen. Eine
-    // einzelne Linie wirkte zu duenn fuer ein Stahlfahrgeschaeft.
-    ctx.strokeStyle = "rgba(126,138,162,0.9)";
-    ctx.lineWidth = Math.max(0.7, 0.05 * pRim.p);
-    ctx.lineCap = "butt";
-    for (const side of [-0.52, 0.52]) {
-      const foot = project(
-        rim.x + ux * HANGER_LEN + tan.x * side * CAR_HALF_W,
-        rim.y + uy * HANGER_LEN + tan.y * side * CAR_HALF_W,
-        rim.z + uz * HANGER_LEN + tan.z * side * CAR_HALF_W,
-      );
-      ctx.beginPath();
-      ctx.moveTo(pRim.x, pRim.y);
-      ctx.lineTo(foot.x, foot.y);
-      ctx.stroke();
+  /** Kreis in der Radebene um c, als projizierte Punkte. */
+  function wheelCircle(c, r, steps) {
+    const { ex, ey } = frame;
+    const pts = [];
+    for (let k = 0; k < steps; k++) {
+      const a = (k / steps) * Math.PI * 2;
+      const ca = Math.cos(a) * r;
+      const sa = Math.sin(a) * r;
+      pts.push(project(c.x + ca * ex.x + sa * ey.x, c.y + ca * ex.y + sa * ey.y, c.z + ca * ex.z + sa * ey.z));
     }
-
-    // Wagenkasten als projiziertes Viereck: Laenge entlang der
-    // Gondelrichtung, Breite tangential zum Rad. So stimmt die Verkuerzung
-    // in jeder Lage, auch wenn das Rad flach liegt und man von oben
-    // hineinschaut.
-    const corner = (alongW, alongL) => {
-      const l = HANGER_LEN + alongL * CAR_LEN;
-      return project(
-        rim.x + ux * l + tan.x * alongW * CAR_HALF_W,
-        rim.y + uy * l + tan.y * alongW * CAR_HALF_W,
-        rim.z + uz * l + tan.z * alongW * CAR_HALF_W,
-      );
-    };
-    const quad = (a, b, c, d) => {
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.lineTo(c.x, c.y);
-      ctx.lineTo(d.x, d.y);
-      ctx.closePath();
-    };
-
-    const c1 = corner(-1, 0);
-    const c2 = corner(1, 0);
-    const c3 = corner(1, 1);
-    const c4 = corner(-1, 1);
-
-    // Korpus: oben heller, zum Boden hin dunkler
-    const body = ctx.createLinearGradient(c1.x, c1.y, c4.x, c4.y);
-    body.addColorStop(0, "#39415a");
-    body.addColorStop(0.45, "#232a3d");
-    body.addColorStop(1, "#11151f");
-    ctx.fillStyle = body;
-    quad(c1, c2, c3, c4);
-    ctx.fill();
-
-    // Warmes Fensterband im oberen Drittel, schmal gehalten
-    const w1 = corner(-0.86, 0.17);
-    const w2 = corner(0.86, 0.17);
-    const w3 = corner(0.86, 0.39);
-    const w4 = corner(-0.86, 0.39);
-    ctx.fillStyle = "rgba(255,178,84,0.62)";
-    quad(w1, w2, w3, w4);
-    ctx.fill();
-
-    // Sitzschale unten, etwas abgesetzt
-    const s1 = corner(-0.78, 0.56);
-    const s2 = corner(0.78, 0.56);
-    const s3 = corner(0.78, 0.95);
-    const s4 = corner(-0.78, 0.95);
-    ctx.fillStyle = "rgba(10,13,20,0.55)";
-    quad(s1, s2, s3, s4);
-    ctx.fill();
-
-    // Kante aussen herum, plus eine hellere Oberkante als Glanzlicht
-    ctx.lineWidth = Math.max(0.5, 0.03 * pRim.p);
-    ctx.strokeStyle = "rgba(150,164,192,0.55)";
-    quad(c1, c2, c3, c4);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(205,218,245,0.5)";
-    ctx.beginPath();
-    ctx.moveTo(c1.x, c1.y);
-    ctx.lineTo(c2.x, c2.y);
-    ctx.stroke();
+    return pts;
   }
 
-  /** Nabe, Hydraulikzylinder, Lagerbock und Unterbau. */
-  function drawStructure(hub, pHub, wheelPoint, tiltNorm) {
-    const pivot = wheelPoint(0, -R);
-    const pPivot = project(pivot.x, pivot.y, pivot.z);
-    const ramTop = wheelPoint(0, -R * 0.42);
-    const pRamTop = project(ramTop.x, ramTop.y, ramTop.z);
-    const ramBase = project(0, 0.95, -5.2);
+  /**
+   * Die Nabenkappe: eine grosse, glatte Scheibe mit flacher Kuppel. Die
+   * Kuppel sitzt auf der Seite, die die Kamera gerade sieht.
+   */
+  function drawHubCap() {
+    const { hub, axis, facing } = frame;
+    const n = vec(axis.x * facing, axis.y * facing, axis.z * facing);
+    const k = lambert(n);
 
-    // Hydraulikzylinder: dickes Rohr unten, duenne Stange oben
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#3b4356";
-    ctx.lineWidth = Math.max(2, 0.5 * ramBase.p);
-    ctx.beginPath();
-    ctx.moveTo(ramBase.x, ramBase.y);
-    ctx.lineTo(
-      lerp(ramBase.x, pRamTop.x, 0.52),
-      lerp(ramBase.y, pRamTop.y, 0.52),
-    );
-    ctx.stroke();
-    ctx.strokeStyle = "#8b94a8";
-    ctx.lineWidth = Math.max(1.2, 0.2 * ramBase.p);
-    ctx.beginPath();
-    ctx.moveTo(
-      lerp(ramBase.x, pRamTop.x, 0.45),
-      lerp(ramBase.y, pRamTop.y, 0.45),
-    );
-    ctx.lineTo(pRamTop.x, pRamTop.y);
-    ctx.stroke();
-
-    // Lagerbock an der Kippachse
-    const legL = project(-2.6, 0, -R - 1.4);
-    const legR = project(2.6, 0, -R - 1.4);
-    ctx.strokeStyle = "#333b4d";
-    ctx.lineWidth = Math.max(2, 0.42 * pPivot.p);
-    ctx.beginPath();
-    ctx.moveTo(legL.x, legL.y);
-    ctx.lineTo(pPivot.x, pPivot.y);
-    ctx.lineTo(legR.x, legR.y);
-    ctx.stroke();
-
-    // Unterbau / Trailer
-    const b = [
-      project(-5.4, 0, -R + 1.2),
-      project(5.4, 0, -R + 1.2),
-      project(4.2, 1.5, -R - 2.0),
-      project(-4.2, 1.5, -R - 2.0),
-    ];
-    const baseGrad = ctx.createLinearGradient(b[0].x, b[0].y, b[3].x, b[3].y);
-    baseGrad.addColorStop(0, "#161c2a");
-    baseGrad.addColorStop(1, "#242c3e");
-    ctx.fillStyle = baseGrad;
-    ctx.beginPath();
-    ctx.moveTo(b[0].x, b[0].y);
-    for (let i = 1; i < b.length; i++) ctx.lineTo(b[i].x, b[i].y);
-    ctx.closePath();
+    polygon(wheelCircle(hub, R_CAP * 1.08, 28));
+    ctx.fillStyle = rgb(STEEL, 0.55 * k);
     ctx.fill();
-    ctx.strokeStyle = "rgba(140,152,176,0.35)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = rgb(METAL, 0.6, 0.6);
+    ctx.lineWidth = Math.max(0.8, 0.08 * frame.pHub.p);
     ctx.stroke();
 
-    // Nabe
-    const hubR = Math.max(3, 1.05 * pHub.p);
-    const hubGrad = ctx.createRadialGradient(
-      pHub.x - hubR * 0.3,
-      pHub.y - hubR * 0.3,
-      hubR * 0.1,
-      pHub.x,
-      pHub.y,
-      hubR,
-    );
-    hubGrad.addColorStop(0, "#9aa4bb");
-    hubGrad.addColorStop(0.7, "#4a5468");
-    hubGrad.addColorStop(1, "#262d3c");
-    ctx.fillStyle = hubGrad;
-    ctx.beginPath();
-    ctx.arc(pHub.x, pHub.y, hubR, 0, Math.PI * 2);
+    polygon(wheelCircle(along(hub, n, 0.35), R_CAP * 0.72, 24));
+    ctx.fillStyle = rgb(METAL, 0.62 * k);
     ctx.fill();
 
-    // Zentrallampe, atmet mit der Neigung. Sie ist viel groesser als die
-    // Kettenlampen und bekommt deshalb ihren eigenen Verlauf statt eines
-    // Sprites - ein Aufruf pro Bild faellt nicht ins Gewicht.
-    const lampR = hubR * 1.9;
-    const lamp = ctx.createRadialGradient(
-      pHub.x, pHub.y, 0, pHub.x, pHub.y, lampR,
-    );
-    const li = 0.14 + 0.16 * tiltNorm;
-    lamp.addColorStop(0, `rgba(255,248,230,${li})`);
-    lamp.addColorStop(0.2, `rgba(255,198,110,${li * 0.75})`);
+    polygon(wheelCircle(along(hub, n, 0.55), R_CAP * 0.34, 16));
+    ctx.fillStyle = rgb(METAL, 0.72 * k);
+    ctx.fill();
+  }
+
+  /** Leuchten der Kappe, atmet mit der Neigung. */
+  function drawHubGlow(tiltNorm) {
+    const { pHub } = frame;
+    const lampR = Math.max(6, R_CAP * 2.4 * pHub.p);
+    const lamp = ctx.createRadialGradient(pHub.x, pHub.y, 0, pHub.x, pHub.y, lampR);
+    const li = 0.1 + 0.12 * tiltNorm;
+    lamp.addColorStop(0, `rgba(255,236,200,${li})`);
+    lamp.addColorStop(0.35, `rgba(255,186,96,${li * 0.6})`);
     lamp.addColorStop(1, "rgba(255,140,40,0)");
-    ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = lamp;
     ctx.beginPath();
     ctx.arc(pHub.x, pHub.y, lampR, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
+  }
+
+  /**
+   * Gondel als Kaefig. Achsen: L vom Drehpunkt weg (Dach -> Boden), W
+   * tangential, N von der Gitterseite zur Aussenschale. N liegt in derselben
+   * Schwingebene wie L und steht senkrecht darauf: haengt die Gondel nach
+   * unten, zeigt N radial nach aussen; steht sie radial ab, zeigt N gegen
+   * die Achse. Die Schale ist also immer der Ruecken der Fahrgaeste.
+   */
+  function drawGondola(u, time) {
+    const { axis } = frame;
+    const { rim, tan, rad, d, i } = u;
+
+    // Leichtes Nachschwingen, damit die Gondeln nicht starr wirken
+    const wob = Math.sin(time * 1.9 + i * 1.7) * 0.025;
+    const L = unit(along(d, tan, wob));
+    const W = tan;
+    const la = dot(L, axis);
+    const lr = dot(L, rad);
+    const N = unit(vec(rad.x * la - axis.x * lr, rad.y * la - axis.y * lr, rad.z * la - axis.z * lr));
+
+    const P = (l, w, n) =>
+      vec(
+        rim.x + L.x * (HANGER_LEN + l * CAR_LEN) + W.x * w * CAR_HALF_W + N.x * n * CAR_HALF_D,
+        rim.y + L.y * (HANGER_LEN + l * CAR_LEN) + W.y * w * CAR_HALF_W + N.y * n * CAR_HALF_D,
+        rim.z + L.z * (HANGER_LEN + l * CAR_LEN) + W.z * w * CAR_HALF_W + N.z * n * CAR_HALF_D,
+      );
+    const center = P(0.5, 0, 0);
+    const shell = SHELLS[i % SHELLS.length];
+    const p = u.pRim.p;
+
+    // Haenger: zwei Streben vom Drehpunkt an der Felge zum Dach
+    ctx.strokeStyle = rgb(STEEL, 1.1, 0.95);
+    ctx.lineWidth = Math.max(0.8, 0.07 * p);
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    for (const side of [-0.5, 0.5]) {
+      const top = projectV(along(rim, W, side * 0.5));
+      const foot = projectV(P(0, side * 1.4, 0.2));
+      ctx.moveTo(top.x, top.y);
+      ctx.lineTo(foot.x, foot.y);
+    }
+    ctx.stroke();
+
+    // Geschlossene Flaechen: Dach (leicht ueberstehend), Boden, Schale
+    const roof = [P(0, -1.12, -1.2), P(0, 1.12, -1.2), P(0, 1.12, 1.12), P(0, -1.12, 1.12)];
+    const floor = [P(1, -1, -1), P(1, 1, -1), P(1, 1, 1), P(1, -1, 1)];
+    const back = [P(0, -1, 1), P(0, 1, 1), P(1, 1, 1), P(1, -1, 1)];
+    // Die Schale ist an den Ecken gerundet; fuer die Sichtbarkeit reicht
+    // das Rechteck, gezeichnet wird der Umriss mit abgeschraegten Ecken.
+    const backShape = [
+      P(0, -0.78, 1), P(0, 0.78, 1), P(0.14, 1, 1), P(0.84, 1, 1),
+      P(1, 0.72, 1), P(1, -0.72, 1), P(0.84, -1, 1), P(0.14, -1, 1),
+    ];
+    const solids = [
+      { world: roof, color: METAL, k: 0.5 },
+      { world: floor, color: DARK, k: 1.6 },
+      { world: back, shape: backShape, color: shell, k: 0.85, stripe: true },
+    ];
+    for (const s of solids) s.info = faceInfo(s.world, center);
+
+    // 1. Was man durch das Gitter von innen sieht: verdeckte Flaechen, dunkel
+    for (const s of solids) {
+      if (s.info.visible) continue;
+      polygon((s.shape || s.world).map(projectV));
+      ctx.fillStyle = rgb(s.color, 0.32 * s.k);
+      ctx.fill();
+    }
+
+    // 2. Sitzschale vor der Schale, mit Lehne
+    polygon([P(0.42, -0.82, 0.88), P(0.42, 0.82, 0.88), P(0.96, 0.82, 0.88), P(0.96, -0.82, 0.88)].map(projectV));
+    ctx.fillStyle = rgb(DARK, 1.3);
+    ctx.fill();
+    polygon([P(0.7, -0.82, 0.88), P(0.7, 0.82, 0.88), P(0.7, 0.82, 0.1), P(0.7, -0.82, 0.1)].map(projectV));
+    ctx.fillStyle = rgb(shell, 0.35);
+    ctx.fill();
+
+    // 3. Gitter: senkrechte Staebe auf der offenen Vorderseite und den
+    // beiden Seiten, dazu je ein Handlauf
+    ctx.strokeStyle = rgb(METAL, 0.95, 0.75);
+    ctx.lineWidth = Math.max(0.5, 0.03 * p);
+    ctx.beginPath();
+    const bar = (a, b) => {
+      const pa = projectV(a);
+      const pb = projectV(b);
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+    };
+    for (const w of [-1, -0.5, 0, 0.5, 1]) bar(P(0, w, -1), P(1, w, -1));
+    for (const n of [-0.33, 0.33]) {
+      bar(P(0, -1, n), P(1, -1, n));
+      bar(P(0, 1, n), P(1, 1, n));
+    }
+    bar(P(0.45, -1, -1), P(0.45, 1, -1));
+    bar(P(0.45, -1, -1), P(0.45, -1, 1));
+    bar(P(0.45, 1, -1), P(0.45, 1, 1));
+    bar(P(1, -1, -1), P(1, 1, -1));
+    ctx.stroke();
+
+    // 4. Sichtbare Aussenflaechen, schattiert, mit heller Kante
+    ctx.lineWidth = Math.max(0.5, 0.03 * p);
+    for (const s of solids) {
+      if (!s.info.visible) continue;
+      const k = s.k * lambert(s.info.n);
+      polygon((s.shape || s.world).map(projectV));
+      ctx.fillStyle = rgb(s.color, k);
+      ctx.fill();
+      ctx.strokeStyle = rgb(METAL, 0.9, 0.35);
+      ctx.stroke();
+      if (s.stripe) {
+        // Zierband und Kante oben, wie die Chromleisten der Originale
+        polygon([P(0.2, -0.96, 1.01), P(0.2, 0.96, 1.01), P(0.3, 0.96, 1.01), P(0.3, -0.96, 1.01)].map(projectV));
+        ctx.fillStyle = rgb(METAL, 0.7 * k);
+        ctx.fill();
+        polygon([P(0.42, -0.7, 1.01), P(0.42, 0.7, 1.01), P(0.9, 0.62, 1.01), P(0.9, -0.62, 1.01)].map(projectV));
+        ctx.fillStyle = rgb(s.color, k * 0.72);
+        ctx.fill();
+      }
+    }
+
+    // Kleine Lampe vorn am Dach
+    const lamp = projectV(P(0, 0, -1.2));
+    queueBulb(lamp.x, lamp.y, Math.max(0.8, 0.07 * p), chase(i / ARMS - time * 0.3) * 0.8);
+  }
+
+  /**
+   * Der Traeger: ein Kastentraeger von der Kippachse zur Nabe, auf der
+   * Achsseite des Rades, dazu das Lager unter der Nabe und die beiden
+   * Hydraulikzylinder vom Trailer.
+   */
+  function drawBoom() {
+    const { hub, ex, ey, axis } = frame;
+    const pivot = along(hub, ey, -R);
+    const edge = "rgba(150,166,198,0.35)";
+    ctx.lineWidth = 1;
+
+    // Hydraulikzylinder: dickes Rohr unten, blanke Stange oben
+    for (const side of [-1.5, 1.5]) {
+      const base = projectV(vec(side, 1.3, -R + 3.2));
+      const top = projectV(along(along(pivot, ey, R * 0.55), axis, 1.4));
+      ctx.lineCap = "round";
+      ctx.strokeStyle = rgb(STEEL, 0.55);
+      ctx.lineWidth = Math.max(2, 0.42 * base.p);
+      ctx.beginPath();
+      ctx.moveTo(base.x, base.y);
+      ctx.lineTo(lerp(base.x, top.x, 0.55), lerp(base.y, top.y, 0.55));
+      ctx.stroke();
+      ctx.strokeStyle = rgb(METAL, 0.75);
+      ctx.lineWidth = Math.max(1.2, 0.17 * base.p);
+      ctx.beginPath();
+      ctx.moveTo(lerp(base.x, top.x, 0.5), lerp(base.y, top.y, 0.5));
+      ctx.lineTo(top.x, top.y);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+
+    // Kastentraeger
+    const mid = along(along(pivot, ey, R * 0.5), axis, 0.95);
+    drawBox(mid, ey, ex, axis, R * 0.5 + 0.4, 0.7, 0.5, STEEL.map((c) => c * 0.62), edge);
+
+    // Lager unter der Nabe
+    drawBox(along(hub, axis, 0.75), axis, ex, ey, 0.55, 1.0, 1.0, STEEL.map((c) => c * 0.75), edge);
+  }
+
+  /**
+   * Boden: Trailer mit Lagerbock an der Kippachse und ein flaches Podest,
+   * von dem aus eingestiegen wird. Mit Lampen an der Podestkante.
+   */
+  function drawGround() {
+    const edge = "rgba(140,152,176,0.3)";
+    ctx.lineWidth = 1;
+
+    // Podest unter dem Rad
+    drawBox(vec(0, 0.15, -1.5), vec(1, 0, 0), vec(0, 1, 0), vec(0, 0, 1), 9.6, 0.15, 7.5, [34, 40, 56], edge);
+    for (let k = 0; k <= 12; k++) {
+      const q = project(-9.4 + (k / 12) * 18.8, 0.32, 6.0);
+      queueBulb(q.x, q.y, Math.max(0.8, 0.07 * q.p), 0.35 + 0.25 * chase(k / 12 - clock * 0.2));
+    }
+
+    // Trailer
+    drawBox(vec(0, 0.85, -R + 1), vec(1, 0, 0), vec(0, 1, 0), vec(0, 0, 1), 1.7, 0.55, 4.2, [42, 50, 70], edge);
+
+    // Lagerbock: zwei Boecke links und rechts der Kippachse
+    for (const side of [-1.9, 1.9]) {
+      drawBox(vec(side, PIVOT_Y * 0.5 + 0.4, -R), vec(1, 0, 0), vec(0, 1, 0), vec(0, 0, 1), 0.3, PIVOT_Y * 0.5 - 0.1, 0.6, [58, 70, 96], edge);
+    }
   }
 
   /** Warmer Lichtteppich am Boden unter dem Fahrgeschaeft. */
-  function drawGroundGlow(pHub, tiltNorm) {
+  function drawGroundGlow(tiltNorm) {
     const gx = originX;
     const gy = originY;
     const rr = Math.max(60, R * 1.6 * pxPerM);
@@ -756,6 +970,7 @@
     ctx.fill();
   }
 
+
   // --------------------------------------------------------------- Layout
 
   function resize() {
@@ -770,22 +985,53 @@
     canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Bei voller Neigung reicht die oberste Gondel rund 21 m hoch, und das
-    // Rad ist mit den Gondeln rund 21 m breit. Der Massstab muss sich auf den
-    // Platz UNTER der Grundlinie beziehen, nicht auf die ganze Fensterhoehe -
-    // sonst laeuft die Szene oben aus dem Bild.
-    const portrait = height > width * 1.15;
-    originX = width / 2;
-    originY = height * (portrait ? 0.86 : 0.93);
-    // PERSPECTIVE_HEADROOM: Punkte weit oben liegen naeher an der Kamera und
-    // werden dadurch groesser gezeichnet. Dafuer etwas Luft lassen.
-    const PERSPECTIVE_HEADROOM = 1.14;
-    pxPerM =
-      Math.min(width / SCENE_W, originY / SCENE_H) / PERSPECTIVE_HEADROOM;
+    fitScene();
 
     buildGlowSprites();
     backdrop = buildBackdrop();
     drawFrame();
+  }
+
+  /**
+   * Legt Massstab und Bildposition so fest, dass das Rad mit allen Gondeln
+   * in jeder Neigung ins Bild passt. Statt einer geschaetzten Szenengroesse
+   * wird die Huelle wirklich projiziert: bei Massstab 1 sind Bildpunkte
+   * linear im Massstab, also reicht ein Durchlauf und eine Division.
+   */
+  function fitScene() {
+    pxPerM = 1;
+    originX = 0;
+    originY = 0;
+    const reach = HANGER_LEN + CAR_LEN + CAR_HALF_D;
+    let maxX = 0;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let s = 0; s <= 6; s++) {
+      const tilt = lerp(TILT_MIN, TILT_MAX, s / 6);
+      const sb = Math.cos(tilt); // sin(beta), beta = 90 Grad - tilt
+      const cb = Math.sin(tilt);
+      const hub = vec(0, PIVOT_Y + R * cb, -R + R * sb);
+      const ey = vec(0, cb, sb);
+      const axis = vec(0, -sb, cb);
+      for (let k = 0; k < 24; k++) {
+        const a = (k / 24) * Math.PI * 2;
+        const rad = vec(Math.cos(a), Math.sin(a) * ey.y, Math.sin(a) * ey.z);
+        const rim = along(hub, rad, R);
+        for (const q of [along(rim, rad, reach), along(rim, axis, reach)]) {
+          const p = projectV(q);
+          maxX = Math.max(maxX, Math.abs(p.x));
+          minY = Math.min(minY, p.y);
+          maxY = Math.max(maxY, p.y);
+        }
+      }
+    }
+    const portrait = height > width * 1.15;
+    // Oben bleibt Platz fuer Titel und Unterzeile der Startseite.
+    const top = height * (portrait ? 0.2 : 0.25);
+    const bottom = height * (portrait ? 0.9 : 0.97);
+    pxPerM = Math.min((width * 0.47) / maxX, (bottom - top) / (maxY - minY));
+    originX = width / 2;
+    originY = bottom - maxY * pxPerM;
   }
 
   // -------------------------------------------------------------- Animation

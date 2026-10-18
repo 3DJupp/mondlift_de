@@ -57,6 +57,36 @@ function isCurrent(header: string | null, etag: string): boolean {
 }
 
 /**
+ * Antwort mit ETag und Cache-Control für einen fertigen Text. 304, wenn der
+ * Client diesen Stand schon hat. Für Inhalte, die asynchron entstehen und
+ * deshalb nicht durch `generatedFile` laufen können - etwa die
+ * Markdown-Fassungen, die aus dem Asset-Binding gelesen werden.
+ */
+export function respondText(
+  request: Request,
+  body: string,
+  contentType: string,
+  maxAge: number,
+  etag: string = weakEtag(body),
+): Response {
+  // Die Header gehören auch an die 304: ohne ETag und Cache-Control
+  // dort verliert der Client die Angaben, mit denen er das nächste Mal
+  // wieder fragen kann.
+  const headers = {
+    etag,
+    "cache-control": `public, max-age=${maxAge}`,
+  };
+
+  if (isCurrent(request.headers.get("if-none-match"), etag)) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  return new Response(body, {
+    headers: { ...headers, "content-type": contentType },
+  });
+}
+
+/**
  * Bindet einen Erzeuger an Content-Type und Cache-Dauer. `build` läuft beim
  * ersten Abruf und danach nicht mehr.
  */
@@ -65,7 +95,6 @@ export function generatedFile(
   contentType: string,
   maxAge: number,
 ): GeneratedFile {
-  const cacheControl = `public, max-age=${maxAge}`;
   let state: { body: string; etag: string } | null = null;
 
   return {
@@ -74,22 +103,7 @@ export function generatedFile(
         const body = build();
         state = { body, etag: weakEtag(body) };
       }
-
-      // Die Header gehören auch an die 304: ohne ETag und Cache-Control
-      // dort verliert der Client die Angaben, mit denen er das nächste Mal
-      // wieder fragen kann.
-      const headers = {
-        etag: state.etag,
-        "cache-control": cacheControl,
-      };
-
-      if (isCurrent(request.headers.get("if-none-match"), state.etag)) {
-        return new Response(null, { status: 304, headers });
-      }
-
-      return new Response(state.body, {
-        headers: { ...headers, "content-type": contentType },
-      });
+      return respondText(request, state.body, contentType, maxAge, state.etag);
     },
   };
 }
