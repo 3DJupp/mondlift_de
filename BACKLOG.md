@@ -1,79 +1,35 @@
 # Backlog
 
-Offen, nach Wichtigkeit: die Optik der Animation, danach die Entscheidung
-zur Reichweitenmessung. Die Optik bleibt der oberste Punkt — die Bewegung
-stimmt, das Bild noch nicht.
+Offen, nach Wichtigkeit: die Sichtbarkeit außerhalb des Codes, danach die
+Entscheidung zur Reichweitenmessung.
 
-## Optik der Enterprise-Animation
+## Sichtbarkeit außerhalb des Codes
 
-Die Bewegung stimmt — das Kippen um die hintere Felgenkante und die
-Gondelstellung aus der resultierenden Kraft entsprechen dem echten Gerät.
-Das **Aussehen** tut es noch nicht. Nach Abgleich mit Referenzfotos eines
-Huss Enterprise sind das die Unterschiede, von oben nach unten sortiert
-nach Wirkung:
+Was im Code geht, ist getan: Inhalte mit Quellen, strukturierte Daten,
+llms.txt, Markdown-Fassungen, Zitiervorschlag, IndexNow. Ob die Seite
+tatsächlich gefunden und von Sprachmodellen zitiert wird, entscheidet sich
+ab hier vor allem außerhalb des Repos. Nach Wirkung sortiert:
 
-### 1. Das Rad ist ein Fachwerk, keine Speichen
-
-Aktuell gehen 20 glatte Linien von der Nabe zur Felge. Das echte Rad ist
-ein Tragwerk aus mehreren Lagen:
-
-- radiale Hauptträger von der Nabe nach außen,
-- ein **innerer Ring** auf etwa halbem Radius,
-- dazwischen eine durchgehende **Dreiecksverstrebung** im Zickzack, die
-  zwischen je zwei Hauptträgern Dreiecke und Rauten bildet,
-- eine **doppelte Felge**: zwei konzentrische Ringe mit Querstreben
-  dazwischen.
-
-Das ist der mit Abstand größte Unterschied. Das Rad wirkt dadurch wie
-Stahlbau statt wie ein Wagenrad.
-
-Variante bei manchen Geräten: statt dicker Träger viele **dünne
-Zugstangen**, etwa zwei pro Gondel in V-Form, was eher wie ein
-Fahrradlaufrad aussieht. Beide Bauarten kommen vor; das Fachwerk ist die
-häufigere und die optisch reizvollere.
-
-### 2. Die Gondeln sind Käfige, keine Platten
-
-Aktuell: ein flaches Viereck mit einem warmen Streifen. Tatsächlich:
-
-- ein **Dach** über dem Wagen, deutlich abgesetzt,
-- eine geschlossene, farbige **Außenschale** (die Seite, die nach außen
-  zeigt),
-- **offene Seiten mit Gitterstäben** in hellem Metall,
-- Sitzschale innen, sichtbar durch das Gitter.
-
-Die Gondeln hängen an einem Drehpunkt an der Felge und öffnen sich nach
-innen zur Nabe hin.
-
-### 3. Nabe und Unterbau
-
-- Die Nabe ist beim Original eine große, glatte **Kappe** oder ein
-  kantiges Gehäuse, nicht eine simple Kugel.
-- Der Unterbau ist je nach Gerät entweder ein **kräftiger schräger
-  Ausleger** oder ein **hoher rechteckiger Mast** bis zur Nabe, montiert
-  auf einem Trailer mit Plattform. Der aktuelle dünne Hydraulikzylinder
-  ist zu zierlich.
-
-### 4. Farbe
-
-Die Originale sind kräftig gefärbt: rote Gondeln auf blauem Stahl, oder
-jede Gondel in einer anderen Farbe (blau, grün, gelb, pink). Das Briefing
-verlangt ein dunkles Schema mit warmem Gelb und Orange für die Lichter,
-also keine Kirmesbuntheit — aber ein zurückhaltender Farbakzent auf den
-Gondelschalen wäre drin und würde dem Bild viel geben.
-
-### 5. Lampen
-
-Beim Original sitzen die Lampen **dicht an dicht** als durchgehende Kette
-auf der Felge und rund um die Nabenscheibe. Aktuell ist es eine Lampe je
-Ausleger. Dichter wäre näher am Original.
-
-### Hinweis zur Umsetzung
-
-Mehr Streben heißen mehr Zeichenbefehle pro Bild. Die Messung aus der
-Entwicklung gilt weiter: unskalierte Sprites sind billig, skalierte sind
-teuer. Zusätzliche Linien sind dagegen günstig — das Fachwerk sollte sich
-ohne Einbruch der Bildrate zeichnen lassen. Vor und nach dem Umbau messen.
+1. **Bing Webmaster Tools.** ChatGPT-Suche und Copilot greifen auf den
+   Bing-Index zurück. Eine Seite, die Bing nicht kennt, zitiert dort
+   niemand. Sitemap einreichen, IndexNow läuft schon.
+2. **Google Search Console.** Für Google-Suche und die KI-Übersichten.
+   Sitemap einreichen, prüfen, ob alle fünf Inhaltsseiten indexiert sind.
+3. **Erwähnungen von außen.** Modelle zitieren, was andere zitieren. Die
+   wirksamsten Stellen für dieses Thema: ein Einzelnachweis im
+   Wikipedia-Artikel „Enterprise (Fahrgeschäft)" an einer Stelle, die die
+   Seite wirklich belegt (etwa die strittigen Stückzahlen), Beiträge in
+   Kirmes- und Freizeitpark-Foren, Fotos auf Wikimedia Commons mit Verweis
+   in der Beschreibung.
+4. **Wikidata.** Ein Eintrag für den Mondlift als Exemplar von
+   der Bauform „Enterprise" mit Hersteller, Betreiber und `described at URL` auf
+   mondlift.de. Wikidata ist eine der Quellen, aus denen Modelle und
+   Suchmaschinen Entitäten zusammensetzen. Danach gehört die Wikidata-
+   Adresse in `sameAs` des Geräts in `src/strukturierte-daten.ts`.
+5. **Prüfen, nicht raten.** Alle paar Wochen dieselben Fragen an ChatGPT,
+   Perplexity, Claude und Gemini stellen („Was ist der Mondlift?", „Gibt
+   es noch ein reisendes Enterprise in Deutschland?", „War der Mondlift
+   auf dem Oktoberfest?") und notieren, ob und wie die Seite genannt wird.
 
 ## Reichweite messen: Vorschlag für den nächsten Schritt
 
@@ -131,8 +87,16 @@ nicht im Code.
 
 ## Erledigt
 
-Zwei Punkte aus diesem Backlog sind umgesetzt und stehen nur noch als
+Diese Punkte aus dem Backlog sind umgesetzt und stehen nur noch als
 Hinweis, wo die Begründung nachzulesen ist.
+
+- **Optik der Animation.** Fachwerkrad mit doppelter Felge, Gondeln als
+  Käfige mit farbiger Schale, Nabenkappe, Kastenträger mit
+  Hydraulikzylindern, dichte Lampenketten; die Kamera steht jetzt vor dem
+  aufgerichteten Rad. Beschrieben im README unter „Die Animation". Die
+  Variante mit dünnen Zugstangen statt Fachwerk ist nicht umgesetzt.
+- **Markdown-Fassungen, llms-full.txt, Zitiervorschlag.** Siehe README
+  unter „llms.txt und die KI-Crawler".
 
 - **Link-Vorschau (`og:image`).** Es gibt jetzt ein Standbild unter
   `/assets/og/mondlift.png`, gerendert aus der Animation selbst mit

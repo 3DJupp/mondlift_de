@@ -62,6 +62,7 @@ const WEBSITE = {
   description: SITE.tagline,
   inLanguage: "de-DE",
   publisher: { "@id": PERSON_ID },
+  about: { "@id": RIDE_ID },
   isAccessibleForFree: true,
 };
 
@@ -166,6 +167,9 @@ function webPage(seite: Seite, extra: Record<string, unknown> = {}): unknown {
     isPartOf: { "@id": WEBSITE_ID },
     breadcrumb: breadcrumb(seite),
     publisher: { "@id": PERSON_ID },
+    // Wer den Text verantwortet - fuer ein Zitat so wichtig wie das Datum.
+    author: { "@id": PERSON_ID },
+    datePublished: SITE.published,
     dateModified: seite.lastmod ?? SITE.lastUpdated,
     ...extra,
   };
@@ -216,7 +220,7 @@ function graphFor(seite: Seite): unknown[] {
       return [
         WEBSITE,
         PERSON,
-        webPage(seite, { about: { "@id": RIDE_ID } }),
+        webPage(seite, { about: { "@id": RIDE_ID }, mentions: { "@id": TYPE_ID } }),
         RIDE_NODE,
         TYPE_NODE,
       ];
@@ -235,7 +239,14 @@ function graphFor(seite: Seite): unknown[] {
         glossarKnoten(),
       ];
     case "/fragen":
-      return [WEBSITE, PERSON, webPage(seite), fragenKnoten()];
+      return [
+        WEBSITE,
+        PERSON,
+        webPage(seite, { about: { "@id": RIDE_ID }, mentions: { "@id": TYPE_ID } }),
+        RIDE_NODE,
+        TYPE_NODE,
+        fragenKnoten(),
+      ];
     // Die Uebersicht ist eine Sammlung von Verweisen auf die eigenen
     // Seiten - CollectionPage sagt das, WebPage waere ungenauer.
     case "/sitemap":

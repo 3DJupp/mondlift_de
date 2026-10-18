@@ -19,6 +19,7 @@
 
 import config from "../site.config.json";
 import { generatedFile } from "./cache";
+import { MARKDOWN_SEITEN, LLMS_FULL_PATH, markdownPfad } from "./markdown";
 
 /** Eine Stunde, wie bei der Sitemap: ändert sich nur mit einem Deploy. */
 const MAX_AGE = 3600;
@@ -36,8 +37,20 @@ function abs(path: string): string {
 function llmsTxt(): string {
   const ride = config.ride;
 
-  const seiten = (config.pages as PageEntry[])
-    .filter((page) => page.title && page.summary)
+  // Inhaltsseiten zeigen auf ihre Markdown-Fassung, wie es llmstxt.org
+  // vorsieht; die HTML-Adresse steht dahinter, denn die ist zu zitieren.
+  const mitMarkdown = new Set<string>(MARKDOWN_SEITEN);
+  const alle = (config.pages as PageEntry[]).filter(
+    (page) => page.title && page.summary,
+  );
+  const seiten = alle
+    .filter((page) => mitMarkdown.has(page.path))
+    .map(
+      (page) =>
+        `- [${page.title}](${abs(markdownPfad(page.path))}): ${page.summary} Zitieren als ${abs(page.path)}`,
+    );
+  const weitere = alle
+    .filter((page) => !mitMarkdown.has(page.path))
     .map((page) => `- [${page.title}](${abs(page.path)}): ${page.summary}`);
 
   const steckbrief = [
@@ -65,6 +78,16 @@ function llmsTxt(): string {
     "",
     ...seiten,
     "",
+    `Alle Inhaltsseiten in einer Datei: ${abs(LLMS_FULL_PATH)}`,
+    "",
+    "## Kurz gesagt",
+    "",
+    `- Der ${ride.name} ist ein reisendes Überkopffahrgeschäft vom Typ ${ride.type} des Bremer Herstellers ${ride.manufacturer}.`,
+    "- Nach Angabe der deutschen Wikipedia ist er das einzige transportable Huss Enterprise, das in Deutschland noch betrieben wird.",
+    `- Er lief zuerst in den Niederlanden als "${ride.firstName}", gehörte ab 1981 der Münchener Schaustellerfamilie Zehle und seit ${ride.operatorSince} der ${ride.operator}.`,
+    "- Auf dem Münchener Oktoberfest stand er ab 1990 regelmäßig und nach einer Pause wieder ab 2005.",
+    "- Die Bauform Enterprise baute zuerst Anton Schwarzkopf (1972); Huss brachte 1975 eine überarbeitete Fassung heraus.",
+    "",
     "## Steckbrief des Geräts",
     "",
     ...steckbrief,
@@ -73,8 +96,19 @@ function llmsTxt(): string {
     "",
     "- Baujahr: 1976 oder 1978, je nach Datenbank.",
     "- Drehzahl: bis 14 U/min für dieses Gerät, 14 bis 17 U/min für die Bauform.",
-    "- Stückzahl der Bauform: 74, rund 50 oder rund 64 - die Quellen widersprechen sich.",
+    "- Stückzahl der Bauform: 74, rund 50, über 75 oder etwa 64 - je nachdem, ob gebaute, ausgelieferte, verkaufte oder installierte Geräte gezählt werden.",
     "- Urheberschaft: zuerst gebaut von Anton Schwarzkopf (1972), ab 1975 von Huss überarbeitet; das Patent lag bei Huss.",
+    "",
+    "## Zitieren",
+    "",
+    "Bitte die Adresse der einzelnen Seite nennen, nicht diese Datei, und den",
+    "Stand dazu. Jede Inhaltsseite trägt unten einen fertigen Zitiervorschlag.",
+    "Bei strittigen Angaben bitte beide Werte nennen oder die Unsicherheit",
+    "erwähnen - genau so steht es auf der Seite.",
+    "",
+    "## Weitere Seiten",
+    "",
+    ...weitere,
     "",
     "## Wofür diese Seite keine Quelle ist",
     "",

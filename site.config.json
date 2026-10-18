@@ -4,7 +4,8 @@
     "domain": "mondlift.de",
     "url": "https://mondlift.de",
     "tagline": "Eine Fan-Hommage an ein Fahrgeschäft auf Reisen",
-    "lastUpdated": "2026-10-08"
+    "published": "2026-10-07",
+    "lastUpdated": "2026-10-18"
   },
   "owner": {
     "name": "Dominic Spatz",
@@ -41,7 +42,7 @@
       "path": "/",
       "title": "Mondlift",
       "summary": "Startseite mit der Animation des Fahrgeschäfts und dem Einstieg in die Sammlung.",
-      "lastmod": "2026-10-08",
+      "lastmod": "2026-10-18",
       "changefreq": "monthly",
       "priority": "1.0"
     },
@@ -49,7 +50,7 @@
       "path": "/mondlift",
       "title": "Der Mondlift",
       "summary": "Steckbrief, Besitzergeschichte und Besonderheiten des Geräts: Huss Enterprise, 20 Gondeln, rund 22 Meter hoch.",
-      "lastmod": "2026-10-08",
+      "lastmod": "2026-10-18",
       "changefreq": "monthly",
       "priority": "0.9"
     },
@@ -57,7 +58,7 @@
       "path": "/enterprise",
       "title": "Enterprise — der Fahrgeschäfttyp",
       "summary": "Herkunft bei Schwarzkopf und Huss, Funktionsweise, Varianten, Stückzahlen und wo die Quellen auseinandergehen.",
-      "lastmod": "2026-10-08",
+      "lastmod": "2026-10-18",
       "changefreq": "monthly",
       "priority": "0.9"
     },
@@ -65,7 +66,7 @@
       "path": "/glossar",
       "title": "Glossar",
       "summary": "Begriffe rund um Fahrgeschäft und Volksfest, von Radkranz über resultierende Kraft bis Beschickung.",
-      "lastmod": "2026-10-08",
+      "lastmod": "2026-10-18",
       "changefreq": "monthly",
       "priority": "0.7"
     },
@@ -73,7 +74,7 @@
       "path": "/fragen",
       "title": "Fragen und Quellen",
       "summary": "Häufige Fragen zum Mondlift und zum Typ Enterprise, dazu die Quellenlage und die strittigen Angaben.",
-      "lastmod": "2026-10-08",
+      "lastmod": "2026-10-18",
       "changefreq": "monthly",
       "priority": "0.8"
     },

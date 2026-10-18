@@ -83,6 +83,12 @@ export const FRAGEN: Frage[] = [
       "Nach derzeitigem Stand nicht. Der Mondlift gilt als das einzige transportable Huss Enterprise, das in Deutschland noch betrieben wird. In Freizeitparks steht die Bauform weiterhin an mehreren Orten, dort aber stationär — und der Hersteller bietet sie in neueren Ausführungen bis heute an.",
   },
   {
+    frage: "War der Mondlift auf dem Oktoberfest?",
+    antwort:
+      "Ja, über viele Jahre. Nach ganz-muenchen.de stand er ab 1990 regelmäßig auf der Münchener Wiesn; danach gab es rund zehn Jahre lang kein Enterprise auf dem Oktoberfest, und ab 2005 war der Mondlift wieder dabei. Ob er nach dem Besitzerwechsel zur Zettl Enterprises KG im Herbst 2023 zurückkehrt, berichten die Quellen widersprüchlich. Welche Geschäfte auf der Wiesn stehen, legt die Stadt München jedes Jahr neu fest.",
+    verweis: { text: "Wo er zu sehen war", href: "/mondlift#wo-er-zu-sehen-war" },
+  },
+  {
     frage: "Wo steht der Mondlift gerade?",
     antwort:
       "Diese Seite führt bewusst keinen Terminkalender. Wo ein Reisegeschäft in der nächsten Saison steht, entscheidet sich über die Beschickung, also die Bewerbung beim Veranstalter und dessen Zuteilung — verlässlich ist das immer erst kurz vorher. Belegt ist die Vergangenheit: auf dem Münchener Oktoberfest war der Mondlift von 1990 an regelmäßig, nach einer Pause wieder ab 2005, und er war mehrfach auf dem Hamburger Dom zu sehen. Ob er nach dem Besitzerwechsel auf die Wiesn zurückkehrt, berichten die Quellen widersprüchlich. Auskunft gibt der Veranstalter des jeweiligen Volksfestes.",
