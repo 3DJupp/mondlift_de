@@ -35,7 +35,7 @@
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x070a12, 0.008);
+  scene.fog = new THREE.FogExp2(0x070a12, 0.014);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.setClearColor(0x070a12, 0);
@@ -50,8 +50,8 @@
   function placeCamera() {
     const narrow = isNarrow();
     camera.fov = narrow ? 47 : 39;
-    camera.position.set(narrow ? 19 : 16, narrow ? 15 : 12, narrow ? 34 : 29);
-    camera.lookAt(0, 7.2, 0);
+    camera.position.set(narrow ? 22 : 21, narrow ? 6 : 6, narrow ? 50 : 42);
+    camera.lookAt(0, narrow ? 11 : 11.5, -4);
     camera.updateProjectionMatrix();
   }
   placeCamera();
@@ -135,44 +135,108 @@
   moonGlow.position.copy(moon.position);
   scene.add(moonGlow);
 
-  // Boden bleibt dezent; der Schwerpunkt ist das beleuchtete Stahlrad.
-  const ground = mesh(new THREE.CircleGeometry(38, 80), groundMat, scene, false, true);
+  // Großer Boden, der im Nebel ausläuft - so gibt es keine sichtbare Kante
+  // und keine Horizontwand.
+  const ground = mesh(new THREE.CircleGeometry(140, 96), groundMat, scene, false, true);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.05;
-  const horizon = new THREE.Mesh(
-    new THREE.PlaneGeometry(110, 20),
-    new THREE.MeshBasicMaterial({ color: 0x070a12, transparent: true, opacity: 0.72 }),
-  );
-  horizon.position.set(0, 1.4, -21);
-  scene.add(horizon);
 
-  // Kippachse und Träger: das Rad hebt sich um eine Achse an der hinteren
-  // Felgenkante; dadurch wandert die Nabe von ca. 2,6 m auf über 10 m.
-  const pivot = new THREE.Group();
-  pivot.position.set(0, 2.6, 0);
-  scene.add(pivot);
+  // Aufbau wie beim echten Enterprise: Ein Sattelauflieger trägt vorn das
+  // Drehlager des Auslegers. Der Ausleger hält die Nabe, das Rad sitzt oben
+  // darauf. Zwei Hydraulikzylinder heben den Ausleger samt Rad von fast
+  // waagerecht auf gut 80 Grad. Weil das Gelenk am Rand des Rads liegt und
+  // nicht in der Mitte, bleibt der tiefste Punkt immer über dem Boden.
+  const R = 8.0;              // Radius der Felge
+  const BOOM = 9.4;           // Gelenk bis Nabe, entlang des Auslegers
+  const HUB_LIFT = 2.2;       // Rad sitzt so weit über dem Ausleger
+  const PIVOT_Y = 1.7;        // Höhe des Gelenks über dem Boden
 
-  const trailer = mesh(new THREE.BoxGeometry(5.2, 0.55, 9.4), darkSteel, pivot);
-  trailer.position.set(0, 0.35, -3.4);
-  const chassisRailA = mesh(new THREE.BoxGeometry(0.42, 0.72, 9.7), steel, pivot);
-  chassisRailA.position.set(-1.65, 0.55, -3.5);
-  const chassisRailB = chassisRailA.clone();
-  chassisRailB.position.x = 1.65;
-  pivot.add(chassisRailB);
-  const pivotBeam = mesh(new THREE.BoxGeometry(4.1, 0.72, 1.05), brightSteel, pivot);
-  pivotBeam.position.set(0, 1.0, -0.15);
-
-  // Stützen und Hydraulikzylinder bleiben hinter der bewegten Radfläche.
+  const base = new THREE.Group();
+  scene.add(base);
+  const deck = mesh(new THREE.BoxGeometry(2.6, 0.5, 13.8), darkSteel, base);
+  deck.position.set(0, 0.85, -5.7);
   for (const side of [-1, 1]) {
-    rod(pivot, new THREE.Vector3(side * 1.45, 0.9, -0.55), new THREE.Vector3(side * 1.45, 3.0, -6.0), 0.24, darkSteel, 12);
-    rod(pivot, new THREE.Vector3(side * 1.1, 0.8, -0.4), new THREE.Vector3(side * 1.1, 4.0, -6.5), 0.105, brightSteel, 12);
-    rod(pivot, new THREE.Vector3(side * 0.9, 0.65, -0.2), new THREE.Vector3(side * 0.9, 3.3, -6.0), 0.07, steel, 10);
+    const rail = mesh(new THREE.BoxGeometry(0.3, 0.72, 14.1), steel, base);
+    rail.position.set(side * 1.36, 0.78, -5.7);
+    // Doppelachse am Heck des Aufliegers.
+    for (const z of [-10.2, -11.4]) {
+      const tyre = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.42, 24), rubber, base);
+      tyre.rotation.z = Math.PI / 2;
+      tyre.position.set(side * 1.62, 0.5, z);
+      const rimCap = mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.44, 16), steel, base, false);
+      rimCap.rotation.z = Math.PI / 2;
+      rimCap.position.copy(tyre.position);
+    }
+    // Ausgefahrene Abstützungen mit Fußplatten auf dem Boden.
+    for (const z of [-0.6, -7.8]) {
+      const outrigger = mesh(new THREE.BoxGeometry(2.2, 0.22, 0.3), steel, base);
+      outrigger.position.set(side * 2.45, 0.92, z);
+      const jack = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.9, 10), brightSteel, base);
+      jack.position.set(side * 3.4, 0.48, z);
+      const pad = mesh(new THREE.BoxGeometry(0.6, 0.06, 0.6), darkSteel, base);
+      pad.position.set(side * 3.4, 0.03, z);
+    }
+    // Lagerböcke für das Gelenk.
+    const bearing = mesh(new THREE.BoxGeometry(0.3, 1.0, 1.1), brightSteel, base);
+    bearing.position.set(side * 1.1, PIVOT_Y - 0.25, 0);
+  }
+  const axle = mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.6, 16), brightSteel, base);
+  axle.rotation.z = Math.PI / 2;
+  axle.position.set(0, PIVOT_Y, 0);
+
+  // Der Ausleger dreht um die Gelenkachse (X). Lokal zeigt er nach -Z.
+  const boom = new THREE.Group();
+  boom.position.set(0, PIVOT_Y, 0);
+  scene.add(boom);
+  const hubMount = new THREE.Vector3(0, HUB_LIFT - 0.45, -BOOM);
+  for (const side of [-1, 1]) {
+    const from = new THREE.Vector3(side * 0.8, 0, 0);
+    const to = new THREE.Vector3(side * 0.5, hubMount.y, hubMount.z);
+    rod(boom, from, to, 0.2, darkSteel, 12);
+    rod(boom, from.clone().setY(0.42), to.clone().setY(hubMount.y + 0.3), 0.09, brightSteel, 10);
+  }
+  // Fachwerk zwischen den beiden Auslegerträgern.
+  for (let i = 0; i < 6; i++) {
+    const t0 = i / 6, t1 = (i + 1) / 6;
+    const p = (t, side) => new THREE.Vector3(side * (0.8 - 0.3 * t), hubMount.y * t, hubMount.z * t);
+    rod(boom, p(t0, -1), p(t1, 1), 0.05, steel, 7);
+    rod(boom, p(t1, -1), p(t1, 1), 0.05, steel, 7);
+  }
+  const hubPost = mesh(new THREE.CylinderGeometry(0.75, 0.95, 0.9, 24), darkSteel, boom);
+  hubPost.position.set(0, HUB_LIFT - 0.5, -BOOM);
+
+  // Hydraulik: Zylinder sitzt auf dem Auflieger, die Kolbenstange greift am
+  // Ausleger an. Beide Teile werden pro Frame neu ausgerichtet, damit sie
+  // immer zwischen ihren beiden Lagerpunkten liegen und mitfahren.
+  const rams = [-1, 1].map((side) => {
+    const barrel = mesh(new THREE.CylinderGeometry(0.2, 0.2, 1, 14), darkSteel, scene);
+    const piston = mesh(new THREE.CylinderGeometry(0.11, 0.11, 1, 12), brightSteel, scene);
+    return {
+      barrel, piston,
+      foot: new THREE.Vector3(side * 0.66, 1.15, -2.6),
+      head: new THREE.Vector3(side * 0.66, 0.62, -5.2), // im Ausleger-System
+    };
+  });
+  const BARREL_LEN = 3.0, PISTON_LEN = 3.4;
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  function placeAlong(item, start, dir, length) {
+    item.scale.set(1, length, 1);
+    item.position.copy(start).addScaledVector(dir, length / 2);
+    item.quaternion.setFromUnitVectors(yAxis, dir);
+  }
+  function updateRams() {
+    for (const ram of rams) {
+      const head = boom.localToWorld(ram.head.clone());
+      const span = head.clone().sub(ram.foot);
+      const length = span.length();
+      const dir = span.normalize();
+      placeAlong(ram.barrel, ram.foot, dir, Math.min(BARREL_LEN, length));
+      placeAlong(ram.piston, head, dir.clone().negate(), Math.min(PISTON_LEN, length - 0.05));
+    }
   }
 
   const wheelTilt = new THREE.Group();
-  pivot.add(wheelTilt);
-  const R = 8.0;
-  wheelTilt.position.set(0, 0, -R);
+  wheelTilt.position.set(0, HUB_LIFT, -BOOM);
+  boom.add(wheelTilt);
   const wheelSpin = new THREE.Group();
   wheelTilt.add(wheelSpin);
 
@@ -297,6 +361,8 @@
     const hangerGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
     const hangerA = new THREE.Line(hangerGeometry, hangerMaterial);
     const hangerB = new THREE.Line(hangerGeometry.clone(), hangerMaterial);
+    // Die Geometrie ändert sich pro Frame, die Bounding-Sphere nicht mit.
+    hangerA.frustumCulled = hangerB.frustumCulled = false;
     scene.add(hangerA, hangerB);
     gondolas.push({ group, index, panel, hangerA, hangerB });
     hangerLines.push(hangerA, hangerB);
@@ -314,55 +380,65 @@
 
   const clock = new THREE.Clock();
   const TAU = Math.PI * 2;
+  const MIN_TILT = THREE.MathUtils.degToRad(6);
+  const MAX_TILT = THREE.MathUtils.degToRad(82);
+  const SPIN_RATE = 1.1;
+  // Fliehkraft im Verhältnis zur Schwerkraft. Beim echten Gerät liegt sie
+  // deutlich über 1, deshalb zeigen die Gondeln auch oben nach außen statt
+  // ins Rad hineinzufallen.
+  const CENTRIFUGAL = 1.6;
+  const gravity = new THREE.Vector3(0, -1, 0);
+  const wheelCenter = new THREE.Vector3();
+  const wheelQuat = new THREE.Quaternion();
   let frameId = 0;
   let lastTime = 0;
 
-  function animate(now = 0) {
-    frameId = requestAnimationFrame(animate);
-    if (document.hidden) { cancelAnimationFrame(frameId); return; }
-    if (reducedMotion.matches && lastTime) { cancelAnimationFrame(frameId); return; }
-    const elapsed = reducedMotion.matches ? 8.5 : clock.getElapsedTime();
+  // Stellt die ganze Anlage für einen Zeitpunkt ein.
+  function pose(elapsed, still) {
     const cycle = elapsed % 26 / 26;
     const triangle = cycle < 0.5 ? cycle * 2 : (1 - cycle) * 2;
     const smooth = triangle * triangle * (3 - 2 * triangle);
-    const tilt = THREE.MathUtils.degToRad(8 + 76 * smooth);
-    wheelTilt.rotation.x = tilt;
-    wheelSpin.rotation.y = reducedMotion.matches ? 0.75 : elapsed * 1.1;
+    boom.rotation.x = MIN_TILT + (MAX_TILT - MIN_TILT) * smooth;
+    wheelSpin.rotation.y = still ? 0.75 : elapsed * SPIN_RATE;
     stars.rotation.y = elapsed * 0.002;
-    wheelTilt.updateMatrixWorld(true);
-    wheelSpin.updateMatrixWorld(true);
+    boom.updateMatrixWorld(true);
+    updateRams();
 
-    const wheelCenter = wheelSpin.getWorldPosition(new THREE.Vector3());
-    const spinRate = reducedMotion.matches ? 0.85 : 1.1;
+    wheelSpin.getWorldPosition(wheelCenter);
+    wheelSpin.getWorldQuaternion(wheelQuat);
     for (const item of gondolas) {
       const a = item.index / 20 * TAU;
-      const localRim = new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R);
-      const rimWorld = wheelSpin.localToWorld(localRim);
+      const rimWorld = wheelSpin.localToWorld(new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R));
       const radial = rimWorld.clone().sub(wheelCenter).normalize();
-      // Resultierende Kraft: Schwerkraft plus Zentrifugalanteil. Der Anteil
-      // ist begrenzt, damit die Gondeln nicht unnatürlich starr radial stehen.
-      const centrifugal = Math.min(1.55, (spinRate * spinRate * R / 9.81) * 0.16);
-      const down = radial.multiplyScalar(centrifugal).add(new THREE.Vector3(0, -1, 0)).normalize();
+      const tangent = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)).applyQuaternion(wheelQuat).normalize();
+      // Die Gondel hängt an einer Achse entlang der Felge (Tangente). Sie kann
+      // nur um diese Achse pendeln, also zählt nur der Teil der Schwerkraft,
+      // der senkrecht zur Tangente steht.
+      const hang = gravity.clone().addScaledVector(tangent, -gravity.dot(tangent));
+      const down = hang.addScaledVector(radial, CENTRIFUGAL).normalize();
       const up = down.clone().negate();
-      const tangent = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
-      tangent.applyQuaternion(wheelSpin.getWorldQuaternion(new THREE.Quaternion())).normalize();
-      const xAxis = tangent.addScaledVector(up, -tangent.dot(up)).normalize();
-      const zAxis = new THREE.Vector3().crossVectors(xAxis, up).normalize();
-      const basis = new THREE.Matrix4().makeBasis(xAxis, up, zAxis);
-      item.group.quaternion.setFromRotationMatrix(basis);
+      const zAxis = new THREE.Vector3().crossVectors(tangent, up).normalize();
+      item.group.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tangent, up, zAxis));
       item.group.position.copy(rimWorld).addScaledVector(down, 1.18);
-      // Zwei Hänger verbinden Felge und Dach. Die Linien werden als echte
-      // räumliche Segmente aktualisiert, nicht als Bildschirmgrafik.
-      const top = item.group.localToWorld(new THREE.Vector3(0, 0.66, 0));
+      item.group.updateMatrixWorld(true);
+      // Zwei Hänger verbinden Felge und Dach.
       const leftRoof = item.group.localToWorld(new THREE.Vector3(-0.34, 0.66, 0));
       const rightRoof = item.group.localToWorld(new THREE.Vector3(0.34, 0.66, 0));
-      const leftRim = rimWorld.clone().addScaledVector(tangent, -0.3);
-      const rightRim = rimWorld.clone().addScaledVector(tangent, 0.3);
+      const leftRim = rimWorld.clone().addScaledVector(tangent, -0.34);
+      const rightRim = rimWorld.clone().addScaledVector(tangent, 0.34);
       item.hangerA.geometry.setFromPoints([leftRim, leftRoof]);
       item.hangerB.geometry.setFromPoints([rightRim, rightRoof]);
       item.hangerA.geometry.attributes.position.needsUpdate = true;
       item.hangerB.geometry.attributes.position.needsUpdate = true;
     }
+  }
+
+  function animate(now = 0) {
+    frameId = requestAnimationFrame(animate);
+    if (document.hidden) { cancelAnimationFrame(frameId); return; }
+    if (reducedMotion.matches && lastTime) { cancelAnimationFrame(frameId); return; }
+    const still = reducedMotion.matches;
+    pose(still ? 8.5 : clock.getElapsedTime(), still);
 
     renderer.render(scene, camera);
     lastTime = now;
