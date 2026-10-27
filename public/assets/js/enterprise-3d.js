@@ -315,8 +315,8 @@
 
   function animate(now = 0) {
     frameId = requestAnimationFrame(animate);
-    if (document.hidden) return;
-    if (reducedMotion.matches && lastTime) return;
+    if (document.hidden) { cancelAnimationFrame(frameId); return; }
+    if (reducedMotion.matches && lastTime) { cancelAnimationFrame(frameId); return; }
     const elapsed = reducedMotion.matches ? 8.5 : clock.getElapsedTime();
     const cycle = elapsed % 26 / 26;
     const triangle = cycle < 0.5 ? cycle * 2 : (1 - cycle) * 2;
@@ -373,7 +373,11 @@
   }
   window.addEventListener("resize", resize, { passive: true });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && !reducedMotion.matches) clock.start();
+    cancelAnimationFrame(frameId);
+    if (!document.hidden && !reducedMotion.matches) {
+      clock.start();
+      animate();
+    }
   });
   reducedMotion.addEventListener?.("change", () => {
     lastTime = 0;
