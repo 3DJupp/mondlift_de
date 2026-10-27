@@ -280,12 +280,16 @@
       rod(group, new THREE.Vector3(x, -0.55, -0.44), new THREE.Vector3(x, 0.65, -0.44), 0.026, brightSteel, 7);
     }
     // Sitzfläche und Lehne sind hinter den Stäben sichtbar.
-    const seat = mesh(new THREE.BoxGeometry(0.76, 0.14, 0.46), darkMat, group);
-    seat.position.set(0, -0.15, -0.02);
-    const backrest = mesh(new THREE.BoxGeometry(0.76, 0.56, 0.12), darkMat, group);
-    backrest.position.set(0, 0.14, 0.19);
-    const headrest = mesh(new THREE.BoxGeometry(0.42, 0.18, 0.15), rubber, group);
-    headrest.position.set(0, 0.46, 0.18);
+    // Zwei Plätze hintereinander – die historische Huss-Gondel ist keine
+    // breite Zweiersitzbank, sondern eine schmale Tandemgondel.
+    for (const z of [-0.2, 0.18]) {
+      const seat = mesh(new THREE.BoxGeometry(0.7, 0.13, 0.31), darkMat, group);
+      seat.position.set(0, -0.15, z);
+      const backrest = mesh(new THREE.BoxGeometry(0.7, 0.42, 0.09), darkMat, group);
+      backrest.position.set(0, 0.08, z + 0.16);
+      const headrest = mesh(new THREE.BoxGeometry(0.38, 0.14, 0.1), rubber, group);
+      headrest.position.set(0, 0.33, z + 0.16);
+    }
     // Haltebügel-/Handlaufdetails, ohne den offenen Käfig zu schließen.
     rod(group, new THREE.Vector3(-0.42, -0.04, -0.47), new THREE.Vector3(0.42, -0.04, -0.47), 0.035, brightSteel, 7);
 
