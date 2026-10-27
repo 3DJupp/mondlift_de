@@ -21,6 +21,12 @@
     { "pattern": "www.mondlift.de", "custom_domain": true }
   ],
 
+  // Preview-URLs auf workers.dev. Ohne diesen Schalter bekommen Previews
+  // keine URL, weil workers.dev wegen der Custom Domains aus ist und
+  // preview_urls diesem Wert sonst folgt. Die Produktion bleibt davon
+  // unberührt und läuft weiter nur über die Custom Domains.
+  "preview_urls": true,
+
   // Öffentliche Variablen. Der Turnstile Site Key ist öffentlich und steht
   // ohnehin im HTML - der Secret Key gehört dagegen in `wrangler secret put`.
   // Leer lassen heißt: kein Widget im Formular.
