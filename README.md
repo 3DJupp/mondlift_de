@@ -5,9 +5,7 @@ ein kleines Nachschlagewerk zu diesem Gerät und zu seiner Bauform. Die Seite
 ist **inoffiziell** und hat keine Verbindung zum Betreiber oder Hersteller
 des Fahrgeschäfts.
 
-Technisch: ein Cloudflare Worker mit Static Assets. Kein Framework, kein
-Build-Schritt, keine Laufzeit-Abhängigkeiten. HTML, CSS und JavaScript liegen
-fertig in `public/`, TypeScript gibt es nur im Worker.
+Technisch: ein Cloudflare Worker mit Static Assets. Die Startseiten-Szene nutzt Three.js als ES-Modul von jsDelivr; wenn das Modul oder WebGL nicht verfügbar ist, startet die bisherige Canvas-Animation als Fallback. HTML, CSS und JavaScript liegen fertig in `public/`, TypeScript gibt es nur im Worker.
 
 ## Aufbau
 
@@ -24,7 +22,8 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   sitemap.html              Hülle für die erzeugte Seitenübersicht
   404.html  favicon.svg
   assets/css/style.css      gemeinsames Stylesheet
-  assets/js/enterprise.js   Canvas-Animation
+  assets/js/enterprise.js   Canvas-2D-Fallback für die Startanimation
+  assets/js/enterprise-3d.js Three.js-Szene mit prozeduralem 3D-Modell
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
   assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
 src/
