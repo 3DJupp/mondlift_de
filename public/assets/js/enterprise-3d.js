@@ -220,11 +220,9 @@
 
   // Mehrteilige Nabenkappe: Stahlring, glatte Kappe und Lampenkranz.
   const hub = mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.72, 64), brightSteel, wheelSpin);
-  hub.rotation.x = Math.PI / 2;
   const hubFace = mesh(new THREE.CylinderGeometry(1.22, 1.22, 0.78, 64), new THREE.MeshStandardMaterial({
     color: 0x68768d, metalness: 0.9, roughness: 0.22,
   }), wheelSpin);
-  hubFace.rotation.x = Math.PI / 2;
   hubFace.position.y = 0.02;
   torus(wheelSpin, 1.52, 0.075, lampMaterial, 0.4);
   for (let i = 0; i < 28; i++) {
@@ -343,7 +341,7 @@
       const down = radial.multiplyScalar(centrifugal).add(new THREE.Vector3(0, -1, 0)).normalize();
       const up = down.clone().negate();
       const tangent = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
-      tangent.applyQuaternion(wheelTilt.quaternion).normalize();
+      tangent.applyQuaternion(wheelSpin.getWorldQuaternion(new THREE.Quaternion())).normalize();
       const xAxis = tangent.addScaledVector(up, -tangent.dot(up)).normalize();
       const zAxis = new THREE.Vector3().crossVectors(xAxis, up).normalize();
       const basis = new THREE.Matrix4().makeBasis(xAxis, up, zAxis);
@@ -379,7 +377,10 @@
   });
   reducedMotion.addEventListener?.("change", () => {
     lastTime = 0;
-    if (!reducedMotion.matches) clock.start();
+    if (!reducedMotion.matches) {
+      clock.start();
+      animate();
+    }
   });
   animate();
 
