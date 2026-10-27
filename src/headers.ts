@@ -20,7 +20,7 @@ const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
  * Quellen fuer `script-src`, schon in CSP-Form (`'sha256-...'`).
  */
 function csp(scriptHashes: readonly string[]): string {
-  const script = ["'self'", TURNSTILE_ORIGIN, ...scriptHashes].join(" ");
+  const script = ["'self'", TURNSTILE_ORIGIN, "https://cdn.jsdelivr.net", ...scriptHashes].join(" ");
   return [
     "default-src 'self'",
     `script-src ${script}`,
