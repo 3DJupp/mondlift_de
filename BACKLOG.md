@@ -82,8 +82,9 @@ Wenn GA4 trotzdem gewünscht ist, ist der Weg klar und machbar: Banner mit
 echter Ablehnmöglichkeit, Skript erst nach Einwilligung nachladen, CSP um
 `googletagmanager.com` und `google-analytics.com` erweitern, Datenschutz-
 erklärung um Zweck, Rechtsgrundlage, Empfänger und Speicherdauer ergänzen.
-Es ist eine Entscheidung, keine Fleißarbeit — deshalb steht sie hier und
-nicht im Code.
+Der Code dafür ist inzwischen vorbereitet und schläft, bis in
+`wrangler.jsonc` eine `GA_MEASUREMENT_ID` steht — siehe README unter
+„Reichweite". Die Entscheidung selbst bleibt eine Entscheidung.
 
 ## Erledigt
 

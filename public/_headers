@@ -1,0 +1,23 @@
+# Header für Dateien, die Cloudflare ohne den Worker ausliefert.
+#
+# CSS, JS, Bilder und das Favicon sind in wrangler.jsonc von
+# run_worker_first ausgenommen, damit sie keine Worker-Anfragen kosten.
+# Die Security-Header aus src/headers.ts kommen deshalb hier an sie heran.
+# Die CSP ist strenger als bei den Seiten: diese Dateien laden selbst nichts.
+# Wer in src/headers.ts etwas ändert, prüft auch diese Datei.
+
+/assets/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+/favicon.svg
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

@@ -66,10 +66,18 @@ Glossar und FAQ, deren Text in `src/` steht — warum, steht im Abschnitt
 
 ### Warum ein Worker vor den Assets
 
-`run_worker_first` steht auf `true`. Dadurch läuft der Worker vor jeder
-Auslieferung und kann sechs Dinge tun, die rein statisch nicht gingen:
+`run_worker_first` steht auf `["/*", "!/assets/*", "!/favicon.svg"]`.
+Der Worker läuft also vor jeder Seite, aber nicht vor CSS, JS, Bildern und
+dem Favicon. Die liefert Cloudflare direkt aus, ohne einen Worker zu
+starten, und solche Abrufe zählen nicht gegen das Anfragekontingent. Ein
+Seitenaufruf kostet damit eine Worker-Anfrage statt fünf oder sechs. Die
+Security-Header für diese Dateien stehen in `public/_headers`; wer
+`src/headers.ts` ändert, sieht dort mit nach.
 
-1. **Security-Header** auf jede Antwort legen, auch auf CSS, JS und Bilder.
+Vor den Seiten kann der Worker sieben Dinge tun, die rein statisch nicht
+gingen:
+
+1. **Security-Header** auf jede Antwort legen.
 2. **`www.mondlift.de`** dauerhaft auf die Apex-Domain umleiten.
 3. **Personendaten einsetzen.** Name, Anschrift und E-Mail stehen nur in
    `site.config.json`. Die HTML-Dateien enthalten Platzhalter
@@ -81,6 +89,8 @@ Auslieferung und kann sechs Dinge tun, die rein statisch nicht gingen:
    Anschrift-Bild erzeugen**, alle aus derselben `site.config.json`.
 6. **Strukturierte Daten einsetzen** und den dazu passenden sha256-Hash in
    die CSP schreiben — beides aus derselben Zeichenkette.
+7. **Google Analytics einbinden**, aber nur, wenn eine Mess-ID gesetzt ist.
+   Siehe „Reichweite".
 
 Wer die Anschrift ändern will, ändert `site.config.json` und sonst nichts.
 Für eine neue Seite gilt dasselbe: ein Eintrag in `pages`, und Sitemap wie
@@ -359,6 +369,35 @@ Wie sich messen lässt, ob das alles etwas bringt — und warum die Empfehlung
 nicht Google Analytics heißt —, steht in [BACKLOG.md](BACKLOG.md). Kurz:
 Search Console und Bing Webmaster Tools kosten keine Zeile Code und keinen
 Cookie-Banner, und sie beantworten die Fragen, um die es hier geht.
+
+### Google Analytics (vorbereitet, aus)
+
+GA4 ist eingebaut, aber abgeschaltet, solange in `wrangler.jsonc` unter
+`vars` die `GA_MEASUREMENT_ID` leer ist. Dann ändert sich gegenüber vorher
+nichts: kein Banner, kein Skript, keine Google-Quellen in der CSP, die
+Datenschutzerklärung in der Fassung ohne Tracking.
+
+Einschalten heißt: die Mess-ID (`G-...`) eintragen und deployen. Danach
+
+- bekommt jede Seite `<meta name="ga-measurement-id">` und
+  `/assets/js/einwilligung.js`,
+- erscheint beim ersten Besuch unten ein Banner mit „Ablehnen" und
+  „Zulassen", beide gleich gewichtet,
+- lädt `gtag.js` erst nach „Zulassen"; vorher geht keine Anfrage an Google,
+- erlaubt die CSP die Quellen von Google (`src/headers.ts`),
+- zeigt die Datenschutzerklärung den GA-Abschnitt samt Knopf zum Ändern der
+  Wahl. Die Blöcke dafür tragen `data-analytics="an"` bzw. `"aus"`, der
+  Worker lässt nur die passende Fassung stehen.
+
+Die Wahl liegt zwölf Monate im localStorage. Ein Widerruf löscht die
+GA-Cookies und lädt die Seite neu. Google Signals und Werbefunktionen sind
+im Code abgeschaltet. Im GA-Konto gehören vorher noch erledigt: die
+Datenverarbeitungsbedingungen akzeptieren und die Datenaufbewahrung auf
+14 Monate stellen, weil die Datenschutzerklärung das so nennt.
+
+Previews haben eine eigene, leere `GA_MEASUREMENT_ID`, damit Testbesuche
+nicht in der Statistik landen. Lokal lässt sich das Banner mit
+`npx wrangler dev --var GA_MEASUREMENT_ID:G-TEST12345` ansehen.
 
 ## Sitemap
 

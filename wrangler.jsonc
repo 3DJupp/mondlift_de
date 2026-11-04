@@ -4,14 +4,17 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-10-07",
 
-  // Static Assets. Der Worker läuft zuerst, damit jede Antwort - auch CSS,
-  // JS und Bilder - dieselben Security-Header bekommt. Danach reicht der
-  // Worker an das Asset-Binding weiter.
+  // Static Assets. Der Worker läuft vor den Seiten, weil er dort Daten
+  // einsetzt, umleitet und Header setzt. CSS, JS, Bilder und das Favicon
+  // liefert Cloudflare dagegen direkt aus: dafür startet kein Worker, und
+  // solche Abrufe zählen nicht gegen das Anfragekontingent. Ein Seitenaufruf
+  // kostet so eine Worker-Anfrage statt fünf oder sechs. Die Security-Header
+  // für diese Dateien stehen in public/_headers.
   "assets": {
     "directory": "./public/",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": true
+    "run_worker_first": ["/*", "!/assets/*", "!/favicon.svg"]
   },
 
   // Custom Domains. Die Zone-/Account-IDs stehen absichtlich nicht hier:
@@ -30,8 +33,14 @@
   // Öffentliche Variablen. Der Turnstile Site Key ist öffentlich und steht
   // ohnehin im HTML - der Secret Key gehört dagegen in `wrangler secret put`.
   // Leer lassen heißt: kein Widget im Formular.
+  //
+  // GA_MEASUREMENT_ID ist die GA4-Mess-ID (G-...), ebenfalls öffentlich.
+  // Leer heißt: kein Analytics, kein Banner, keine Google-Quellen in der
+  // CSP. Erst mit einer ID erscheint das Einwilligungsbanner - siehe
+  // src/analytics.ts und README.
   "vars": {
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAFRtdEHO2PO0lLFd"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFRtdEHO2PO0lLFd",
+    "GA_MEASUREMENT_ID": ""
   },
 
   // Rate Limits fürs Kontaktformular, pro IP. Die Periode darf nur 10 oder
@@ -68,8 +77,11 @@
     // Offizieller Turnstile-Testschlüssel von Cloudflare. Öffentlich und für
     // genau diesen Zweck gedacht: das Widget wird gerendert, sodass sich die
     // Seite im Preview ansehen lässt.
+    // Analytics bleibt im Preview aus, damit Testbesuche nicht in der
+    // Statistik landen. Zum Ausprobieren des Banners hier eine ID eintragen.
     "vars": {
-      "TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
+      "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+      "GA_MEASUREMENT_ID": ""
     },
 
     // Eigene Namespaces, damit Previews nicht am selben Zähler wie die
