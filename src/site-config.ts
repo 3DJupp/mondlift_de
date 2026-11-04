@@ -17,6 +17,8 @@
  *   <div data-glossar>                         bekommt die Begriffsliste
  *   <div data-fragen>                          bekommt die Fragenliste
  *   <p data-zitat>                             bekommt den Zitiervorschlag
+ *   <section data-analytics="an|aus">          bleibt nur, wenn Google
+ *                                              Analytics an bzw. aus ist
  *
  * Glossar und Fragen stehen als Daten in src/, weil es von beiden zwei
  * Fassungen gibt - die sichtbare und die strukturierte. Eine Quelle, zwei
@@ -66,6 +68,10 @@ export interface PageContext {
   markdownHref?: string;
   /** Text für den Zitiervorschlag unter `<p data-zitat>`. */
   zitat?: string;
+  /**
+   * GA4-Mess-ID, null wenn Analytics aus ist. Siehe src/analytics.ts.
+   */
+  analyticsId?: string | null;
 }
 
 /** ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ. */
@@ -110,6 +116,25 @@ export function injectSiteConfig(
             { html: true },
           );
         }
+        // Google Analytics: nur die ID und das Einwilligungsskript. gtag.js
+        // selbst lädt erst der Browser, und erst nach „Zulassen". Die ID
+        // steht in einem meta-Element statt in einem Inline-Skript, weil die
+        // CSP keine Inline-Skripte erlaubt.
+        if (context.analyticsId) {
+          element.append(
+            `<meta name="ga-measurement-id" content="${escapeHtml(context.analyticsId)}" />` +
+              `<script src="/assets/js/einwilligung.js" defer></script>`,
+            { html: true },
+          );
+        }
+      },
+    })
+    .on("[data-analytics]", {
+      element(element) {
+        const an = Boolean(context.analyticsId);
+        const soll = element.getAttribute("data-analytics") === "an";
+        if (soll === an) element.removeAttribute("data-analytics");
+        else element.remove();
       },
     })
     .on("[data-zitat]", {

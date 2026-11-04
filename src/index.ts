@@ -11,9 +11,14 @@
  *  - die Anschrift als Bild zeichnen
  *  - Daten aus site.config.json in die HTML-Seiten einsetzen
  *  - strukturierte Daten einsetzen und ihren Hash in die CSP schreiben
+ *  - Google Analytics samt Einwilligung einbinden, wenn eine Mess-ID
+ *    gesetzt ist
  *  - Security-Header auf jede Antwort legen
  *
  * Alles andere ist statisch und kommt aus ./public via Asset-Binding.
+ * CSS, JS, Bilder und das Favicon erreichen den Worker gar nicht erst:
+ * `run_worker_first` in wrangler.jsonc nimmt sie aus, damit sie keine
+ * Worker-Anfragen verbrauchen. Ihre Header stehen in public/_headers.
  */
 
 import { withSecurityHeaders } from "./headers";
@@ -26,6 +31,7 @@ import { INDEXNOW_KEY_PATH, handleIndexNowKey } from "./indexnow";
 import { ROBOTS_PATH, handleRobots } from "./robots";
 import { SITEMAP_XSL_PATH, handleSitemapXsl } from "./sitemap-xsl";
 import { handleAnschrift } from "./anschrift";
+import { analyticsId } from "./analytics";
 import { altlast, goneResponse } from "./altlasten";
 import {
   LLMS_FULL_PATH,
@@ -171,14 +177,19 @@ export default {
       // der Block kommt in den Kopf der Seite, der Hash in die CSP. Beide
       // aus derselben Zeichenkette, siehe src/strukturierte-daten.ts.
       const daten = await strukturierteDaten(url.pathname);
+      const gaId = analyticsId(env);
       const body = injectSiteConfig(asset, {
         turnstileSiteKey: env.TURNSTILE_SITE_KEY,
+        analyticsId: gaId,
         status: url.searchParams.get("status"),
         jsonLd: daten?.json,
         markdownHref: markdownFuer(url.pathname),
         zitat: zitiervorschlag(url.pathname),
       });
-      return withSecurityHeaders(body, url, daten ? [daten.hash] : []);
+      return withSecurityHeaders(body, url, {
+        scriptHashes: daten ? [daten.hash] : [],
+        analytics: gaId !== null,
+      });
     } catch (error) {
       // Strukturiert loggen, nach aussen nichts Internes preisgeben.
       console.error(

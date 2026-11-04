@@ -40,12 +40,29 @@
     <main class="wrap">
       <h1>Datenschutzerklärung</h1>
 
-      <p class="lead">
-        Diese Website ist absichtlich einfach gebaut: Es gibt keine Cookies,
-        keine Analyse-Werkzeuge, keine Werbenetzwerke und keine
-        Social-Media-Plugins. Bis auf den Spamschutz des Kontaktformulars
-        kommt alles, was im Browser läuft, von dieser Domain.
-      </p>
+      <!--
+        Die Blöcke mit data-analytics gibt es in zwei Fassungen. Der Worker
+        lässt nur die passende stehen: "aus", solange in wrangler.jsonc keine
+        GA_MEASUREMENT_ID gesetzt ist, sonst "an". Siehe src/analytics.ts.
+      -->
+      <div data-analytics="aus">
+        <p class="lead">
+          Diese Website ist absichtlich einfach gebaut: Es gibt keine Cookies,
+          keine Analyse-Werkzeuge, keine Werbenetzwerke und keine
+          Social-Media-Plugins. Bis auf den Spamschutz des Kontaktformulars
+          kommt alles, was im Browser läuft, von dieser Domain.
+        </p>
+      </div>
+      <div data-analytics="an">
+        <p class="lead">
+          Diese Website ist absichtlich einfach gebaut: Es gibt keine
+          Werbenetzwerke und keine Social-Media-Plugins. Google Analytics wird
+          nur geladen, wenn Sie ausdrücklich einwilligen. Ohne Einwilligung
+          setzt die Seite keine Cookies, und bis auf den Spamschutz des
+          Kontaktformulars kommt alles, was im Browser läuft, von dieser
+          Domain.
+        </p>
+      </div>
 
       <h2>1. Verantwortlicher</h2>
       <p>
@@ -133,15 +150,77 @@
         Fehleranalyse und der Abwehr von Angriffen und Missbrauch.
       </p>
 
-      <h2>4. Keine Cookies, kein Tracking</h2>
-      <p>
-        Diese Website setzt keine Cookies und verwendet keinen Local Storage
-        oder vergleichbare Techniken, um Daten auf Ihrem Gerät zu speichern oder
-        auszulesen. Es gibt keine Reichweitenmessung, keine Analyse-Software,
-        keine Conversion-Messung und keine Wiedererkennung über Besuche hinweg.
-        Eine Einwilligung nach § 25 TDDDG ist deshalb nicht erforderlich, und es
-        gibt folgerichtig auch kein Cookie-Banner.
-      </p>
+      <div data-analytics="aus">
+        <h2>4. Keine Cookies, kein Tracking</h2>
+        <p>
+          Diese Website setzt keine Cookies und verwendet keinen Local Storage
+          oder vergleichbare Techniken, um Daten auf Ihrem Gerät zu speichern
+          oder auszulesen. Es gibt keine Reichweitenmessung, keine
+          Analyse-Software, keine Conversion-Messung und keine Wiedererkennung
+          über Besuche hinweg. Eine Einwilligung nach § 25 TDDDG ist deshalb
+          nicht erforderlich, und es gibt folgerichtig auch kein Cookie-Banner.
+        </p>
+      </div>
+
+      <div data-analytics="an">
+        <h2 id="analytics">4. Reichweitenmessung mit Google Analytics</h2>
+        <p>
+          Wenn Sie im Hinweis am unteren Bildschirmrand auf „Zulassen“
+          klicken, nutzt diese Website Google Analytics 4, einen Dienst der
+          Google Ireland Limited, Gordon House, Barrow Street, Dublin 4,
+          Irland. Zweck ist, zu verstehen, welche Seiten gelesen werden, wie
+          Besucher die Seite finden und wo sie sie wieder verlassen. Vor Ihrer
+          Einwilligung wird das Skript von Google nicht geladen und es geht
+          keine Anfrage an Google.
+        </p>
+        <p>
+          Nach Ihrer Einwilligung lädt Ihr Browser ein Skript von
+          <code>googletagmanager.com</code>. Google setzt dabei Cookies
+          (<code>_ga</code> und <code>_ga_&lt;ID&gt;</code>, Speicherdauer bis
+          zu 2 Jahre) und erhält Angaben wie die aufgerufenen Seiten, die
+          verweisende Seite, Verweildauer, ungefähren Standort aus der
+          IP-Adresse, Browser, Betriebssystem und Bildschirmgröße. Google
+          Analytics 4 speichert keine vollständigen IP-Adressen. Google
+          Signals und die Nutzung für Werbung sind abgeschaltet. Die
+          Nutzungsdaten speichert Google für 14 Monate.
+        </p>
+        <p>
+          Google verarbeitet die Daten als Auftragsverarbeiter auf Grundlage
+          eines Vertrags nach Art. 28 DSGVO. Eine Übermittlung in die USA ist
+          dabei nicht ausgeschlossen. Google LLC ist nach dem EU-US Data
+          Privacy Framework zertifiziert, auf dem Angemessenheitsbeschluss der
+          EU-Kommission beruht die Übermittlung. Mehr in der
+          <a href="https://policies.google.com/privacy?hl=de" rel="noopener"
+            >Datenschutzerklärung von Google</a
+          >.
+        </p>
+        <p>
+          Rechtsgrundlage ist Ihre Einwilligung nach § 25 Abs. 1 TDDDG und
+          Art. 6 Abs. 1 lit. a DSGVO. Sie ist freiwillig, und die Seite
+          funktioniert ohne sie genauso. Ihre Wahl wird im Local Storage Ihres
+          Browsers gespeichert, damit der Hinweis nicht bei jedem Aufruf
+          erscheint; nach zwölf Monaten werden Sie erneut gefragt. Diese
+          Speicherung ist für die Einwilligungsverwaltung selbst
+          erforderlich (§ 25 Abs. 2 TDDDG).
+        </p>
+        <p>
+          Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft
+          widerrufen. Beim Widerruf werden die Cookies von Google Analytics
+          gelöscht.
+        </p>
+        <p>
+          <span data-einwilligung-status></span>
+        </p>
+        <p class="einwilligung__aendern" data-einwilligung-oeffnen hidden>
+          <button type="button" class="btn">Einstellung ändern</button>
+        </p>
+        <noscript>
+          <p>
+            Ohne JavaScript wird Google Analytics nie geladen; eine
+            Einwilligung ist dann nicht nötig.
+          </p>
+        </noscript>
+      </div>
 
       <h2>5. Keine externen Inhalte</h2>
       <p>
@@ -155,9 +234,14 @@
       <p>
         Eine einzige Ausnahme gibt es: Auf der Seite
         <a href="/kontakt">/kontakt</a> wird für den Spamschutz ein Skript von
-        Cloudflare Turnstile nachgeladen. Näheres dazu in Abschnitt 7. Auf
-        allen anderen Seiten baut Ihr Browser keine Verbindung zu fremden
-        Servern auf.
+        Cloudflare Turnstile nachgeladen. Näheres dazu in Abschnitt 7.
+        <span data-analytics="aus"
+          >Auf allen anderen Seiten baut Ihr Browser keine Verbindung zu
+          fremden Servern auf.</span
+        ><span data-analytics="an"
+          >Dazu kommt Google Analytics, aber nur nach Ihrer Einwilligung,
+          siehe Abschnitt 4.</span
+        >
       </p>
       <p>
         Externe Links sind als solche erkennbar. Wenn Sie einem Link folgen,
@@ -235,9 +319,13 @@
         Missbrauch und Spam.
       </p>
       <p>
-        Turnstile ist die einzige Stelle dieser Website, an der ein Inhalt von
-        einem fremden Server geladen wird, und das ausschließlich auf der
-        Seite <a href="/kontakt">/kontakt</a>. Wenn Sie das vermeiden möchten,
+        <span data-analytics="an"
+          >Abgesehen von Google Analytics, das nur mit Ihrer Einwilligung
+          geladen wird, ist</span
+        ><span data-analytics="aus">Turnstile ist</span>
+        <span data-analytics="an">Turnstile</span> die einzige Stelle dieser
+        Website, an der ein Inhalt von einem fremden Server geladen wird, und
+        das ausschließlich auf der Seite <a href="/kontakt">/kontakt</a>. Wenn Sie das vermeiden möchten,
         schreiben Sie mir einfach direkt an die oben genannte E-Mail-Adresse —
         das Formular ist kein notwendiger Weg.
       </p>
