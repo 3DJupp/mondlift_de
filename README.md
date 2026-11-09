@@ -24,6 +24,7 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   assets/css/style.css      gemeinsames Stylesheet
   assets/js/enterprise.js   Canvas-2D-Fallback für die Startanimation
   assets/js/enterprise-3d.js Three.js-Szene mit prozeduralem 3D-Modell
+  assets/img/rueckwand.webp Wandbild der Rückwand als Textur (Herkunft siehe unten)
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
   assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
 src/
@@ -151,6 +152,44 @@ Messung rund 50 ms pro Bild — bei über 140 Lampen ist das der Unterschied
 zwischen 12 und 60 Bildern pro Sekunde. Deshalb gibt es die Größenleiter in
 `buildGlowSprites()`. Das Fachwerk dagegen ist billig: Linien kosten fast
 nichts, und die Streben eines Feldes gehen in drei Pfaden auf einmal raus.
+
+### Die 3D-Szene
+
+`public/assets/js/enterprise-3d.js` ist das, was die Startseite tatsächlich
+zeigt; die Canvas-Fassung oben springt nur ein, wenn Three.js oder WebGL
+fehlen. Die Szene bildet den Mondlift nach, wie er am Platz steht:
+
+- **Podium.** Runder Umlauf mit Geländern, vorn drei Stufen in
+  Regenbogenfarben links und rechts der Kasse, in der Mitte die Grube mit
+  dem Auflieger.
+- **Ausleger.** Das Gelenk sitzt vorn hinter der Kasse. In Ruhe liegt der
+  Ausleger waagerecht in der Grube, zwei Hydraulikzylinder heben ihn auf
+  87 Grad. Aufgerichtet steht das Rad vorn über dem Eingang und zeigt mit der
+  Nabenkappe zum Publikum, die Rückwand bleibt dahinter stehen.
+- **Rad.** Kranz als Fachwerk, zwanzig Speichen in der Radebene und zwanzig
+  Abspannungen vom Nabenkegel, um eine halbe Teilung versetzt. Lampen auf
+  Felge und Abspannungen laufen als Lauflicht in drei Phasen.
+- **Gondeln.** Zwanzig Tandemgondeln hängen an Konsolen direkt am Kranz und
+  schwenken um eine Achse entlang der Felge: Wanne mit runden Enden,
+  offener Rohrkäfig, farbiges Dach.
+- **Fahrtablauf.** Stehen, anfahren bis 14 Umdrehungen in der Minute,
+  aufrichten, oben halten, absenken, auslaufen. Die Fliehkraft an der
+  Gondel folgt aus der Drehzahl (ω² · r / g, bei voller Fahrt gut 2 g), die
+  Gondelstellung wie oben aus der resultierenden Kraft.
+
+Feste Teile werden je Werkstoff zu einem Netz verschmolzen, die Gondeln als
+Instanzen gezeichnet. Das hält die Szene bei wenigen Dutzend Zeichenaufrufen.
+
+`/?t=30` friert die Fahrt bei Sekunde 30 ein. Das hilft beim Vergleich mit
+Fotos und beim Erzeugen von Standbildern.
+
+**Herkunft des Wandbilds.** `public/assets/img/rueckwand.webp` ist aus acht
+Tafeln der Mondlift-Rückwand zusammengesetzt. Die Vorlagen stammen aus dem
+Planet-Coaster-Modell „Mondlift“ von Chaos im Steam Workshop
+(<https://steamcommunity.com/sharedfiles/filedetails/?id=2860665873>) und
+zeigen die Bemalung des echten Geschäfts. Die Rechte an der Malerei liegen
+nicht bei diesem Projekt. Wer die Seite ohne die Datei ausliefert, bekommt
+an ihrer Stelle eine einfarbige Rückwand, sonst ändert sich nichts.
 
 ### Das Kontaktformular
 
