@@ -30,6 +30,10 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/css/style.css" />
+    <!-- Die 3D-Bibliothek schon beim Lesen des Kopfes anfordern, nicht erst,
+         wenn das Skript am Seitenende sie verlangt. -->
+    <link rel="modulepreload" crossorigin href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js" />
+    <link rel="modulepreload" crossorigin href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.core.min.js" />
   </head>
   <body>
     <a class="skip" href="#inhalt">Zum Inhalt springen</a>

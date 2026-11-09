@@ -16,7 +16,7 @@
   // nicht verfügbar sind, übernimmt die bisherige Canvas-Animation.
   let THREE;
   try {
-    THREE = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js");
+    THREE = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js");
   } catch (error) {
     console.warn("3D-Modell nicht verfügbar; nutze die Canvas-Fallback-Animation.", error);
     return fallback();
@@ -63,7 +63,8 @@
   const moonLight = new THREE.DirectionalLight(0xc7d7ff, 2.2);
   moonLight.position.set(-14, 30, 16);
   moonLight.castShadow = true;
-  moonLight.shadow.mapSize.set(2048, 2048);
+  const shadowSize = window.innerWidth < 680 ? 1024 : 2048;
+  moonLight.shadow.mapSize.set(shadowSize, shadowSize);
   moonLight.shadow.camera.left = -22;
   moonLight.shadow.camera.right = 22;
   moonLight.shadow.camera.top = 26;
@@ -376,8 +377,10 @@
     rod(b, polar(WALL_R - 0.06, Math.PI + 0.36, wallTop + 0.3), polar(WALL_R - 0.06, Math.PI + 0.36, wallTop + 2.3), 0.06, white, 6);
 
     // Kugelleuchten an den Ecken des Podiums.
-    for (const a of [0.62, -0.62, 1.95, -1.95]) {
-      const foot = polar(DECK_OUT + 2.2, a, 0);
+    // Die vorderen stehen seitlich außerhalb des Radkreises: Aufgerichtet
+    // reichen die Gondeln bis knapp zehn Meter neben die Mitte.
+    for (const a of [0.95, -0.95, 1.95, -1.95]) {
+      const foot = polar(DECK_OUT + 3.0, a, 0);
       rod(b, foot, foot.clone().setY(4.4), 0.07, white, 8);
       for (const [dx, dy, dz] of [[0, 0.45, 0], [0.42, 0, 0], [-0.42, 0, 0], [0, 0, 0.42], [0, 0, -0.42]]) {
         ball(b, 0.3, globeMat, foot.clone().add(v(dx, 4.5 + dy, dz)));
@@ -491,6 +494,8 @@
     box(b, 0.3, 0.03, BOOM - 0.4, stripeGreen, 0.38, 0.32, -BOOM / 2 + 0.4);
     for (const side of [-1, 1]) {
       box(b, 0.05, 0.3, BOOM - 1, darkSteel, side * 0.66, -0.05, -BOOM / 2);
+      // Konsole, an der die Kolbenstange angreift.
+      box(b, 0.42, 0.36, 0.5, darkSteel, side * 0.8, -0.15, -5.6);
     }
     // Nabenturm mit Drehkranz und Antrieb.
     const tower = new THREE.Matrix4().makeTranslation(0, 0, -BOOM);
@@ -517,6 +522,7 @@
     };
   });
   const BARREL_LEN = 3.4, PISTON_LEN = 3.4;
+  const ramHead = v(0, 0, 0), ramDir = v(0, 0, 0);
   function placeAlong(item, start, dir, length) {
     item.scale.set(1, length, 1);
     item.position.copy(start).addScaledVector(dir, length / 2);
@@ -524,12 +530,11 @@
   }
   function updateRams() {
     for (const ram of rams) {
-      const head = boom.localToWorld(ram.head.clone());
-      const span = head.clone().sub(ram.foot);
-      const length = span.length();
-      const dir = span.normalize();
-      placeAlong(ram.barrel, ram.foot, dir, Math.min(BARREL_LEN, length));
-      placeAlong(ram.piston, head, dir.clone().negate(), Math.min(PISTON_LEN, length - 0.05));
+      boom.localToWorld(ramHead.copy(ram.head));
+      const length = ramDir.subVectors(ramHead, ram.foot).length();
+      ramDir.normalize();
+      placeAlong(ram.barrel, ram.foot, ramDir, Math.min(BARREL_LEN, length));
+      placeAlong(ram.piston, ramHead, ramDir.negate(), Math.min(PISTON_LEN, length - 0.05));
     }
   }
 
@@ -688,6 +693,7 @@
   const wheelCenter = new THREE.Vector3();
   const wheelQuat = new THREE.Quaternion();
   const gondolaMatrix = new THREE.Matrix4();
+  const gPivot = v(0, 0, 0), gRadial = v(0, 0, 0), gTangent = v(0, 0, 0), gUp = v(0, 0, 0), gSide = v(0, 0, 0);
   // Wer die Seite mit ?t=30 aufruft, sieht die Anlage in genau diesem
   // Augenblick der Fahrt stehen - praktisch zum Vergleichen mit Fotos.
   const frozenAt = Number.parseFloat(new URLSearchParams(location.search).get("t") ?? "");
@@ -716,17 +722,17 @@
     wheelSpin.getWorldQuaternion(wheelQuat);
     for (let i = 0; i < GONDOLAS; i++) {
       const a = i / GONDOLAS * TAU;
-      const pivot = wheelSpin.localToWorld(v(Math.cos(a) * RP, 0, Math.sin(a) * RP));
-      const radial = pivot.clone().sub(wheelCenter).normalize();
-      const tangent = v(-Math.sin(a), 0, Math.cos(a)).applyQuaternion(wheelQuat).normalize();
+      wheelSpin.localToWorld(gPivot.set(Math.cos(a) * RP, 0, Math.sin(a) * RP));
+      gRadial.copy(gPivot).sub(wheelCenter).normalize();
+      gTangent.set(-Math.sin(a), 0, Math.cos(a)).applyQuaternion(wheelQuat).normalize();
       // Die Gondel kann nur um ihre Achse entlang der Felge schwenken. Also
       // zählt von der Schwerkraft nur der Teil senkrecht zu dieser Achse;
-      // dazu kommt die Fliehkraft nach außen. Die Summe ist "unten".
-      const down = gravity.clone().addScaledVector(tangent, -gravity.dot(tangent))
-        .addScaledVector(radial, centrifugal).normalize();
-      const up = down.negate();
-      const side = new THREE.Vector3().crossVectors(tangent, up).normalize();
-      gondolaMatrix.makeBasis(tangent, up, side).setPosition(pivot);
+      // dazu kommt die Fliehkraft nach außen. Die Summe ist "unten", ihr
+      // Gegenteil "oben".
+      gUp.copy(gravity).addScaledVector(gTangent, -gravity.dot(gTangent))
+        .addScaledVector(gRadial, centrifugal).normalize().negate();
+      gSide.crossVectors(gTangent, gUp).normalize();
+      gondolaMatrix.makeBasis(gTangent, gUp, gSide).setPosition(gPivot);
       for (const part of gondolaParts) part.setMatrixAt(i, gondolaMatrix);
     }
     for (const part of gondolaParts) part.instanceMatrix.needsUpdate = true;
@@ -745,9 +751,49 @@
     if (isStill()) drawStill();
   }
 
-  function animate() {
+  // Sobald der Text die Bühne verdeckt, wird nicht mehr gezeichnet. Das
+  // Scrollen durch die Seite bleibt so frei von der Last der Szene.
+  let onStage = true;
+  const hero = document.querySelector(".hero");
+  if (hero && "IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => {
+      onStage = entry.isIntersecting;
+      if (onStage) { clock.getDelta(); windowStart = 0; animate(); }
+    }).observe(hero);
+  }
+
+  // Schafft ein Gerät die Szene nicht flüssig, wird sie schrittweise
+  // leichter: erst weniger Pixel, dann ohne Schatten. Gezählt wird in
+  // Fenstern von zwei Sekunden; zwei langsame Fenster in Folge lösen aus.
+  // Die erste Sekunde zählt nicht, weil dort noch übersetzt wird.
+  let pixelRatioCap = 1.6;
+  let quality = 2, slowFrames = 0, windowStart = 0, windowFrames = 0;
+  function watchFrameRate(now) {
+    if (!windowStart) { windowStart = now + 1000; windowFrames = 0; return; }
+    if (now < windowStart) return;
+    windowFrames++;
+    const span = now - windowStart;
+    if (span < 2000) return;
+    const fps = windowFrames * 1000 / span;
+    windowStart = now;
+    windowFrames = 0;
+    slowFrames = fps < 27 ? slowFrames + 1 : 0;
+    if (slowFrames < 2 || quality === 0) return;
+    slowFrames = 0;
+    quality--;
+    if (quality === 1) {
+      pixelRatioCap = 1;
+      resize();
+    } else {
+      moonLight.castShadow = false;
+      renderer.shadowMap.enabled = false;
+      scene.traverse((item) => { if (item.material) item.material.needsUpdate = true; });
+    }
+  }
+
+  function animate(now = 0) {
     cancelAnimationFrame(frameId);
-    if (document.hidden) return;
+    if (document.hidden || !onStage) return;
     if (isStill()) {
       if (!stillDrawn) drawStill();
       return;
@@ -759,10 +805,11 @@
     stars.rotation.y = rideTime * 0.002;
     pose(rideTime, spinAngle);
     renderer.render(scene, camera);
+    if (now) watchFrameRate(now);
   }
 
   function resize() {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     camera.aspect = window.innerWidth / window.innerHeight;
     placeCamera();
@@ -772,6 +819,7 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) return cancelAnimationFrame(frameId);
     clock.getDelta();
+    windowStart = 0;
     animate();
   });
   reducedMotion.addEventListener?.("change", () => {

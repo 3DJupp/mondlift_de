@@ -1,7 +1,7 @@
 # Backlog
 
 Offen, nach Wichtigkeit: die Sichtbarkeit außerhalb des Codes, danach die
-Entscheidung zur Reichweitenmessung.
+Entscheidung zur Reichweitenmessung, dann Termine und Übergabefähigkeit.
 
 ## Sichtbarkeit außerhalb des Codes
 
@@ -85,6 +85,55 @@ erklärung um Zweck, Rechtsgrundlage, Empfänger und Speicherdauer ergänzen.
 Der Code dafür ist inzwischen vorbereitet und schläft, bis in
 `wrangler.jsonc` eine `GA_MEASUREMENT_ID` steht — siehe README unter
 „Reichweite". Die Entscheidung selbst bleibt eine Entscheidung.
+
+## Termine des Mondlifts
+
+Die Seite soll die Plätze führen, auf denen der Mondlift tatsächlich steht:
+Volksfest, Ort, Zeitraum, Quelle.
+
+- **Das kehrt eine bisherige Entscheidung um.** An vier Stellen steht heute
+  ausdrücklich, dass die Seite keinen Terminkalender führt:
+  `public/mondlift.html` (Abschnitt zu den Standorten), `public/fragen.html`
+  und `src/fragen.ts` (Frage nach den Standorten), `src/llms.ts` (Hinweis
+  für Sprachmodelle). Alle vier müssen mit umgestellt werden, sonst
+  widerspricht sich die Seite selbst.
+- **Daten an einer Stelle.** Termine gehören als Liste in
+  `site.config.json` oder eine eigene `termine.json`, mit Feldern für Fest,
+  Ort, von, bis, Quelle und Abrufdatum. Von dort aus speisen sie die Seite,
+  die Markdown-Fassung, `llms.txt` und strukturierte Daten vom Typ `Event`.
+- **Die Regel für den Inhalt gilt weiter.** Jeder Termin braucht eine
+  Quelle (Beschickerliste des Veranstalters, Ankündigung des Betreibers).
+  Ohne Quelle kein Eintrag; unbestätigte Termine werden als solche
+  gekennzeichnet.
+- **Vergangenes bleibt stehen.** Abgelaufene Termine wandern in ein Archiv
+  statt zu verschwinden. Das ist zugleich die belegte Standortgeschichte.
+- **Pflege.** Ein Kalender, der im Juli noch den Frühjahrsdom zeigt, schadet
+  mehr als keiner. Deshalb „Stand"-Datum anzeigen und die Liste so bauen,
+  dass ein Eintrag eine Zeile JSON ist und keinen Eingriff in HTML braucht.
+
+## Übergabefähigkeit
+
+Die Seite soll so gebaut bleiben, dass ein anderer sie samt Domain
+übernehmen und unter eigenem Namen weiterführen kann, ohne den Code
+umzuschreiben.
+
+- **Was schon passt:** Name, Anschrift, Kontakt und Steckbrief stehen in
+  `site.config.json` und `wrangler.jsonc`, nicht verstreut im HTML.
+- **Was beim Wechsel umzustellen wäre, als Liste festhalten:** Impressum
+  und Datenschutzerklärung (Verantwortlicher), der Hinweis „Inoffizielle
+  Fan-Seite" im Fuß jeder Seite, `llms.txt`, strukturierte Daten
+  (Herausgeber), Turnstile-Schlüssel, Empfänger des Kontaktformulars,
+  Cloudflare-Konto mit Zone, Worker und Geheimnissen, Search Console und
+  Bing Webmaster Tools.
+- **Ton der Texte.** Die Inhaltsseiten nennen offene Fragen und
+  widersprüchliche Quellen beim Namen. Ein neuer Inhaber würde manches
+  davon aus erster Hand klären können; die Stellen sind über „Quellen" und
+  „Stand" auffindbar.
+- **Fremdes Material.** Das Wandbild der Rückwand in der 3D-Szene stammt
+  aus dem Planet-Coaster-Modell von Chaos (siehe README). Vor einer
+  Übergabe klären oder durch eigenes Material ersetzen.
+- **Termine** (siehe oben) so anlegen, dass sie jemand ohne
+  Programmierkenntnis pflegen kann.
 
 ## Erledigt
 

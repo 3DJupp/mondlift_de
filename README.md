@@ -177,8 +177,18 @@ fehlen. Die Szene bildet den Mondlift nach, wie er am Platz steht:
   Gondel folgt aus der Drehzahl (ω² · r / g, bei voller Fahrt gut 2 g), die
   Gondelstellung wie oben aus der resultierenden Kraft.
 
-Feste Teile werden je Werkstoff zu einem Netz verschmolzen, die Gondeln als
-Instanzen gezeichnet. Das hält die Szene bei wenigen Dutzend Zeichenaufrufen.
+Damit die Seite flüssig läuft und schnell lädt:
+
+- Feste Teile werden je Werkstoff zu einem Netz verschmolzen, die Gondeln
+  als Instanzen gezeichnet. Ein Bild kostet rund 70 Zeichenaufrufe und
+  90.000 Dreiecke, Schattendurchgang eingerechnet.
+- Three.js kommt als verkleinerte Fassung (rund 166 kB übertragen statt
+  375 kB) und wird in `index.html` per `modulepreload` schon im Kopf
+  angefordert.
+- Sobald der Text die Bühne verdeckt, wird nicht mehr gezeichnet; ebenso
+  bei verstecktem Tab.
+- Bleibt ein Gerät vier Sekunden lang unter 27 Bildern in der Sekunde,
+  rechnet die Szene erst mit weniger Pixeln, danach ohne Schatten.
 
 `/?t=30` friert die Fahrt bei Sekunde 30 ein. Das hilft beim Vergleich mit
 Fotos und beim Erzeugen von Standbildern.
