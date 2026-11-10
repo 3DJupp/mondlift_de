@@ -266,6 +266,60 @@
     texture.anisotropy = 4;
     return texture;
   }
+  // Namensschild: gezeichnet aus denselben Pfaden wie das Schild im
+  // Seitenkopf. Dort legt pathLength fest, wie viele Birnen auf ein Stück
+  // passen; hier wird daraus der Abstand der Punkte. Fehlt das SVG, gibt
+  // es null zurück und das Modell bekommt die einfache Beschriftung.
+  function nameSignTexture(width) {
+    const svg = document.querySelector("svg.schild");
+    const board = svg?.querySelector(".schild__tafel");
+    if (!board || typeof Path2D !== "function") return null;
+    const view = svg.viewBox.baseVal;
+    const scale = width / view.width;
+    const c = document.createElement("canvas");
+    c.width = width;
+    c.height = Math.round(view.height * scale);
+    const g = c.getContext("2d");
+    g.scale(scale, scale);
+    g.translate(-view.x, -view.y);
+    const path = (el) => new Path2D(el.getAttribute("d"));
+    const bulbs = (el, color, size, every = 1) => {
+      g.setLineDash([0, el.getTotalLength() / el.pathLength.baseVal * every]);
+      g.lineCap = "round";
+      g.lineWidth = size;
+      g.strokeStyle = color;
+      g.stroke(path(el));
+    };
+    g.fillStyle = "#fff0c2";
+    g.fill(path(board));
+    const stars = svg.querySelector(".schild__sterne");
+    if (stars) { g.fillStyle = "#e9a91c"; g.fill(path(stars)); }
+    const rim = svg.querySelector(".schild__rand");
+    if (rim) bulbs(rim, "#2f6df0", 8);
+    const row = svg.querySelector("#schild-zeile rect");
+    if (row) {
+      g.beginPath();
+      g.rect(row.x.baseVal.value, row.y.baseVal.value, row.width.baseVal.value, row.height.baseVal.value);
+      g.clip();
+    }
+    for (const letter of svg.querySelectorAll(".schild__buchstabe")) {
+      g.save();
+      const shift = letter.transform.baseVal.consolidate();
+      if (shift) g.translate(shift.matrix.e, shift.matrix.f);
+      g.setLineDash([]);
+      g.lineCap = "square";
+      g.miterLimit = 8;
+      g.lineWidth = 26;
+      g.strokeStyle = "#c4141a";
+      g.stroke(path(letter.querySelector(".schild__koerper")));
+      for (const piece of letter.querySelectorAll(".schild__birnen")) bulbs(piece, "#ffe6a6", 6);
+      g.restore();
+    }
+    const texture = new THREE.CanvasTexture(c);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return { texture, aspect: c.width / c.height };
+  }
 
   // ------------------------------------------------------------ Hintergrund
   const starPositions = [];
@@ -313,6 +367,9 @@
   const GAP = 0.25;           // Lücke im Umlauf für Gelenk und Kasse (Bogenmaß)
   const STAIRS = 1.75;        // die Treppen laufen vorn bis hierher herum
   const WALL_R = 11.9, WALL_H = 4.1, WALL_HALF = 1.0;
+  // Namensschild über der Rückwand: halber Öffnungswinkel, Höhe, Abstand
+  // der Unterkante von der Wandoberkante.
+  const SIGN_HALF = 0.42, SIGN_H = 2.7, SIGN_LIFT = 0.3;
 
   // ---------------------------------------------------------------- Podium
   const podium = new THREE.Group();
@@ -357,7 +414,8 @@
       const a = Math.PI - WALL_HALF + (2 * WALL_HALF) * i / 8;
       rod(b, polar(WALL_R - 0.06, a, 0), polar(WALL_R - 0.06, a, wallTop + 0.25), 0.07, white, 8);
       rod(b, polar(WALL_R + 0.5, a, 0), polar(WALL_R - 0.06, a, wallTop - 0.4), 0.04, darkSteel, 6);
-      // Wimpel auf jedem Pfosten.
+      // Wimpel auf jedem Pfosten, außer in der Mitte: dort steht das Schild.
+      if (Math.abs(a - Math.PI) < SIGN_HALF + 0.08) continue;
       const top = polar(WALL_R - 0.06, a, wallTop + 2.0);
       rod(b, polar(WALL_R - 0.06, a, wallTop + 0.25), top, 0.025, chrome, 5);
       const out = polar(1, a + Math.PI / 2, 0);
@@ -373,8 +431,13 @@
       lamps.add(polar(WALL_R - 0.16, a, wallTop + 0.12), i);
       if (i % 2 === 0) lamps.add(polar(WALL_R - 0.16, a, DECK_Y + 0.1), -i / 2);
     }
-    rod(b, polar(WALL_R - 0.06, Math.PI - 0.36, wallTop + 0.3), polar(WALL_R - 0.06, Math.PI - 0.36, wallTop + 2.3), 0.06, white, 6);
-    rod(b, polar(WALL_R - 0.06, Math.PI + 0.36, wallTop + 0.3), polar(WALL_R - 0.06, Math.PI + 0.36, wallTop + 2.3), 0.06, white, 6);
+    // Vier Pfosten tragen das Namensschild; obenauf sitzt je ein Scheinwerfer.
+    for (const f of [-0.94, -0.32, 0.32, 0.94]) {
+      const a = Math.PI + SIGN_HALF * f;
+      const head = polar(WALL_R + 0.02, a, wallTop + SIGN_LIFT + SIGN_H * (0.84 + 0.12 * f * f));
+      rod(b, polar(WALL_R + 0.02, a, wallTop + 0.2), head, 0.06, white, 6);
+      ball(b, 0.17, darkSteel, head.clone().add(v(0, 0.2, 0)));
+    }
 
     // Kugelleuchten an den Ecken des Podiums.
     // Die vorderen stehen seitlich außerhalb des Radkreises: Aufgerichtet
@@ -429,11 +492,34 @@
       renderOnce();
     });
 
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 1.9), new THREE.MeshBasicMaterial({
-      map: signTexture("MONDLIFT", 1024, 226, "#fff1c4", "#c2302d"), transparent: true, side: THREE.DoubleSide,
-    }));
-    sign.position.set(0, wallTop + 1.45, -WALL_R + 0.75);
-    podium.add(sign);
+    // Namensschild: eine Tafel, die dem Bogen der Rückwand folgt.
+    const nameSign = nameSignTexture(1024);
+    if (nameSign) {
+      const pos = [], uv = [], idx = [];
+      const segs = 24, r = WALL_R - 0.12;
+      const height = 2 * SIGN_HALF * r / nameSign.aspect;
+      for (let i = 0; i <= segs; i++) {
+        const u = i / segs;
+        const theta = -SIGN_HALF + 2 * SIGN_HALF * u;
+        const x = Math.sin(theta) * r, z = -Math.cos(theta) * r;
+        pos.push(x, wallTop + SIGN_LIFT, z, x, wallTop + SIGN_LIFT + height, z);
+        uv.push(u, 0, u, 1);
+        if (i < segs) idx.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex(idx);
+      podium.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+        map: nameSign.texture, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide,
+      })));
+    } else {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 1.9), new THREE.MeshBasicMaterial({
+        map: signTexture("MONDLIFT", 1024, 226, "#fff1c4", "#c2302d"), transparent: true, side: THREE.DoubleSide,
+      }));
+      sign.position.set(0, wallTop + 1.45, -WALL_R + 0.75);
+      podium.add(sign);
+    }
   }
 
   // ------------------------------------------------------------------ Kasse

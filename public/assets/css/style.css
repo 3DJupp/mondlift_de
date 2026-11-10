@@ -146,17 +146,119 @@ a:hover {
 
 .hero__title {
   margin: 0;
-  font-size: clamp(2.6rem, 11vw, 6rem);
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  line-height: 1;
-  color: var(--ink);
-  text-shadow: 0 0 36px rgba(255, 176, 64, 0.22);
+  font-size: 1rem;
+  line-height: 0;
+}
+
+/* Der Name als Text: für Screenreader und Suchmaschinen da, zu sehen ist
+   das Schild. */
+.hero__name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Namensschild im Stil des Fahrgeschäfts. Die Birnen sind gepunktete
+   Linien: Strichlänge null, runde Enden, und pathLength im SVG legt fest,
+   wie viele Birnen auf ein Stück passen. */
+.schild {
+  display: block;
+  width: min(100%, 30rem, 60vh);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  color: #e0322c;
+  filter: drop-shadow(0 0 0.7rem rgba(255, 120, 70, 0.28));
+}
+
+.schild path {
+  fill: none;
+}
+
+.schild .schild__tafel {
+  fill: rgba(40, 24, 92, 0.55);
+  stroke: rgba(160, 180, 255, 0.22);
+  stroke-width: 1.5;
+}
+
+.schild .schild__sterne {
+  fill: #ffd45c;
+}
+
+.schild__rand {
+  stroke: #5b9bff;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 0 3;
+  animation: schild-lauf 0.9s step-end infinite;
+}
+
+.schild__rand--2 {
+  stroke-dashoffset: -1;
+  animation-delay: -0.3s;
+}
+
+.schild__rand--3 {
+  stroke-dashoffset: -2;
+  animation-delay: -0.6s;
+}
+
+.schild__buchstabe {
+  animation: schild-farbe 28s linear infinite;
+}
+
+.schild__buchstabe--2 { animation-delay: 0.12s; }
+.schild__buchstabe--3 { animation-delay: 0.24s; }
+.schild__buchstabe--4 { animation-delay: 0.36s; }
+.schild__buchstabe--5 { animation-delay: 0.48s; }
+.schild__buchstabe--6 { animation-delay: 0.6s; }
+.schild__buchstabe--7 { animation-delay: 0.72s; }
+.schild__buchstabe--8 { animation-delay: 0.84s; }
+
+.schild__koerper {
+  stroke: currentColor;
+  stroke-width: 21;
+  stroke-linecap: square;
+  stroke-miterlimit: 8;
+}
+
+.schild__birnen {
+  stroke: #fff4d6;
+  stroke-width: 7.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 1;
+}
+
+/* Lauflicht: jede dritte Birne ist kurz dunkel, die Lücke wandert. */
+@keyframes schild-lauf {
+  0% { opacity: 1; }
+  67%, 100% { opacity: 0.22; }
+}
+
+/* Farbprogramm wie bei den LED-Birnen am Platz: lange Rot, dann Blau,
+   danach einmal durch die Farben. Die Buchstaben wechseln leicht versetzt. */
+@keyframes schild-farbe {
+  0%, 40% { color: #e0322c; }
+  43%, 64% { color: #2c63f2; }
+  67%, 73% { color: #e8a614; }
+  76%, 82% { color: #1c9c63; }
+  85%, 91% { color: #b93fc9; }
+  94%, 100% { color: #e0322c; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .schild__rand,
+  .schild__buchstabe {
+    animation: none;
+  }
 }
 
 .hero__sub {
-  margin: 0.9rem auto 0;
+  margin: 0.7rem auto 0;
   max-width: 34ch;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: clamp(0.72rem, 2.6vw, 0.88rem);
