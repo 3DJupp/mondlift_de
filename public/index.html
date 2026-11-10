@@ -43,7 +43,65 @@
 
     <div class="hero">
       <header class="hero__head">
-        <h1 class="hero__title" data-site="site.name">Mondlift</h1>
+        <!-- Der Name steht als Text in der Überschrift; zu sehen ist das
+             Schild darunter. Es ist dem Namensschild über der Rückwand
+             nachempfunden: Buchstaben mit Birnen, Lauflicht am Rand. Die
+             3D-Szene liest dieselben Pfade für ihr Schild am Modell aus. -->
+        <h1 class="hero__title">
+          <span class="hero__name" data-site="site.name">Mondlift</span>
+        <svg class="schild" viewBox="-78 -68 866 236" aria-hidden="true" focusable="false">
+          <clipPath id="schild-zeile"><rect x="-40" y="-10.5" width="800" height="121" /></clipPath>
+          <path class="schild__tafel" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="schild__sterne" d="M98 12L99.68 16.32L104 18L99.68 19.68L98 24L96.32 19.68L92 18L96.32 16.32ZM204 90L205.68 94.32L210 96L205.68 97.68L204 102L202.32 97.68L198 96L202.32 94.32ZM310 8L311.68 12.32L316 14L311.68 15.68L310 20L308.32 15.68L304 14L308.32 12.32ZM414 54L415.68 58.32L420 60L415.68 61.68L414 66L412.32 61.68L408 60L412.32 58.32ZM505 16L506.68 20.32L511 22L506.68 23.68L505 28L503.32 23.68L499 22L503.32 20.32ZM541 78L542.68 82.32L547 84L542.68 85.68L541 90L539.32 85.68L535 84L539.32 82.32ZM626 80L627.68 84.32L632 86L627.68 87.68L626 92L624.32 87.68L620 86L624.32 84.32ZM728 54L729.68 58.32L734 60L729.68 61.68L728 66L726.32 61.68L722 60L726.32 58.32ZM-22 0L-20.32 4.32L-16 6L-20.32 7.68L-22 12L-23.68 7.68L-28 6L-23.68 4.32ZM-18 94L-16.32 98.32L-12 100L-16.32 101.68L-18 106L-19.68 101.68L-24 100L-19.68 98.32ZM742 -2L743.68 2.32L748 4L743.68 5.68L742 10L740.32 5.68L736 4L740.32 2.32Z" />
+          <path class="schild__rand schild__rand--1" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="schild__rand schild__rand--2" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="schild__rand schild__rand--3" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <g class="schild__wort" clip-path="url(#schild-zeile)">
+            <g class="schild__buchstabe schild__buchstabe--1" transform="translate(0)">
+              <path class="schild__koerper" d="M0 100V0L40 70L80 0V100" />
+              <path class="schild__birnen" pathLength="8" d="M0 100L0 0" />
+              <path class="schild__birnen" pathLength="6" d="M0 0L40 70" />
+              <path class="schild__birnen" pathLength="6" d="M40 70L80 0" />
+              <path class="schild__birnen" pathLength="8" d="M80 0L80 100" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--2" transform="translate(116)">
+              <path class="schild__koerper" d="M35 0A35 35 0 0 1 70 35V65A35 35 0 0 1 0 65V35A35 35 0 0 1 35 0Z" />
+              <path class="schild__birnen" pathLength="22" d="M35 0A35 35 0 0 1 70 35V65A35 35 0 0 1 0 65V35A35 35 0 0 1 35 0Z" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--3" transform="translate(222)">
+              <path class="schild__koerper" d="M0 100V0L70 100V0" />
+              <path class="schild__birnen" pathLength="8" d="M0 100L0 0" />
+              <path class="schild__birnen" pathLength="10" d="M0 0L70 100" />
+              <path class="schild__birnen" pathLength="8" d="M70 100L70 0" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--4" transform="translate(328)">
+              <path class="schild__koerper" d="M0 0H24A44 50 0 0 1 24 100H0Z" />
+              <path class="schild__birnen" pathLength="8" d="M0 0L0 100" />
+              <path class="schild__birnen" pathLength="16" d="M0 0H24A44 50 0 0 1 24 100H0" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--5" transform="translate(432)">
+              <path class="schild__koerper" d="M0 0V100H55" />
+              <path class="schild__birnen" pathLength="8" d="M0 0L0 100" />
+              <path class="schild__birnen" pathLength="4" d="M0 100L55 100" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--6" transform="translate(523)">
+              <path class="schild__koerper" d="M0 0V100" />
+              <path class="schild__birnen" pathLength="8" d="M0 0L0 100" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--7" transform="translate(559)">
+              <path class="schild__koerper" d="M55 0H0V100M0 48H44" />
+              <path class="schild__birnen" pathLength="8" d="M0 100L0 0" />
+              <path class="schild__birnen" pathLength="4" d="M0 0L55 0" />
+              <path class="schild__birnen" pathLength="4" d="M0 48L44 48" />
+            </g>
+            <g class="schild__buchstabe schild__buchstabe--8" transform="translate(642)">
+              <path class="schild__koerper" d="M0 0H70M35 0V100" />
+              <path class="schild__birnen" pathLength="6" d="M0 0L70 0" />
+              <path class="schild__birnen" pathLength="8" d="M35 0L35 100" />
+            </g>
+          </g>
+        </svg>
+        </h1>
         <p class="hero__sub" data-site="site.tagline">
           Eine Fan-Hommage an ein Fahrgeschäft auf Reisen
         </p>
