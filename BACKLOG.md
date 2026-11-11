@@ -148,14 +148,13 @@ Hinweis, wo die Begründung nachzulesen ist.
 - **Markdown-Fassungen, llms-full.txt, Zitiervorschlag.** Siehe README
   unter „llms.txt und die KI-Crawler".
 
-- **Link-Vorschau (`og:image`).** Es gibt jetzt ein Standbild unter
-  `/assets/og/mondlift.png`, gerendert aus der Animation selbst mit
-  `scripts/og-image.mjs`. Die Annahme von damals — „der Worker kann kein
-  PNG erzeugen" — stimmt weiter; erzeugt wird es nicht im Worker, sondern
-  einmalig beim Entwickeln.
-- **Die Animation als Video (`og:video`).** Die Startseite bietet die
-  3D-Szene zusätzlich als `/assets/og/mondlift.mp4` an, aufgenommen mit
-  `scripts/og-video.mjs`. Siehe README unter „Link-Vorschau".
+- **Link-Vorschau (`og:image`, `og:video`).** Es gibt ein Standbild unter
+  `/assets/og/mondlift.png` und für die Startseite ein Video unter
+  `/video/mondlift.mp4`, beide aus der 3D-Szene der Startseite gerendert
+  (`scripts/og-image.mjs`, `scripts/og-video.mjs`). Die Annahme von damals —
+  „der Worker kann kein PNG erzeugen" — stimmt weiter; erzeugt wird nicht im
+  Worker, sondern einmalig beim Entwickeln. Siehe README unter
+  „Link-Vorschau".
 - **Lesbare Sitemap.** `/sitemap.xml` bleibt reines XML, daneben steht
   `/sitemap` als normale Seite aus derselben Liste. Der übliche Weg über
   ein XSLT-Stylesheet fällt weg, weil Chrome XSLT am 17. November 2026

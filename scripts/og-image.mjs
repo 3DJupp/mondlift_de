@@ -7,206 +7,94 @@
  * Messenger nicht an, und ein PNG-Encoder im Worker haette keinen zweiten
  * Verwendungszweck. Das Bild wird also einmal gebaut und eingecheckt.
  *
- * Gezeigt wird dasselbe, was Besucher auf der Startseite sehen: die
- * Animation aus public/assets/js/enterprise.js, angehalten in der Stellung,
- * die sie auch bei `prefers-reduced-motion: reduce` zeichnet. Dafuer laeuft
- * hier kein Playwright und keine Bibliothek, sondern das Chromium, das
- * ohnehin auf dem Rechner liegt - mit `--screenshot` kann es das allein.
+ * Gezeigt wird der Kopf der Startseite: Namensschild, Unterzeile und die
+ * 3D-Szene mit aufgerichtetem Rad. Die Fahrt wird dafuer mit `?t=...`
+ * eingefroren, wie es enterprise-3d.js fuer Standbilder vorsieht, und die
+ * Lichter des Schilds stehen auf einem festen Zeitpunkt. Dadurch sieht das
+ * Bild nach jedem Lauf gleich aus. Dieselbe Buehne nimmt og-video.mjs in
+ * Bewegung auf; die gemeinsamen Teile stehen in og-buehne.mjs.
+ *
+ * Gebraucht werden Chromium und Netz fuer three.js. Mit ffmpeg wird das
+ * Bild zusaetzlich auf 256 Farben gebracht, damit es klein bleibt; ohne
+ * ffmpeg bleibt es beim groesseren PNG aus Chromium.
  *
  *   node scripts/og-image.mjs
  *   node scripts/og-image.mjs --chrome /pfad/zu/chrome
  *   node scripts/og-image.mjs --out /tmp/vorschau.png
+ *   node scripts/og-image.mjs --t 24 --schild 600
  *
- * Neu bauen muss man das Bild nur, wenn sich die Animation oder der
- * Schriftzug darauf aendert. Die Punkte zur Optik stehen in BACKLOG.md.
+ * Neu bauen muss man das Bild nur, wenn sich die Szene, das Schild oder
+ * der Kopf der Startseite aendert - dann auch das Video.
  */
 
-import { createServer } from "node:http";
-import { readFile, mkdir, access } from "node:fs/promises";
+import { mkdir, writeFile, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { extname, join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { join, resolve, dirname } from "node:path";
+import {
+  PUBLIC,
+  WIDTH,
+  HEIGHT,
+  arg,
+  zahl,
+  oeffneStartseite,
+} from "./og-buehne.mjs";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PUBLIC = join(ROOT, "public");
-const WIDTH = 1200;
-const HEIGHT = 630;
-const HARNESS = "/__og-standbild.html";
+const FAHRT = zahl("t", 24); // Sekunde der Fahrt: Rad steht oben
+const SCHILD = zahl("schild", 600); // Millisekunden im Lichtspiel des Schilds
 
-/** Pfade, unter denen ein Chromium liegen kann - der erste Treffer gewinnt. */
-const CHROME_CANDIDATES = [
-  process.env.CHROME_PATH,
-  "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  "/usr/bin/chromium",
-  "/usr/bin/chromium-browser",
-  "/usr/bin/google-chrome",
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-];
-
-const TYPES = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".txt": "text/plain; charset=utf-8",
-};
-
-function arg(name, fallback = null) {
-  const index = process.argv.indexOf(`--${name}`);
-  return index === -1 ? fallback : (process.argv[index + 1] ?? fallback);
-}
-
-/**
- * Die Seite fuer den Screenshot. Nur Canvas und Schriftzug - keine
- * Navigation, kein Footer, nichts, was auf einer Vorschaukarte verloren
- * waere. Das Stylesheet der Seite wird mitgeladen, damit Schrift und
- * Farben dieselben sind.
- */
-const harnessHtml = `<!doctype html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="/assets/css/style.css" />
-    <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #070a12; }
-      #ride { position: fixed; inset: 0; width: 100%; height: 100%; }
-      .karte {
-        position: fixed;
-        inset: auto 0 0 0;
-        padding: 0 0 54px;
-        text-align: center;
-        background: linear-gradient(
-          to top,
-          rgba(4, 6, 14, 0.95) 0%,
-          rgba(4, 6, 14, 0.62) 55%,
-          rgba(4, 6, 14, 0) 100%
-        );
-      }
-      .karte__titel {
-        margin: 0;
-        font-size: 92px;
-        font-weight: 600;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        line-height: 1;
-        color: #e9edf6;
-        text-shadow: 0 0 48px rgba(255, 176, 64, 0.3);
-      }
-      .karte__zeile {
-        margin: 18px 0 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 19px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: #b3bdd1;
-      }
-    </style>
-  </head>
-  <body>
-    <canvas id="ride" aria-hidden="true"></canvas>
-    <div class="karte">
-      <p class="karte__titel">Mondlift</p>
-      <p class="karte__zeile">Huss Enterprise &middot; mondlift.de</p>
-    </div>
-    <script src="/assets/js/enterprise.js"></script>
-  </body>
-</html>
-`;
-
-async function erstesVorhandenes(pfade) {
-  for (const pfad of pfade) {
-    if (!pfad) continue;
-    try {
-      await access(pfad);
-      return pfad;
-    } catch {
-      // weiter suchen
-    }
-  }
-  return null;
-}
-
-/** Kleiner Server, damit die absoluten Pfade im HTML aufgehen. */
-function serve() {
-  const server = createServer(async (request, response) => {
-    const pfad = new URL(request.url, "http://127.0.0.1").pathname;
-
-    if (pfad === HARNESS) {
-      response.writeHead(200, { "content-type": TYPES[".html"] });
-      response.end(harnessHtml);
-      return;
-    }
-
-    try {
-      const datei = join(PUBLIC, pfad);
-      if (!datei.startsWith(PUBLIC)) throw new Error("ausserhalb");
-      const inhalt = await readFile(datei);
-      response.writeHead(200, {
-        "content-type": TYPES[extname(datei)] ?? "application/octet-stream",
-      });
-      response.end(inhalt);
-    } catch {
-      response.writeHead(404);
-      response.end("nicht gefunden");
-    }
-  });
-
+/** PNG auf eine Palette von 256 Farben bringen. Faellt aus, wenn ffmpeg fehlt. */
+function verkleinern(png) {
   return new Promise((ok) => {
-    server.listen(0, "127.0.0.1", () => ok(server));
+    const ffmpeg = spawn(
+      arg("ffmpeg", "ffmpeg"),
+      [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "image2pipe",
+        "-c:v",
+        "png",
+        "-i",
+        "-",
+        "-vf",
+        "split[a][b];[a]palettegen=max_colors=256:stats_mode=single[p];[b][p]paletteuse=dither=sierra2_4a",
+        "-f",
+        "image2pipe",
+        "-c:v",
+        "png",
+        "-",
+      ],
+      { stdio: ["pipe", "pipe", "ignore"] },
+    );
+    const teile = [];
+    ffmpeg.stdout.on("data", (stueck) => teile.push(stueck));
+    ffmpeg.on("error", () => ok(null));
+    ffmpeg.on("close", (code) => ok(code === 0 ? Buffer.concat(teile) : null));
+    ffmpeg.stdin.on("error", () => {});
+    ffmpeg.stdin.end(png);
   });
-}
-
-function run(bin, args) {
-  return new Promise((ok, fehler) => {
-    const kind = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] });
-    let stderr = "";
-    kind.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    kind.on("error", fehler);
-    kind.on("close", (code) => {
-      if (code === 0) ok();
-      else fehler(new Error(`Chromium endete mit ${code}:\n${stderr}`));
-    });
-  });
-}
-
-const chrome = await erstesVorhandenes([arg("chrome"), ...CHROME_CANDIDATES]);
-if (!chrome) {
-  console.error(
-    "Kein Chromium gefunden. Pfad mit --chrome oder CHROME_PATH angeben.",
-  );
-  process.exit(1);
 }
 
 const ziel = resolve(arg("out", join(PUBLIC, "assets/og/mondlift.png")));
 await mkdir(dirname(ziel), { recursive: true });
 
-const server = await serve();
-const { port } = server.address();
-const profil = await mkdtemp(join(tmpdir(), "og-chrome-"));
-
+let buehne = null;
 try {
-  await run(chrome, [
-    "--headless=new",
-    "--disable-gpu",
-    "--no-sandbox",
-    "--hide-scrollbars",
-    `--user-data-dir=${profil}`,
-    // Haelt die Animation an: bei reduzierter Bewegung zeichnet
-    // enterprise.js genau ein Bild, in einer festgelegten Stellung.
-    // Dadurch sieht die Vorschau nach jedem Lauf gleich aus.
-    "--force-prefers-reduced-motion",
-    "--virtual-time-budget=4000",
-    `--window-size=${WIDTH},${HEIGHT}`,
-    `--screenshot=${ziel}`,
-    `http://127.0.0.1:${port}${HARNESS}`,
-  ]);
-  console.log(`Standbild geschrieben: ${ziel} (${WIDTH}x${HEIGHT})`);
+  buehne = await oeffneStartseite({ query: `?t=${FAHRT}` });
+  await buehne.schritt(SCHILD);
+  const gross = await buehne.bild();
+  const klein = await verkleinern(gross);
+  if (!klein) console.warn("ffmpeg fehlt, das Bild bleibt unverkleinert.");
+  await writeFile(ziel, klein && klein.length < gross.length ? klein : gross);
+
+  const { size } = await stat(ziel);
+  console.log(
+    `Standbild geschrieben: ${ziel} (${WIDTH}x${HEIGHT}, ${Math.round(size / 1024)} kB)`,
+  );
+} catch (fehler) {
+  console.error(fehler.message);
+  process.exitCode = 1;
 } finally {
-  server.close();
-  await rm(profil, { recursive: true, force: true });
+  await buehne?.schliessen();
 }

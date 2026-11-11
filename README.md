@@ -27,7 +27,7 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   assets/img/rueckwand.webp Wandbild der Rückwand als Textur (Herkunft siehe unten)
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
   assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
-  assets/og/mondlift.mp4    die Startanimation als Video für die Link-Vorschau (erzeugt)
+  video/mondlift.mp4        die Startanimation als Video für die Link-Vorschau (erzeugt)
 src/
   index.ts                  Routing, www-Redirect, Fehlerfälle
   headers.ts                Security-Header inkl. CSP
@@ -44,6 +44,7 @@ src/
   llms.ts                   erzeugt /llms.txt
   markdown.ts               Markdown-Fassungen der Seiten, /llms-full.txt
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
+  video.ts                  liefert /video/ mit Teilabrufen (Range) aus
   anschrift.ts              zeichnet /anschrift.svg
   anschrift-glyphen.ts      Zeichenumrisse dafür (erzeugt)
   contact.ts                POST /api/contact
@@ -56,6 +57,7 @@ scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
   og-image.mjs              rendert das Standbild (läuft selten)
   og-video.mjs              nimmt das Vorschauvideo auf (läuft selten)
+  og-buehne.mjs             was beide teilen: Server, Chromium, Uhr
   glyphs.py                 erzeugt anschrift-glyphen.ts (läuft selten)
 docs/superpowers/specs/     Entwürfe, aus denen größere Umbauten kamen
 site.config.json            Name, Anschrift, E-Mail, Steckbrief, Seitenliste
@@ -395,56 +397,61 @@ und der Bauform verknüpft.
 ## Link-Vorschau
 
 `og:image` zeigt auf `/assets/og/mondlift.png`, ein Standbild von 1200×630
-Pixeln. Erzeugt wird es mit `scripts/og-image.mjs`:
+Pixeln. Die Startseite trägt zusätzlich `og:video` mit
+`/video/mondlift.mp4`. Beide zeigen dieselbe Bühne, den Kopf der Startseite
+mit Namensschild, Unterzeile und der 3D-Szene: das Bild mit aufgerichtetem
+Rad, das Video fünfzehn Sekunden lang, wie das Rad anfährt und sich
+aufrichtet (H.264, ohne Ton).
 
 ```bash
 node scripts/og-image.mjs
-```
-
-Das Skript startet einen kleinen Server auf `public/`, öffnet darin eine
-Seite mit der Animation und dem Schriftzug und lässt Chromium davon einen
-Screenshot machen. Playwright oder eine Bibliothek braucht es dafür nicht —
-`--screenshot` kann Chromium allein. Gezeigt wird dieselbe Stellung, die
-`enterprise.js` bei `prefers-reduced-motion: reduce` zeichnet; dadurch sieht
-das Bild nach jedem Lauf gleich aus.
-
-Der Weg über eine Datei ist Absicht: `og:image` braucht ein Rasterbild, SVG
-nimmt dort fast niemand an, und ein PNG-Encoder im Worker hätte keinen
-zweiten Verwendungszweck. Das Bild ist damit die eine Stelle, an der die
-Regel „alles aus `site.config.json`" nicht trägt — neu gebaut werden muss
-es, wenn sich die Animation oder der Schriftzug darauf ändert.
-
-### Das Video dazu
-
-Die Startseite trägt zusätzlich `og:video` mit `/assets/og/mondlift.mp4`:
-fünfzehn Sekunden der 3D-Szene, wie das Rad anfährt und sich aufrichtet,
-1200×630 Pixel, H.264, ohne Ton. Abgespielt wird das nur dort, wo ein
-Dienst Videos fremder Seiten in der Vorschau zulässt, etwa in Discord oder
-Telegram. Alle anderen nehmen weiter das Standbild, deshalb bleibt
-`og:image` daneben stehen und `twitter:card` unverändert. Die Unterseiten
-haben das Video nicht; dort wäre ein Fahrgeschäft in Bewegung über einem
-Glossar eher Ablenkung.
-
-```bash
 node scripts/og-video.mjs
 ```
 
-Das Skript öffnet die Startseite in Chromium und nimmt sie Bild für Bild
-auf. Dafür schiebt es der Seite eine eigene Uhr unter: `performance.now()`
-und `requestAnimationFrame` laufen nur weiter, wenn das Skript einen Schritt
-macht, und die CSS-Animationen des Namensschilds folgen derselben Zeit. So
-spielt es keine Rolle, wie schnell der Rechner die Szene zeichnet, und das
-Ergebnis ist nach jedem Lauf dasselbe. Gebraucht werden Chromium, ffmpeg
-und Netz für Three.js; mit `--vorlauf`, `--dauer` und `--crf` lassen sich
-Ausschnitt und Dateigröße ändern.
+Beide Skripte öffnen die Startseite in Chromium und steuern es über das
+DevTools-Protokoll; eine Bibliothek braucht es dafür nicht. Was sie teilen,
+steht in `scripts/og-buehne.mjs`. Gebraucht werden Chromium, Netz für
+Three.js und ffmpeg — fürs Video zwingend, fürs Bild nur, um es auf 256
+Farben und damit auf rund 130 kB zu bringen.
 
-Standbild und Video zeigen nicht dasselbe: das Bild stammt aus der
-Canvas-Fassung, das Video aus der 3D-Szene.
+Damit das Ergebnis nach jedem Lauf gleich aussieht, bekommt die Seite eine
+eigene Uhr untergeschoben: `performance.now()` und `requestAnimationFrame`
+laufen nur weiter, wenn das Skript einen Schritt macht, und die
+CSS-Animationen des Namensschilds folgen derselben Zeit. Das Video entsteht
+so Bild für Bild, und es spielt keine Rolle, wie schnell der Rechner die
+Szene zeichnet. Das Standbild friert die Fahrt mit `?t=24` ein.
 
-Beide Dateien liegen unter `/assets/og/` und sind in `public/_headers` von
-`Cross-Origin-Resource-Policy: same-origin` ausgenommen. Manche Foren und
-Web-Clients binden Vorschaubilder direkt im Browser des Lesers ein, und der
-würde sie sonst verwerfen.
+Zwei Dinge weichen von der Seite ab: Der Sprunglink am unteren Rand fehlt,
+und die Unterzeile steht unten statt unter dem Schild. Im flachen
+Vorschauformat reicht das aufgerichtete Rad bis unter das Schild und würde
+sie sonst verdecken.
+
+Der Weg über Dateien ist Absicht: `og:image` braucht ein Rasterbild, SVG
+nimmt dort fast niemand an, und ein PNG-Encoder im Worker hätte keinen
+zweiten Verwendungszweck. Bild und Video sind damit die Stelle, an der die
+Regel „alles aus `site.config.json`" nicht trägt — neu gebaut werden müssen
+beide, wenn sich die Szene, das Schild oder der Kopf der Startseite ändert.
+
+**Wer das Video abspielt.** Nur Dienste, die Videos fremder Seiten in der
+Vorschau zulassen, etwa Discord oder Telegram. Alle anderen nehmen das
+Standbild, deshalb bleibt `twitter:card` unverändert. Die Unterseiten haben
+das Video nicht; dort wäre ein Fahrgeschäft in Bewegung über einem Glossar
+eher Ablenkung.
+
+**Warum das Video über den Worker läuft.** Cloudflare beantwortet eine
+Anfrage mit `Range` an ein Static Asset mit `200` und der ganzen Datei.
+Safari und alles, was auf Apples Abspieler aufsetzt, spielt ein Video aber
+nur ab, wenn der Server Teilstücke liefert. Das Video liegt deshalb nicht
+unter `/assets/`, sondern unter `/video/`, und `src/video.ts` schneidet das
+verlangte Stück selbst heraus (`206`, `Accept-Ranges`, `If-Range`, `416`).
+Das kostet eine Worker-Anfrage je Abruf; bei einer Datei, die nur
+Link-Vorschauen laden, fällt das nicht ins Gewicht.
+
+**Fremde Seiten dürfen beides einbinden.** Bild und Video tragen
+`Cross-Origin-Resource-Policy: cross-origin`, alles andere bleibt bei
+`same-origin`. Manche Foren und Web-Clients binden Vorschauen direkt im
+Browser des Lesers ein, und der würde sie sonst verwerfen. Fürs Bild steht
+die Ausnahme in `public/_headers`, fürs Video in `src/headers.ts`.
 
 ## Reichweite
 

@@ -14,10 +14,11 @@
   Cross-Origin-Resource-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
-# Vorschaubild und -video für geteilte Links. Manche Foren und Web-Clients
-# binden beides direkt im Browser des Lesers ein, statt es selbst abzuholen;
-# mit same-origin bliebe die Vorschau dort leer. Die Zeile mit dem
+# Vorschaubild für geteilte Links. Manche Foren und Web-Clients binden es
+# direkt im Browser des Lesers ein, statt es selbst abzuholen; mit
+# same-origin bliebe die Vorschau dort leer. Die Zeile mit dem
 # Ausrufezeichen nimmt den Wert von oben zurück, sonst stünden beide da.
+# Das Video dazu liegt unter /video/ und läuft über den Worker.
 /assets/og/*
   ! Cross-Origin-Resource-Policy
   Cross-Origin-Resource-Policy: cross-origin
