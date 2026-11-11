@@ -29,6 +29,11 @@ export interface HeaderOptions {
    * erst nach Einwilligung, siehe public/assets/js/einwilligung.js.
    */
   analytics?: boolean;
+  /**
+   * Die Antwort darf von fremden Seiten als Bild oder Video eingebunden
+   * werden. Gilt nur fuer das Vorschauvideo, siehe src/video.ts.
+   */
+  einbindbar?: boolean;
 }
 
 /**
@@ -109,7 +114,10 @@ export function withSecurityHeaders(
   headers.set("Permissions-Policy", PERMISSIONS_POLICY);
   headers.set("X-Frame-Options", "DENY");
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
-  headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  headers.set(
+    "Cross-Origin-Resource-Policy",
+    options.einbindbar ? "cross-origin" : "same-origin",
+  );
 
   // HSTS nur ueber HTTPS, damit lokales `wrangler dev` auf http nicht
   // dauerhaft im Browser-Cache landet.

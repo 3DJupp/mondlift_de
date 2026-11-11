@@ -9,6 +9,7 @@
  *  - Adressen des Vorbesitzers mit 410 Gone beantworten
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
+ *  - das Vorschauvideo mit Teilabrufen ausliefern
  *  - Daten aus site.config.json in die HTML-Seiten einsetzen
  *  - strukturierte Daten einsetzen und ihren Hash in die CSP schreiben
  *  - Google Analytics samt Einwilligung einbinden, wenn eine Mess-ID
@@ -33,6 +34,7 @@ import { SITEMAP_XSL_PATH, handleSitemapXsl } from "./sitemap-xsl";
 import { handleAnschrift } from "./anschrift";
 import { analyticsId } from "./analytics";
 import { altlast, goneResponse } from "./altlasten";
+import { VIDEO_PREFIX, handleVideo } from "./video";
 import {
   LLMS_FULL_PATH,
   handleLlmsFull,
@@ -164,6 +166,13 @@ export default {
 
     // --- Auslieferung ----------------------------------------------------
     try {
+      // Das Vorschauvideo. Es darf von fremden Seiten eingebunden werden,
+      // sonst koennte es in keiner Link-Vorschau laufen. Siehe src/video.ts.
+      if (url.pathname.startsWith(VIDEO_PREFIX)) {
+        const video = await handleVideo(request, url, env);
+        if (video) return withSecurityHeaders(video, url, { einbindbar: true });
+      }
+
       // Das Asset-Binding soll die Query nicht sehen: ?status=... gehört
       // zur Seitenlogik, nicht zum Dateinamen, und würde sonst den Cache
       // unnötig aufteilen.
