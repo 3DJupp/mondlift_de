@@ -153,6 +153,9 @@ Hinweis, wo die Begründung nachzulesen ist.
   `scripts/og-image.mjs`. Die Annahme von damals — „der Worker kann kein
   PNG erzeugen" — stimmt weiter; erzeugt wird es nicht im Worker, sondern
   einmalig beim Entwickeln.
+- **Die Animation als Video (`og:video`).** Die Startseite bietet die
+  3D-Szene zusätzlich als `/assets/og/mondlift.mp4` an, aufgenommen mit
+  `scripts/og-video.mjs`. Siehe README unter „Link-Vorschau".
 - **Lesbare Sitemap.** `/sitemap.xml` bleibt reines XML, daneben steht
   `/sitemap` als normale Seite aus derselben Liste. Der übliche Weg über
   ein XSLT-Stylesheet fällt weg, weil Chrome XSLT am 17. November 2026

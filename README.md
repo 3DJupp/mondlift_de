@@ -27,6 +27,7 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   assets/img/rueckwand.webp Wandbild der Rückwand als Textur (Herkunft siehe unten)
   assets/js/kontakt.js      Formular, schrittweise Verbesserung
   assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
+  assets/og/mondlift.mp4    die Startanimation als Video für die Link-Vorschau (erzeugt)
 src/
   index.ts                  Routing, www-Redirect, Fehlerfälle
   headers.ts                Security-Header inkl. CSP
@@ -54,6 +55,7 @@ src/
 scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
   og-image.mjs              rendert das Standbild (läuft selten)
+  og-video.mjs              nimmt das Vorschauvideo auf (läuft selten)
   glyphs.py                 erzeugt anschrift-glyphen.ts (läuft selten)
 docs/superpowers/specs/     Entwürfe, aus denen größere Umbauten kamen
 site.config.json            Name, Anschrift, E-Mail, Steckbrief, Seitenliste
@@ -411,6 +413,38 @@ nimmt dort fast niemand an, und ein PNG-Encoder im Worker hätte keinen
 zweiten Verwendungszweck. Das Bild ist damit die eine Stelle, an der die
 Regel „alles aus `site.config.json`" nicht trägt — neu gebaut werden muss
 es, wenn sich die Animation oder der Schriftzug darauf ändert.
+
+### Das Video dazu
+
+Die Startseite trägt zusätzlich `og:video` mit `/assets/og/mondlift.mp4`:
+fünfzehn Sekunden der 3D-Szene, wie das Rad anfährt und sich aufrichtet,
+1200×630 Pixel, H.264, ohne Ton. Abgespielt wird das nur dort, wo ein
+Dienst Videos fremder Seiten in der Vorschau zulässt, etwa in Discord oder
+Telegram. Alle anderen nehmen weiter das Standbild, deshalb bleibt
+`og:image` daneben stehen und `twitter:card` unverändert. Die Unterseiten
+haben das Video nicht; dort wäre ein Fahrgeschäft in Bewegung über einem
+Glossar eher Ablenkung.
+
+```bash
+node scripts/og-video.mjs
+```
+
+Das Skript öffnet die Startseite in Chromium und nimmt sie Bild für Bild
+auf. Dafür schiebt es der Seite eine eigene Uhr unter: `performance.now()`
+und `requestAnimationFrame` laufen nur weiter, wenn das Skript einen Schritt
+macht, und die CSS-Animationen des Namensschilds folgen derselben Zeit. So
+spielt es keine Rolle, wie schnell der Rechner die Szene zeichnet, und das
+Ergebnis ist nach jedem Lauf dasselbe. Gebraucht werden Chromium, ffmpeg
+und Netz für Three.js; mit `--vorlauf`, `--dauer` und `--crf` lassen sich
+Ausschnitt und Dateigröße ändern.
+
+Standbild und Video zeigen nicht dasselbe: das Bild stammt aus der
+Canvas-Fassung, das Video aus der 3D-Szene.
+
+Beide Dateien liegen unter `/assets/og/` und sind in `public/_headers` von
+`Cross-Origin-Resource-Policy: same-origin` ausgenommen. Manche Foren und
+Web-Clients binden Vorschaubilder direkt im Browser des Lesers ein, und der
+würde sie sonst verwerfen.
 
 ## Reichweite
 
