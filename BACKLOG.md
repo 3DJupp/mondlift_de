@@ -25,7 +25,7 @@ ab hier vor allem außerhalb des Repos. Nach Wirkung sortiert:
    der Bauform „Enterprise" mit Hersteller, Betreiber und `described at URL` auf
    mondlift.de. Wikidata ist eine der Quellen, aus denen Modelle und
    Suchmaschinen Entitäten zusammensetzen. Danach gehört die Wikidata-
-   Adresse in `sameAs` des Geräts in `src/strukturierte-daten.ts`.
+   Adresse in `sameAs` des Geräts in `src/structured-data.ts`.
 5. **Prüfen, nicht raten.** Alle paar Wochen dieselben Fragen an ChatGPT,
    Perplexity, Claude und Gemini stellen („Was ist der Mondlift?", „Gibt
    es noch ein reisendes Enterprise in Deutschland?", „War der Mondlift
@@ -94,7 +94,7 @@ Volksfest, Ort, Zeitraum, Quelle.
 - **Das kehrt eine bisherige Entscheidung um.** An vier Stellen steht heute
   ausdrücklich, dass die Seite keinen Terminkalender führt:
   `public/mondlift.html` (Abschnitt zu den Standorten), `public/fragen.html`
-  und `src/fragen.ts` (Frage nach den Standorten), `src/llms.ts` (Hinweis
+  und `src/faq.ts` (Frage nach den Standorten), `src/llms.ts` (Hinweis
   für Sprachmodelle). Alle vier müssen mit umgestellt werden, sonst
   widerspricht sich die Seite selbst.
 - **Daten an einer Stelle.** Termine gehören als Liste in
@@ -162,10 +162,10 @@ Hinweis, wo die Begründung nachzulesen ist.
 - **Altlasten der Domain.** Die Adressen des WordPress, das vor dieser
   Seite unter der Domain lief, beantwortet der Worker mit `410 Gone` statt
   `404`, damit sie schneller aus dem Index fallen. Siehe
-  `src/altlasten.ts` und den Abschnitt im README.
+  `src/legacy-urls.ts` und den Abschnitt im README.
 - **IndexNow beim Deploy.** `npm run deploy` meldet über den npm-Hook
   `postdeploy` die kürzlich geänderten Seiten selbst.
 - **Strukturierte Daten (JSON-LD).** Der Einwand war die CSP und ein Hash,
   der von Hand nachgezogen werden müsste. Der Worker rechnet ihn jetzt
   selbst über denselben Block, den er ausliefert — siehe
-  `src/strukturierte-daten.ts` und den Abschnitt im README.
+  `src/structured-data.ts` und den Abschnitt im README.

@@ -19,41 +19,34 @@
 
 import config from "../site.config.json";
 import { generatedFile } from "./cache";
-import { MARKDOWN_SEITEN, LLMS_FULL_PATH, markdownPfad } from "./markdown";
+import { MARKDOWN_PAGES, LLMS_FULL_PATH, markdownPath } from "./markdown";
+import { PAGES, absoluteUrl, pageById, type Lang } from "./pages";
 
 /** Eine Stunde, wie bei der Sitemap: ändert sich nur mit einem Deploy. */
 const MAX_AGE = 3600;
 
-interface PageEntry {
-  path: string;
-  title?: string;
-  summary?: string;
-}
-
-function abs(path: string): string {
-  return new URL(path, config.site.url).toString();
+/**
+ * Die Seiten einer Sprache: Inhaltsseiten zeigen auf ihre Markdown-Fassung,
+ * wie es llmstxt.org vorsieht; die HTML-Adresse steht dahinter, denn die
+ * ist zu zitieren.
+ */
+function pageLines(lang: Lang, withMarkdown: boolean): string[] {
+  const cite = lang === "en" ? "Cite as" : "Zitieren als";
+  return PAGES.filter(
+    (page) => page.lang === lang && MARKDOWN_PAGES.includes(page) === withMarkdown,
+  ).map((page) =>
+    withMarkdown
+      ? `- [${page.title}](${absoluteUrl(markdownPath(page.path))}): ${page.summary} ${cite} ${absoluteUrl(page.path)}`
+      : `- [${page.title}](${absoluteUrl(page.path)}): ${page.summary}`,
+  );
 }
 
 function llmsTxt(): string {
-  const ride = config.ride;
+  const ride = { ...config.ride, ...config.ride.de };
+  const rideEn = { ...config.ride, ...config.ride.en };
+  const contact = (lang: Lang) => absoluteUrl(pageById("contact", lang)?.path ?? "/kontakt");
 
-  // Inhaltsseiten zeigen auf ihre Markdown-Fassung, wie es llmstxt.org
-  // vorsieht; die HTML-Adresse steht dahinter, denn die ist zu zitieren.
-  const mitMarkdown = new Set<string>(MARKDOWN_SEITEN);
-  const alle = (config.pages as PageEntry[]).filter(
-    (page) => page.title && page.summary,
-  );
-  const seiten = alle
-    .filter((page) => mitMarkdown.has(page.path))
-    .map(
-      (page) =>
-        `- [${page.title}](${abs(markdownPfad(page.path))}): ${page.summary} Zitieren als ${abs(page.path)}`,
-    );
-  const weitere = alle
-    .filter((page) => !mitMarkdown.has(page.path))
-    .map((page) => `- [${page.title}](${abs(page.path)}): ${page.summary}`);
-
-  const steckbrief = [
+  const factSheet = [
     `- Name: ${ride.name} (zuerst "${ride.firstName}")`,
     `- Typ: ${ride.type}, Hersteller ${ride.manufacturer}`,
     `- Baujahr: ${ride.built}`,
@@ -67,7 +60,7 @@ function llmsTxt(): string {
   return [
     `# ${config.site.name}`,
     "",
-    `> ${config.site.tagline}. Nachschlagewerk zu einem reisenden Fahrgeschäft vom Typ ${ride.type} (Hersteller ${ride.manufacturer}) und zu dieser Bauform überhaupt.`,
+    `> ${config.site.tagline.de}. Nachschlagewerk zu einem reisenden Fahrgeschäft vom Typ ${ride.type} (Hersteller ${ride.manufacturer}) und zu dieser Bauform überhaupt.`,
     "",
     "Die Seite ist ein privates Hobbyprojekt und hat keine Verbindung zum",
     "Betreiber des Geschäfts oder zum Hersteller. Angaben sind zusammengetragen",
@@ -76,9 +69,9 @@ function llmsTxt(): string {
     "",
     "## Seiten",
     "",
-    ...seiten,
+    ...pageLines("de", true),
     "",
-    `Alle Inhaltsseiten in einer Datei: ${abs(LLMS_FULL_PATH)}`,
+    `Alle Inhaltsseiten in einer Datei: ${absoluteUrl(LLMS_FULL_PATH)}`,
     "",
     "## Kurz gesagt",
     "",
@@ -90,7 +83,7 @@ function llmsTxt(): string {
     "",
     "## Steckbrief des Geräts",
     "",
-    ...steckbrief,
+    ...factSheet,
     "",
     "## Strittige Angaben",
     "",
@@ -108,7 +101,7 @@ function llmsTxt(): string {
     "",
     "## Weitere Seiten",
     "",
-    ...weitere,
+    ...pageLines("de", false),
     "",
     "## Wofür diese Seite keine Quelle ist",
     "",
@@ -119,7 +112,24 @@ function llmsTxt(): string {
     "- Technische Unterlagen des Herstellers: liegen hier nicht vor. Alle Zahlen",
     "  stammen aus öffentlichen Datenbanken, Fanseiten und Wikipedia.",
     "",
-    `Stand: ${config.site.lastUpdated}. Korrekturen über ${abs("/kontakt")}.`,
+    `Stand: ${config.site.lastUpdated}. Korrekturen über ${contact("de")}.`,
+    "",
+    "## English",
+    "",
+    `The site is also available in English under ${absoluteUrl("/en")}. The English pages`,
+    "are translations of the German ones and carry the same content and sources.",
+    "",
+    ...pageLines("en", true),
+    ...pageLines("en", false),
+    "",
+    "In short:",
+    "",
+    `- The ${rideEn.name} is a travelling inverting ride of the ${rideEn.type} type made by ${rideEn.manufacturer} of Bremen, built ${rideEn.built}.`,
+    "- According to the German Wikipedia it is the only transportable Huss Enterprise still operated in Germany.",
+    `- It ran first in the Netherlands as "${rideEn.firstName}", belonged to the Zehle family of showmen from Munich from 1981 and to ${rideEn.operator} since ${rideEn.operatorSince}.`,
+    "- This site is no source for dates, locations, opening hours or prices. Ask the organiser of the funfair.",
+    "",
+    `Corrections via ${contact("en")}.`,
     "",
   ].join("\n");
 }

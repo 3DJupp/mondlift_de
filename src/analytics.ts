@@ -11,15 +11,15 @@
  *  - `<meta name="ga-measurement-id">` und das Einwilligungsskript kommen
  *    in den Kopf jeder HTML-Seite,
  *  - die CSP erlaubt die Quellen von Google, siehe src/headers.ts,
- *  - Blöcke mit `data-analytics="an"` bleiben stehen, solche mit
- *    `data-analytics="aus"` fallen weg (Datenschutzerklärung).
+ *  - Blöcke mit `data-analytics="on"` bleiben stehen, solche mit
+ *    `data-analytics="off"` fallen weg (Datenschutzerklärung).
  *
  * Geladen wird gtag.js erst im Browser und erst nach einem Klick auf
- * „Zulassen", siehe public/assets/js/einwilligung.js.
+ * „Zulassen", siehe public/assets/js/consent.js.
  */
 
 /** Format einer GA4-Mess-ID, etwa G-AB12CD34EF. */
-const MESS_ID = /^G-[A-Z0-9]{4,16}$/;
+const MEASUREMENT_ID = /^G-[A-Z0-9]{4,16}$/;
 
 /**
  * Die gültige Mess-ID oder null. Ein Tippfehler in der Konfiguration soll
@@ -29,7 +29,7 @@ const MESS_ID = /^G-[A-Z0-9]{4,16}$/;
 export function analyticsId(env: Env): string | null {
   const raw = (env.GA_MEASUREMENT_ID ?? "").trim();
   if (raw === "") return null;
-  if (MESS_ID.test(raw)) return raw;
+  if (MEASUREMENT_ID.test(raw)) return raw;
   console.warn(
     JSON.stringify({ event: "analytics_id_invalid", value: raw.slice(0, 32) }),
   );

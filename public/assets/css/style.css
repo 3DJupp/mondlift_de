@@ -165,7 +165,7 @@ a:hover {
 /* Namensschild im Stil des Fahrgeschäfts. Die Birnen sind gepunktete
    Linien: Strichlänge null, runde Enden, und pathLength im SVG legt fest,
    wie viele Birnen auf ein Stück passen. */
-.schild {
+.sign {
   display: block;
   width: min(100%, 30rem, 60vh);
   height: auto;
@@ -175,21 +175,21 @@ a:hover {
   filter: drop-shadow(0 0 0.7rem rgba(255, 120, 70, 0.28));
 }
 
-.schild path {
+.sign path {
   fill: none;
 }
 
-.schild .schild__tafel {
+.sign .sign__board {
   fill: rgba(40, 24, 92, 0.55);
   stroke: rgba(160, 180, 255, 0.22);
   stroke-width: 1.5;
 }
 
-.schild .schild__sterne {
+.sign .sign__stars {
   fill: #ffd45c;
 }
 
-.schild__rand {
+.sign__rim {
   stroke: #5b9bff;
   stroke-width: 7;
   stroke-linecap: round;
@@ -197,36 +197,36 @@ a:hover {
   animation: schild-lauf 0.9s step-end infinite;
 }
 
-.schild__rand--2 {
+.sign__rim--2 {
   stroke-dashoffset: -1;
   animation-delay: -0.3s;
 }
 
-.schild__rand--3 {
+.sign__rim--3 {
   stroke-dashoffset: -2;
   animation-delay: -0.6s;
 }
 
-.schild__buchstabe {
+.sign__letter {
   animation: schild-farbe 28s linear infinite;
 }
 
-.schild__buchstabe--2 { animation-delay: 0.12s; }
-.schild__buchstabe--3 { animation-delay: 0.24s; }
-.schild__buchstabe--4 { animation-delay: 0.36s; }
-.schild__buchstabe--5 { animation-delay: 0.48s; }
-.schild__buchstabe--6 { animation-delay: 0.6s; }
-.schild__buchstabe--7 { animation-delay: 0.72s; }
-.schild__buchstabe--8 { animation-delay: 0.84s; }
+.sign__letter--2 { animation-delay: 0.12s; }
+.sign__letter--3 { animation-delay: 0.24s; }
+.sign__letter--4 { animation-delay: 0.36s; }
+.sign__letter--5 { animation-delay: 0.48s; }
+.sign__letter--6 { animation-delay: 0.6s; }
+.sign__letter--7 { animation-delay: 0.72s; }
+.sign__letter--8 { animation-delay: 0.84s; }
 
-.schild__koerper {
+.sign__body {
   stroke: currentColor;
   stroke-width: 21;
   stroke-linecap: square;
   stroke-miterlimit: 8;
 }
 
-.schild__birnen {
+.sign__bulbs {
   stroke: #fff4d6;
   stroke-width: 7.5;
   stroke-linecap: round;
@@ -251,8 +251,8 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .schild__rand,
-  .schild__buchstabe {
+  .sign__rim,
+  .sign__letter {
     animation: none;
   }
 }
@@ -401,13 +401,13 @@ address {
 /* Die Anschrift im Impressum ist ein Bild. Groesse und Farbe stecken im SVG,
    das der Worker zeichnet - hier steht nur, dass es auf schmalen Schirmen
    mitschrumpfen darf. */
-.anschrift {
+.address {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-.anschrift__hinweis {
+.address__note {
   margin-top: 1rem;
   font-size: 0.8rem;
   color: var(--ink-dim);
@@ -444,7 +444,7 @@ address {
 
 /* Zitiervorschlag unter den Inhaltsseiten, vom Worker eingesetzt. Wie die
    Fusszeile der Seite gesetzt, damit er nicht mit dem Text konkurriert. */
-.zitat {
+.citation {
   margin: 3rem 0 0;
   padding: 0.8rem 1rem;
   background: var(--bg-panel);
@@ -455,7 +455,7 @@ address {
   overflow-wrap: anywhere;
 }
 
-.zitat__label {
+.citation__label {
   display: block;
   margin-bottom: 0.2rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -465,7 +465,7 @@ address {
   color: var(--ink-dim);
 }
 
-.zitat + .meta {
+.citation + .meta {
   margin-top: 1.4rem;
 }
 
@@ -641,20 +641,25 @@ address {
 
 /* --------------------------------------------------------- Navigation */
 
+/* Schrift und Groesse sitzen an den Links, nicht an der Leiste: --col ist
+   in ch angegeben, und ein ch der kleinen Monospace-Schrift ist viel
+   schmaler als eines der Textschrift. Sonst waere die Leiste schmaler als
+   die Spalte darunter und finge weiter rechts an. */
 .nav {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: 0.4rem 1.3rem;
   max-width: var(--col);
   margin: 0 auto;
   padding: clamp(1rem, 3vw, 1.6rem) clamp(1.1rem, 4vw, 1.6rem) 0;
+}
+
+.nav a {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.76rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.nav a {
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 182, 77, 0.3);
   padding-bottom: 1px;
@@ -679,7 +684,7 @@ address {
   padding: 0;
 }
 
-.nav--mitte {
+.nav--center {
   justify-content: center;
   margin-top: 2.4rem;
   padding: 0;
@@ -738,7 +743,7 @@ address {
 }
 
 /* Die vier Wege in die Sammlung */
-.karten {
+.cards {
   list-style: none;
   margin: 2rem 0 0;
   padding: 0;
@@ -747,12 +752,12 @@ address {
 }
 
 @media (min-width: 38rem) {
-  .karten {
+  .cards {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-.karten li {
+.cards li {
   margin: 0;
   padding: 1rem 1.2rem;
   background: var(--bg-panel);
@@ -760,19 +765,19 @@ address {
   border-radius: 4px;
 }
 
-.karten li + li {
+.cards li + li {
   margin-top: 0;
 }
 
-.karten a {
+.cards a {
   text-decoration: none;
 }
 
-.karten a strong {
+.cards a strong {
   font-weight: 600;
 }
 
-.karten p {
+.cards p {
   margin: 0.35rem 0 0;
   font-size: 0.9em;
   color: var(--ink-dim);
@@ -791,14 +796,14 @@ address {
 
 /* Steckbrief: Merkmal und Wert, auf breiten Schirmen zweispaltig. Die
    Werte setzt der Worker aus site.config.json ein. */
-.steckbrief,
-.verlauf {
+.factsheet,
+.timeline {
   margin: 1.4rem 0 0;
   padding: 0;
 }
 
-.steckbrief dt,
-.verlauf dt {
+.factsheet dt,
+.timeline dt {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.74rem;
   letter-spacing: 0.1em;
@@ -806,39 +811,39 @@ address {
   color: var(--ink-dim);
 }
 
-.steckbrief dd,
-.verlauf dd {
+.factsheet dd,
+.timeline dd {
   margin: 0.15rem 0 0.9rem;
   color: var(--ink);
 }
 
 @media (min-width: 34rem) {
-  .steckbrief {
+  .factsheet {
     display: grid;
     grid-template-columns: 14rem 1fr;
     gap: 0.1rem 1.2rem;
     align-items: baseline;
   }
 
-  .steckbrief dt,
-  .steckbrief dd {
+  .factsheet dt,
+  .factsheet dd {
     margin: 0;
     padding: 0.42rem 0;
     border-top: 1px solid var(--line);
   }
 
-  .steckbrief dt {
+  .factsheet dt {
     padding-top: 0.5rem;
   }
 }
 
 /* Glossar: Stichwort und Erklaerung, Stichwort hervorgehoben */
-.glossar {
+.glossary {
   margin: 1.6rem 0 0;
   padding: 0;
 }
 
-.glossar dt {
+.glossary dt {
   margin-top: 1.7rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
@@ -848,19 +853,19 @@ address {
   scroll-margin-top: 1.5rem;
 }
 
-.glossar dd {
+.glossary dd {
   margin: 0.4rem 0 0;
   color: var(--ink-soft);
 }
 
-.begriff__mehr,
-.frage__mehr a {
+.term__more,
+.question__more a {
   font-size: 0.86em;
   white-space: nowrap;
 }
 
 /* Fragen: jede mit eigener Sprungmarke */
-.frage h3 {
+.question h3 {
   margin: 2rem 0 0.4rem;
   padding-top: 1.2rem;
   border-top: 1px solid var(--line);
@@ -870,17 +875,17 @@ address {
   scroll-margin-top: 1.5rem;
 }
 
-.frage p {
+.question p {
   margin: 0.3rem 0 0;
   color: var(--ink-soft);
 }
 
-.frage__mehr {
+.question__more {
   margin-top: 0.5rem !important;
 }
 
 /* Tabellen fuer strittige Angaben und Stueckzahlen */
-.tabelle {
+.data-table {
   width: 100%;
   margin: 1.4rem 0;
   border-collapse: collapse;
@@ -889,14 +894,14 @@ address {
   color: var(--ink-soft);
 }
 
-.tabelle th,
-.tabelle td {
+.data-table th,
+.data-table td {
   padding: 0.5rem 0.7rem 0.5rem 0;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
-.tabelle th {
+.data-table th {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.1em;
@@ -905,25 +910,25 @@ address {
   font-weight: 400;
 }
 
-.tabelle td:last-child,
-.tabelle th:last-child {
+.data-table td:last-child,
+.data-table th:last-child {
   padding-right: 0;
 }
 
 /* Quellenlisten: Angabe und wofuer sie steht */
-.quellen {
+.sources {
   padding-left: 0;
   list-style: none;
 }
 
-.quellen li {
+.sources li {
   padding-left: 1.1rem;
   position: relative;
   margin-top: 0.6rem;
   font-size: 0.94em;
 }
 
-.quellen li::before {
+.sources li::before {
   content: "→";
   position: absolute;
   left: 0;
@@ -931,12 +936,12 @@ address {
 }
 
 /* Seitenuebersicht unter /sitemap: Titel, Pfad, ein Satz, Stand.
-   Der Worker setzt die Liste ein, siehe src/seitenliste.ts. */
-.liste {
+   Der Worker setzt die Liste ein, siehe src/page-list.ts. */
+.page-list {
   margin: 1.6rem 0 0;
 }
 
-.liste dt {
+.page-list dt {
   margin-top: 1.4rem;
   display: flex;
   flex-wrap: wrap;
@@ -944,23 +949,23 @@ address {
   gap: 0.2rem 0.7rem;
 }
 
-.liste dt a {
+.page-list dt a {
   font-size: 1.05em;
 }
 
-.liste dd {
+.page-list dd {
   margin: 0.25rem 0 0;
 }
 
-.liste__pfad,
-.liste__stand {
+.page-list__path,
+.page-list__date {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8em;
   color: var(--ink-dim);
 }
 
 /* Der Stand gehoert zum Satz darueber, soll ihn aber nicht unterbrechen. */
-.liste__stand {
+.page-list__date {
   display: block;
   margin-top: 0.2rem;
 }
@@ -969,43 +974,43 @@ address {
    vier Spalten braucht mehr Breite als eine Textspalte, sonst bricht die
    Adresse um. Nur deshalb gibt es die breite Variante - Farben, Schrift und
    Abstaende kommen unveraendert aus den Klassen darueber. */
-.wrap--breit,
-.nav--breit {
+.wrap--wide,
+.nav--wide {
   max-width: 54rem;
 }
 
-.tabelle--sitemap {
+.data-table--sitemap {
   font-size: 0.88em;
 }
 
 /* Datum, Haeufigkeit und Prioritaet sind kurz und sollen nicht umbrechen -
    die Adresse bekommt den Rest der Zeile. */
-.tabelle--sitemap .zelle--schmal {
+.data-table--sitemap .cell--narrow {
   white-space: nowrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.86em;
   color: var(--ink-dim);
 }
 
-.tabelle--sitemap .zahl {
+.data-table--sitemap .num {
   text-align: right;
 }
 
-.tabelle--sitemap td a {
+.data-table--sitemap td a {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 182, 77, 0.3);
 }
 
-.tabelle--sitemap td a:hover {
+.data-table--sitemap td a:hover {
   border-bottom-color: currentColor;
 }
 
 /* Einwilligungsbanner fuer Google Analytics. Erscheint nur, wenn eine
-   Mess-ID gesetzt ist - siehe public/assets/js/einwilligung.js. Beide
+   Mess-ID gesetzt ist - siehe public/assets/js/consent.js. Beide
    Knoepfe sehen gleich aus: Ablehnen darf nicht schwerer sein als
    Zulassen. */
-.einwilligung {
+.consent {
   position: fixed;
   z-index: 50;
   left: 1rem;
@@ -1023,37 +1028,43 @@ address {
   line-height: 1.55;
 }
 
-.einwilligung[hidden] {
+.consent[hidden] {
   display: none;
 }
 
-.einwilligung__titel {
+.consent__title {
   margin: 0 0 0.4rem;
   font-size: 1rem;
   color: var(--ink);
 }
 
-.einwilligung__text {
+.consent__text {
   margin: 0;
 }
 
-.einwilligung__knoepfe {
+.consent__buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.9rem;
 }
 
-.einwilligung__knopf {
+.consent__button {
   flex: 1 1 8rem;
   margin-top: 0;
   padding: 0.6em 1.2em;
 }
 
-.einwilligung__aendern {
+.consent__change {
   margin-top: 0.2rem;
 }
 
-.einwilligung__aendern[hidden] {
+.consent__change[hidden] {
   display: none;
+}
+
+/* Der Sprachumschalter steht am Ende der Navigation und rueckt nach
+   rechts, damit er nicht wie eine weitere Inhaltsseite aussieht. */
+.nav__lang {
+  margin-left: auto;
 }

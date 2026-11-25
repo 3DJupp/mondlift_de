@@ -35,7 +35,7 @@
  *     so (ausser der Startseite), WordPress-Permalinks dagegen immer. Fuer
  *     eine Adresse, die sonst eine echte Seite waere, ist der Schraegstrich
  *     kein Grund fuer 410 - die wird auf die kanonische Form umgeleitet,
- *     siehe `altlast()`.
+ *     siehe `legacyAction()`.
  *
  * Alles andere bleibt 404: ein Tippfehler in einem fremden Link soll ein
  * weicher Fehler bleiben, kein Grabstein.
@@ -46,18 +46,17 @@
  */
 
 import config from "../site.config.json";
+import { PAGES } from "./pages";
 
-/** Pfade dieser Seite, ohne Schraegstrich am Ende. */
-const BEKANNT = new Set<string>(
-  (config.pages as Array<{ path: string }>).map((page) => page.path),
-);
+/** Pfade dieser Seite in allen Sprachen, ohne Schraegstrich am Ende. */
+const KNOWN_PATHS = new Set<string>(PAGES.map((page) => page.path));
 
 /**
  * Pfadmuster, die es auf dieser Domain nie gegeben hat und nie geben wird.
  * Ohne Beruecksichtigung der Gross- und Kleinschreibung, weil Crawler und
  * Scanner beides schicken.
  */
-const PFAD_MUSTER: RegExp[] = [
+const PATH_PATTERNS: RegExp[] = [
   /^\/wp-/, //                      wp-admin, wp-content, wp-includes, wp-json, wp-login.php
   /^\/xmlrpc\.php$/,
   /^\/wlwmanifest\.xml$/,
@@ -71,54 +70,54 @@ const PFAD_MUSTER: RegExp[] = [
 ];
 
 /** Query-Parameter, die nur ein WordPress kennt. */
-const QUERY_SCHLUESSEL = ["p", "page_id", "cat", "tag_id", "attachment_id", "m", "feed"];
+const WORDPRESS_QUERY_KEYS = ["p", "page_id", "cat", "tag_id", "attachment_id", "m", "feed"];
 
 /** Was mit einer Anfrage zu tun ist, die keine Seite dieser Liste trifft. */
-export type Altlast =
-  | { art: "gone" }
-  | { art: "redirect"; ziel: string }
+export type LegacyAction =
+  | { kind: "gone" }
+  | { kind: "redirect"; target: string }
   | null;
 
 /**
  * Prueft eine Adresse gegen die Muster.
  *
- *  `{ art: "gone" }`     410 - Adresse des Vorbesitzers.
- *  `{ art: "redirect" }` 301 - echte Seite, nur mit Schraegstrich am Ende.
+ *  `{ kind: "gone" }`     410 - Adresse des Vorbesitzers.
+ *  `{ kind: "redirect" }` 301 - echte Seite, nur mit Schraegstrich am Ende.
  *  `null`                nichts zu tun, normal weiterreichen.
  */
-export function altlast(url: URL): Altlast {
-  const pfad = url.pathname;
-  const wpQuery = QUERY_SCHLUESSEL.some((name) => url.searchParams.has(name));
+export function legacyAction(url: URL): LegacyAction {
+  const path = url.pathname;
+  const wordpressQuery = WORDPRESS_QUERY_KEYS.some((name) => url.searchParams.has(name));
 
   // Die Startseite mit einem WordPress-Parameter: /?p=123 war die Adressform
   // eines WordPress ohne sprechende Permalinks. Nur auf der Startseite ist
   // das eindeutig - dort erzeugt diese Seite selbst keine Query. Auf einer
   // Unterseite waere `?p=` eher ein Zaehlparameter aus einem fremden Link,
   // und ein 410 auf eine Seite, die es gibt, waere der schlimmere Fehler.
-  if (pfad === "/") return wpQuery ? { art: "gone" } : null;
+  if (path === "/") return wordpressQuery ? { kind: "gone" } : null;
 
   // Dann die eigenen Seiten, vor allen Mustern: eine echte Seite soll nie
   // 410 bekommen, auch nicht wegen eines Parameters, den irgendein Dienst
   // an den Link gehaengt hat.
-  const ohneSlash = pfad.replace(/\/+$/, "");
-  if (BEKANNT.has(ohneSlash)) {
-    if (ohneSlash === pfad) return null;
-    const ziel = new URL(url);
-    ziel.pathname = ohneSlash;
-    return { art: "redirect", ziel: ziel.toString() };
+  const withoutSlash = path.replace(/\/+$/, "");
+  if (KNOWN_PATHS.has(withoutSlash)) {
+    if (withoutSlash === path) return null;
+    const target = new URL(url);
+    target.pathname = withoutSlash;
+    return { kind: "redirect", target: target.toString() };
   }
 
-  const klein = pfad.toLowerCase();
+  const lower = path.toLowerCase();
 
-  for (const muster of PFAD_MUSTER) {
-    if (muster.test(klein)) return { art: "gone" };
+  for (const pattern of PATH_PATTERNS) {
+    if (pattern.test(lower)) return { kind: "gone" };
   }
 
   // Ein WordPress-Parameter an einer Adresse, die es hier nicht gibt.
-  if (wpQuery) return { art: "gone" };
+  if (wordpressQuery) return { kind: "gone" };
 
   // Schraegstrich am Ende und keine eigene Seite: WordPress-Permalink.
-  if (pfad.endsWith("/")) return { art: "gone" };
+  if (path.endsWith("/")) return { kind: "gone" };
 
   return null;
 }
@@ -137,6 +136,11 @@ export function goneResponse(): Response {
     "nicht zurueck.",
     "",
     `Was es hier gibt: ${config.site.url}/sitemap`,
+    "",
+    "This address belonged to a different site that ran on this domain",
+    "before mondlift.de. It is gone for good and will not come back.",
+    "",
+    `What there is here: ${config.site.url}/en/sitemap`,
     "",
   ].join("\n");
 

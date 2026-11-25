@@ -16,7 +16,7 @@
  * Beide Fassungen stehen in dieser Ansicht nebeneinander verlinkt.
  *
  * Das Aussehen kommt aus /assets/css/style.css, mit denselben Klassen wie
- * jede andere Seite: `page`, `nav`, `wrap`, `tabelle`, `foot`. Deshalb
+ * jede andere Seite: `page`, `nav`, `wrap`, `data-table`, `foot`. Deshalb
  * steht hier kein eigenes Farbschema, das beim naechsten Umbau des
  * Stylesheets zurueckbleiben wuerde - die Ansicht erbt die CI, statt sie
  * nachzubauen.
@@ -49,7 +49,7 @@ function sitemapXsl(): string {
 
   <!-- Aus 2026-10-08 wird 08.10.2026. XSLT 1.0 kann nicht rechnen, aber
        Zeichen zaehlen genuegt hier. -->
-  <xsl:template name="datum">
+  <xsl:template name="date">
     <xsl:param name="iso" />
     <xsl:choose>
       <xsl:when test="string-length($iso) &gt;= 10">
@@ -77,7 +77,7 @@ function sitemapXsl(): string {
         <link rel="stylesheet" href="/assets/css/style.css" />
       </head>
       <body class="page">
-        <nav class="nav nav--breit" aria-label="Seiten">
+        <nav class="nav nav--wide" aria-label="Seiten">
           <a href="/">Start</a>
           <a href="/mondlift">Das Ger&#228;t</a>
           <a href="/enterprise">Der Typ</a>
@@ -86,7 +86,7 @@ function sitemapXsl(): string {
           <a href="/sitemap">&#220;bersicht</a>
         </nav>
 
-        <main class="wrap wrap--breit">
+        <main class="wrap wrap--wide">
           <h1>sitemap.xml</h1>
 
           <p class="lead">
@@ -96,13 +96,13 @@ function sitemapXsl(): string {
             <xsl:text>XML-Datei; die Datei selbst ist davon unber&#252;hrt.</xsl:text>
           </p>
 
-          <table class="tabelle tabelle--sitemap">
+          <table class="data-table data-table--sitemap">
             <thead>
               <tr>
                 <th scope="col">Adresse</th>
                 <th scope="col">Ge&#228;ndert</th>
                 <th scope="col">H&#228;ufigkeit</th>
-                <th scope="col" class="zahl">Priorit&#228;t</th>
+                <th scope="col" class="num">Priorit&#228;t</th>
               </tr>
             </thead>
             <tbody>
@@ -116,15 +116,15 @@ function sitemapXsl(): string {
                         select="substring-after(substring-after(sm:loc, '://'), '/')" />
                     </a>
                   </td>
-                  <td class="zelle--schmal">
-                    <xsl:call-template name="datum">
+                  <td class="cell--narrow">
+                    <xsl:call-template name="date">
                       <xsl:with-param name="iso" select="sm:lastmod" />
                     </xsl:call-template>
                   </td>
-                  <td class="zelle--schmal">
+                  <td class="cell--narrow">
                     <xsl:value-of select="sm:changefreq" />
                   </td>
-                  <td class="zelle--schmal zahl">
+                  <td class="cell--narrow num">
                     <xsl:value-of select="sm:priority" />
                   </td>
                 </tr>

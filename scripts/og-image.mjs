@@ -12,7 +12,7 @@
  * eingefroren, wie es enterprise-3d.js fuer Standbilder vorsieht, und die
  * Lichter des Schilds stehen auf einem festen Zeitpunkt. Dadurch sieht das
  * Bild nach jedem Lauf gleich aus. Dieselbe Buehne nimmt og-video.mjs in
- * Bewegung auf; die gemeinsamen Teile stehen in og-buehne.mjs.
+ * Bewegung auf; die gemeinsamen Teile stehen in og-stage.mjs.
  *
  * Gebraucht werden Chromium und Netz fuer three.js. Mit ffmpeg wird das
  * Bild zusaetzlich auf 256 Farben gebracht, damit es klein bleibt; ohne
@@ -37,7 +37,7 @@ import {
   arg,
   zahl,
   oeffneStartseite,
-} from "./og-buehne.mjs";
+} from "./og-stage.mjs";
 
 const FAHRT = zahl("t", 24); // Sekunde der Fahrt: Rad steht oben
 const SCHILD = zahl("schild", 600); // Millisekunden im Lichtspiel des Schilds

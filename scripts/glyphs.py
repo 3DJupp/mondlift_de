@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Erzeugt src/anschrift-glyphen.ts: die Umrisse der Zeichen, aus denen der
+Erzeugt src/address-glyphs.ts: die Umrisse der Zeichen, aus denen der
 Worker das Anschrift-Bild zusammensetzt.
 
 Laeuft nicht im normalen Entwicklungsablauf. Noetig nur, wenn die Schrift
@@ -23,7 +23,7 @@ from fontTools.misc.transform import Transform
 from fontTools.ttLib import TTFont
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-OUT = Path(__file__).resolve().parent.parent / "src" / "anschrift-glyphen.ts"
+OUT = Path(__file__).resolve().parent.parent / "src" / "address-glyphs.ts"
 
 # Zielhoehe des Koordinatensystems. 1000 statt der 2048 der Schrift: auf
 # ganze Zahlen gerundet bleibt das fuer eine Anschrift reichlich genau und

@@ -3,7 +3,10 @@
     "name": "Mondlift",
     "domain": "mondlift.de",
     "url": "https://mondlift.de",
-    "tagline": "Eine Fan-Hommage an ein Fahrgeschäft auf Reisen",
+    "tagline": {
+      "de": "Eine Fan-Hommage an ein Fahrgeschäft auf Reisen",
+      "en": "A fan tribute to a fairground ride on the road"
+    },
     "published": "2026-10-07",
     "lastUpdated": "2026-10-18"
   },
@@ -22,93 +25,185 @@
     "firstName": "Moonlift",
     "manufacturer": "Huss",
     "type": "Enterprise",
-    "built": "1976 oder 1978 (Quellen weichen ab)",
     "serial": "31 053",
-    "height": "ca. 22 m",
-    "diameter": "ca. 22 m",
     "gondolas": "20",
     "seats": "40",
-    "capacity": "ca. 1.400 Personen je Stunde",
-    "rpm": "bis 14 U/min",
     "power": "90 kW",
-    "operator": "Zettl Enterprises KG, München",
-    "operatorSince": "Oktober 2023"
+    "de": {
+      "built": "1976 oder 1978 (Quellen weichen ab)",
+      "height": "ca. 22 m",
+      "diameter": "ca. 22 m",
+      "capacity": "ca. 1.400 Personen je Stunde",
+      "rpm": "bis 14 U/min",
+      "operator": "Zettl Enterprises KG, München",
+      "operatorSince": "Oktober 2023"
+    },
+    "en": {
+      "built": "1976 or 1978 (sources differ)",
+      "height": "approx. 22 m",
+      "diameter": "approx. 22 m",
+      "capacity": "approx. 1,400 riders per hour",
+      "rpm": "up to 14 rpm",
+      "operator": "Zettl Enterprises KG, Munich",
+      "operatorSince": "October 2023"
+    }
   },
   "indexNow": {
     "key": "366baf56aa87ec95c4bb8fcf1da73011"
   },
   "pages": [
     {
-      "path": "/",
-      "title": "Mondlift",
-      "summary": "Startseite mit der Animation des Fahrgeschäfts und dem Einstieg in die Sammlung.",
-      "lastmod": "2026-10-18",
+      "id": "home",
       "changefreq": "monthly",
-      "priority": "1.0"
+      "priority": "1.0",
+      "de": {
+        "path": "/",
+        "title": "Mondlift",
+        "summary": "Startseite mit der Animation des Fahrgeschäfts und dem Einstieg in die Sammlung.",
+        "lastmod": "2026-10-18"
+      },
+      "en": {
+        "path": "/en",
+        "title": "Mondlift",
+        "summary": "Home page with the animation of the ride and the way into the collection.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/mondlift",
-      "title": "Der Mondlift",
-      "summary": "Steckbrief, Besitzergeschichte und Besonderheiten des Geräts: Huss Enterprise, 20 Gondeln, rund 22 Meter hoch.",
-      "lastmod": "2026-10-18",
+      "id": "mondlift",
       "changefreq": "monthly",
-      "priority": "0.9"
+      "priority": "0.9",
+      "de": {
+        "path": "/mondlift",
+        "title": "Der Mondlift",
+        "summary": "Steckbrief, Besitzergeschichte und Besonderheiten des Geräts: Huss Enterprise, 20 Gondeln, rund 22 Meter hoch.",
+        "lastmod": "2026-10-18"
+      },
+      "en": {
+        "path": "/en/mondlift",
+        "title": "The Mondlift",
+        "summary": "Fact sheet, ownership history and particulars of the ride: Huss Enterprise, 20 gondolas, about 22 metres high.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/enterprise",
-      "title": "Enterprise — der Fahrgeschäfttyp",
-      "summary": "Herkunft bei Schwarzkopf und Huss, Funktionsweise, Varianten, Stückzahlen und wo die Quellen auseinandergehen.",
-      "lastmod": "2026-10-18",
+      "id": "enterprise",
       "changefreq": "monthly",
-      "priority": "0.9"
+      "priority": "0.9",
+      "de": {
+        "path": "/enterprise",
+        "title": "Enterprise — der Fahrgeschäfttyp",
+        "summary": "Herkunft bei Schwarzkopf und Huss, Funktionsweise, Varianten, Stückzahlen und wo die Quellen auseinandergehen.",
+        "lastmod": "2026-10-18"
+      },
+      "en": {
+        "path": "/en/enterprise",
+        "title": "Enterprise — the ride type",
+        "summary": "Origins at Schwarzkopf and Huss, how it works, variants, production numbers and where the sources disagree.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/glossar",
-      "title": "Glossar",
-      "summary": "Begriffe rund um Fahrgeschäft und Volksfest, von Radkranz über resultierende Kraft bis Beschickung.",
-      "lastmod": "2026-10-18",
+      "id": "glossary",
       "changefreq": "monthly",
-      "priority": "0.7"
+      "priority": "0.7",
+      "de": {
+        "path": "/glossar",
+        "title": "Glossar",
+        "summary": "Begriffe rund um Fahrgeschäft und Volksfest, von Radkranz über resultierende Kraft bis Beschickung.",
+        "lastmod": "2026-10-18"
+      },
+      "en": {
+        "path": "/en/glossary",
+        "title": "Glossary",
+        "summary": "Terms around fairground rides and funfairs, from wheel rim and resultant force to pitch allocation.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/fragen",
-      "title": "Fragen und Quellen",
-      "summary": "Häufige Fragen zum Mondlift und zum Typ Enterprise, dazu die Quellenlage und die strittigen Angaben.",
-      "lastmod": "2026-10-18",
+      "id": "faq",
       "changefreq": "monthly",
-      "priority": "0.8"
+      "priority": "0.8",
+      "de": {
+        "path": "/fragen",
+        "title": "Fragen und Quellen",
+        "summary": "Häufige Fragen zum Mondlift und zum Typ Enterprise, dazu die Quellenlage und die strittigen Angaben.",
+        "lastmod": "2026-10-18"
+      },
+      "en": {
+        "path": "/en/faq",
+        "title": "Questions and sources",
+        "summary": "Frequently asked questions about the Mondlift and the Enterprise type, plus the state of the sources and the disputed figures.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/sitemap",
-      "title": "Übersicht",
-      "summary": "Alle Seiten dieser Seite auf einen Blick, mit je einem Satz dazu und dem Stand der letzten Änderung.",
-      "lastmod": "2026-10-13",
+      "id": "sitemap",
       "changefreq": "monthly",
-      "priority": "0.4"
+      "priority": "0.4",
+      "de": {
+        "path": "/sitemap",
+        "title": "Übersicht",
+        "summary": "Alle Seiten dieser Seite auf einen Blick, mit je einem Satz dazu und dem Stand der letzten Änderung.",
+        "lastmod": "2026-10-13"
+      },
+      "en": {
+        "path": "/en/sitemap",
+        "title": "Overview",
+        "summary": "Every page of this site at a glance, each with one sentence and the date of its last change.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/kontakt",
-      "title": "Kontakt",
-      "summary": "Nachricht an den Betreiber der Seite, etwa für Korrekturen oder Fotos.",
-      "lastmod": "2026-10-07",
+      "id": "contact",
       "changefreq": "yearly",
-      "priority": "0.5"
+      "priority": "0.5",
+      "de": {
+        "path": "/kontakt",
+        "title": "Kontakt",
+        "summary": "Nachricht an den Betreiber der Seite, etwa für Korrekturen oder Fotos.",
+        "lastmod": "2026-11-25"
+      },
+      "en": {
+        "path": "/en/contact",
+        "title": "Contact",
+        "summary": "Send a message to the person behind this site, for corrections or photos for example.",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/impressum",
-      "title": "Impressum",
-      "summary": "Anbieterkennzeichnung nach § 5 DDG.",
-      "lastmod": "2026-10-08",
+      "id": "legal-notice",
       "changefreq": "yearly",
-      "priority": "0.3"
+      "priority": "0.3",
+      "de": {
+        "path": "/impressum",
+        "title": "Impressum",
+        "summary": "Anbieterkennzeichnung nach § 5 DDG.",
+        "lastmod": "2026-10-08"
+      },
+      "en": {
+        "path": "/en/legal-notice",
+        "title": "Legal notice",
+        "summary": "Provider identification under section 5 DDG (German Digital Services Act).",
+        "lastmod": "2026-11-25"
+      }
     },
     {
-      "path": "/datenschutz",
-      "title": "Datenschutz",
-      "summary": "Was bei einem Besuch verarbeitet wird und was nicht.",
-      "lastmod": "2026-10-08",
+      "id": "privacy",
       "changefreq": "yearly",
-      "priority": "0.3"
+      "priority": "0.3",
+      "de": {
+        "path": "/datenschutz",
+        "title": "Datenschutz",
+        "summary": "Was bei einem Besuch verarbeitet wird und was nicht.",
+        "lastmod": "2026-10-08"
+      },
+      "en": {
+        "path": "/en/privacy",
+        "title": "Privacy",
+        "summary": "What is processed when you visit, and what is not.",
+        "lastmod": "2026-11-25"
+      }
     }
   ]
 }

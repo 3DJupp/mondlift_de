@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mondlift — the last travelling Huss Enterprise</title>
+    <meta
+      name="description"
+      content="Private fan tribute to the Mondlift, a travelling fairground ride of the Huss Enterprise type: fact sheet, history, engineering and a glossary, with sources and an animation of the ride."
+    />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <link rel="canonical" href="https://mondlift.de/en" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mondlift" />
+    <meta property="og:title" content="Mondlift — the last travelling Huss Enterprise" />
+    <meta
+      property="og:description"
+      content="Fact sheet, history and engineering of a fairground ride on the road, with sources."
+    />
+    <meta property="og:url" content="https://mondlift.de/en" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Drawing of an Enterprise fairground ride with an illuminated wheel at night."
+    />
+    <!-- The animation as a short video, for services that play one in a
+         link preview. Everyone else keeps showing the image above. -->
+    <meta property="og:video" content="https://mondlift.de/video/mondlift.mp4" />
+    <meta property="og:video:secure_url" content="https://mondlift.de/video/mondlift.mp4" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="1200" />
+    <meta property="og:video:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <!-- Request the 3D library while the head is being read, not only when
+         the script at the end of the page asks for it. -->
+    <link rel="modulepreload" crossorigin href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js" />
+    <link rel="modulepreload" crossorigin href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.core.min.js" />
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <!-- The animation is pure decoration and hidden from screen readers. -->
+    <canvas id="ride" aria-hidden="true"></canvas>
+
+    <div class="hero">
+      <header class="hero__head">
+        <!-- The name is in the heading as text; what you see is the sign
+             below it, modelled on the name board above the back wall:
+             letters made of bulbs, chaser lights round the edge. The 3D
+             scene reads the same paths for the sign on the model. -->
+        <h1 class="hero__title">
+          <span class="hero__name" data-site="site.name">Mondlift</span>
+        <svg class="sign" viewBox="-78 -68 866 236" aria-hidden="true" focusable="false">
+          <clipPath id="sign-row"><rect x="-40" y="-10.5" width="800" height="121" /></clipPath>
+          <path class="sign__board" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="sign__stars" d="M98 12L99.68 16.32L104 18L99.68 19.68L98 24L96.32 19.68L92 18L96.32 16.32ZM204 90L205.68 94.32L210 96L205.68 97.68L204 102L202.32 97.68L198 96L202.32 94.32ZM310 8L311.68 12.32L316 14L311.68 15.68L310 20L308.32 15.68L304 14L308.32 12.32ZM414 54L415.68 58.32L420 60L415.68 61.68L414 66L412.32 61.68L408 60L412.32 58.32ZM505 16L506.68 20.32L511 22L506.68 23.68L505 28L503.32 23.68L499 22L503.32 20.32ZM541 78L542.68 82.32L547 84L542.68 85.68L541 90L539.32 85.68L535 84L539.32 82.32ZM626 80L627.68 84.32L632 86L627.68 87.68L626 92L624.32 87.68L620 86L624.32 84.32ZM728 54L729.68 58.32L734 60L729.68 61.68L728 66L726.32 61.68L722 60L726.32 58.32ZM-22 0L-20.32 4.32L-16 6L-20.32 7.68L-22 12L-23.68 7.68L-28 6L-23.68 4.32ZM-18 94L-16.32 98.32L-12 100L-16.32 101.68L-18 106L-19.68 101.68L-24 100L-19.68 98.32ZM742 -2L743.68 2.32L748 4L743.68 5.68L742 10L740.32 5.68L736 4L740.32 2.32Z" />
+          <path class="sign__rim sign__rim--1" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="sign__rim sign__rim--2" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <path class="sign__rim sign__rim--3" pathLength="165" d="M-60 -50Q355 -6 770 -50L748 50L770 150Q355 106 -60 150L-38 50Z" />
+          <g class="sign__word" clip-path="url(#sign-row)">
+            <g class="sign__letter sign__letter--1" transform="translate(0)">
+              <path class="sign__body" d="M0 100V0L40 70L80 0V100" />
+              <path class="sign__bulbs" pathLength="8" d="M0 100L0 0" />
+              <path class="sign__bulbs" pathLength="6" d="M0 0L40 70" />
+              <path class="sign__bulbs" pathLength="6" d="M40 70L80 0" />
+              <path class="sign__bulbs" pathLength="8" d="M80 0L80 100" />
+            </g>
+            <g class="sign__letter sign__letter--2" transform="translate(116)">
+              <path class="sign__body" d="M35 0A35 35 0 0 1 70 35V65A35 35 0 0 1 0 65V35A35 35 0 0 1 35 0Z" />
+              <path class="sign__bulbs" pathLength="22" d="M35 0A35 35 0 0 1 70 35V65A35 35 0 0 1 0 65V35A35 35 0 0 1 35 0Z" />
+            </g>
+            <g class="sign__letter sign__letter--3" transform="translate(222)">
+              <path class="sign__body" d="M0 100V0L70 100V0" />
+              <path class="sign__bulbs" pathLength="8" d="M0 100L0 0" />
+              <path class="sign__bulbs" pathLength="10" d="M0 0L70 100" />
+              <path class="sign__bulbs" pathLength="8" d="M70 100L70 0" />
+            </g>
+            <g class="sign__letter sign__letter--4" transform="translate(328)">
+              <path class="sign__body" d="M0 0H24A44 50 0 0 1 24 100H0Z" />
+              <path class="sign__bulbs" pathLength="8" d="M0 0L0 100" />
+              <path class="sign__bulbs" pathLength="16" d="M0 0H24A44 50 0 0 1 24 100H0" />
+            </g>
+            <g class="sign__letter sign__letter--5" transform="translate(432)">
+              <path class="sign__body" d="M0 0V100H55" />
+              <path class="sign__bulbs" pathLength="8" d="M0 0L0 100" />
+              <path class="sign__bulbs" pathLength="4" d="M0 100L55 100" />
+            </g>
+            <g class="sign__letter sign__letter--6" transform="translate(523)">
+              <path class="sign__body" d="M0 0V100" />
+              <path class="sign__bulbs" pathLength="8" d="M0 0L0 100" />
+            </g>
+            <g class="sign__letter sign__letter--7" transform="translate(559)">
+              <path class="sign__body" d="M55 0H0V100M0 48H44" />
+              <path class="sign__bulbs" pathLength="8" d="M0 100L0 0" />
+              <path class="sign__bulbs" pathLength="4" d="M0 0L55 0" />
+              <path class="sign__bulbs" pathLength="4" d="M0 48L44 48" />
+            </g>
+            <g class="sign__letter sign__letter--8" transform="translate(642)">
+              <path class="sign__body" d="M0 0H70M35 0V100" />
+              <path class="sign__bulbs" pathLength="6" d="M0 0L70 0" />
+              <path class="sign__bulbs" pathLength="8" d="M35 0L35 100" />
+            </g>
+          </g>
+        </svg>
+        </h1>
+        <p class="hero__sub" data-site="site.tagline">
+          A fan tribute to a fairground ride on the road
+        </p>
+      </header>
+
+      <p class="hero__more">
+        <a href="#content">What the Mondlift is <span aria-hidden="true">↓</span></a>
+      </p>
+    </div>
+
+    <main class="sheet" id="content">
+      <div class="wrap">
+        <nav class="nav nav--sheet" aria-label="Pages">
+          <a href="/en/mondlift">The ride</a>
+          <a href="/en/enterprise">The type</a>
+          <a href="/en/glossary">Glossary</a>
+          <a href="/en/faq">FAQ</a>
+          <a class="nav__lang" data-lang-switch href="/">Deutsch</a>
+        </nav>
+
+        <h2>A wheel that stands up</h2>
+
+        <p class="lead">
+          The <strong>Mondlift</strong> is a travelling fairground ride of the
+          <a href="/en/enterprise">Enterprise</a> type, made by Huss of
+          Bremen: twenty freely swinging gondolas on a wheel of about
+          twenty-two metres that rises during the ride from horizontal to
+          vertical and carries its riders upside down, with no lap bar and no
+          belt. As far as is publicly known, it is the last ride of this
+          design still moving from funfair to funfair in Germany.
+        </p>
+
+        <p>
+          From 1981 the ride was owned by the Zehle family of showmen from
+          Munich; before that it ran in the Netherlands under the name
+          <em>Moonlift</em>. Since the end of the 2023 season it has belonged
+          to Zettl Enterprises KG. The year it was built is not clearly
+          documented: the sources say 1976 or 1978, and that is how it stays
+          here.
+        </p>
+
+        <p>
+          This site is a private reference work: a
+          <a href="/en/mondlift">fact sheet of the ride</a> with its history,
+          the <a href="/en/enterprise">Enterprise design</a> from Anton
+          Schwarzkopf in 1972 to today's versions, a
+          <a href="/en/glossary">glossary</a> of the terms and a page of
+          <a href="/en/faq">questions and sources</a>. Every figure says where
+          it comes from; where the sources contradict each other, both values
+          are given.
+        </p>
+
+        <p>
+          The English pages are translations of the German original. Names
+          of places, companies and funfairs stay in German.
+        </p>
+
+        <ul class="cards">
+          <li>
+            <a href="/en/mondlift"><strong>The Mondlift</strong></a>
+            <p>
+              Fact sheet, ownership from Ropers to Zehle to Zettl, how the
+              ride runs and the open question of the year it was built.
+            </p>
+          </li>
+          <li>
+            <a href="/en/enterprise"><strong>Enterprise</strong></a>
+            <p>
+              The design: origins at Schwarzkopf and Huss, how the tilt
+              works, variants, production numbers and the manufacturer.
+            </p>
+          </li>
+          <li>
+            <a href="/en/glossary"><strong>Glossary</strong></a>
+            <p>
+              Twenty terms from wheel rim and resultant force to pitch
+              allocation, each one linkable on its own.
+            </p>
+          </li>
+          <li>
+            <a href="/en/faq"><strong>Questions and sources</strong></a>
+            <p>
+              How tall, how fast, who runs it, and where the sources do not
+              agree.
+            </p>
+          </li>
+        </ul>
+
+        <h2>About the animation above</h2>
+
+        <p>
+          The picture in the background is computed, not filmed. The ride
+          runs the way it does on site: the wheel spins up flat above the
+          platform until the gondolas swing out, then the boom lifts it about
+          its joint behind the ticket booth to 87 degrees, holds it at the top
+          and lowers it again. Every gondola points in the direction of the
+          <a href="/en/glossary#resultant-force">resultant force</a> of
+          centrifugal force and gravity. Flat and slow, the gondolas hang
+          down; steep and fast, they stand out radially, without a single
+          special case in the code.
+        </p>
+
+        <p>
+          The mural on the back wall is the only image in the scene that is
+          not computed. It is based on the
+          <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2860665873"
+            >Planet Coaster model of the Mondlift by Chaos</a
+          >
+          and shows the paintwork of the real ride.
+        </p>
+
+        <p>
+          If you are interested in the technology behind it: the site works
+          without a framework, without cookies and without tracking. What is
+          processed when you visit is set out in the
+          <a href="/en/privacy">privacy notice</a>.
+        </p>
+      </div>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/en/mondlift">The ride</a></li>
+        <li><a href="/en/enterprise">The type</a></li>
+        <li><a href="/en/glossary">Glossary</a></li>
+        <li><a href="/en/faq">FAQ</a></li>
+        <li><a href="/en/sitemap">Overview</a></li>
+        <li><a href="/en/legal-notice">Legal notice</a></li>
+        <li><a href="/en/privacy">Privacy</a></li>
+        <li><a href="/en/contact">Contact</a></li>
+        <li><a data-lang-switch href="/">Deutsch</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Unofficial fan site.</strong> This site is a private hobby
+        project with no connection to the operator or the manufacturer of the
+        ride. Names and trademarks belong to their respective owners.
+      </p>
+    </footer>
+
+    <script type="module" src="/assets/js/enterprise-3d.js"></script>
+  </body>
+</html>

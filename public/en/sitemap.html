@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Overview — all pages of mondlift.de</title>
+    <meta
+      name="description"
+      content="All pages of mondlift.de at a glance: the ride, the design, glossary, questions and sources, contact and legal pages, each with one sentence and the date of its last change."
+    />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <link rel="canonical" href="https://mondlift.de/en/sitemap" />
+    <meta name="theme-color" content="#070a12" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mondlift" />
+    <meta property="og:title" content="Overview — all pages of mondlift.de" />
+    <meta
+      property="og:description"
+      content="Every page of this site at a glance, each with one sentence."
+    />
+    <meta property="og:url" content="https://mondlift.de/en/sitemap" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:image" content="https://mondlift.de/assets/og/mondlift.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Drawing of an Enterprise fairground ride with an illuminated wheel at night."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body class="page">
+    <nav class="nav" aria-label="Pages">
+      <a href="/en">Home</a>
+      <a href="/en/mondlift">The ride</a>
+      <a href="/en/enterprise">The type</a>
+      <a href="/en/glossary">Glossary</a>
+      <a href="/en/faq">FAQ</a>
+      <a class="nav__lang" data-lang-switch href="/sitemap">Deutsch</a>
+    </nav>
+
+    <main class="wrap">
+      <h1>Overview</h1>
+
+      <p class="lead">
+        This site has no nested levels: everything there is, is listed here.
+        The list comes from the same source as the
+        <a href="/sitemap.xml">sitemap for search engines</a>, so it cannot
+        differ from it.
+      </p>
+
+      <!-- The worker builds the list from `pages` in site.config.json,
+           see src/page-list.ts. -->
+      <div data-page-list>
+        <p>
+          The list of pages could not be loaded. All pages can be reached from
+          the <a href="/en">home page</a>.
+        </p>
+      </div>
+
+      <h2>For machines</h2>
+
+      <ul>
+        <li>
+          <a href="/sitemap.xml">sitemap.xml</a>: the same list as XML, the
+          way search engines read it, with both languages.
+        </li>
+        <li>
+          <a href="/llms.txt">llms.txt</a>: a short index for language models,
+          with the fact sheet of the ride and a note on what this site is
+          <em>not</em> a source for.
+        </li>
+        <li>
+          <a href="/robots.txt">robots.txt</a>: everything open, for search
+          engines and AI crawlers alike.
+        </li>
+      </ul>
+
+      <p class="meta">
+        Last updated: <span data-site="site.lastUpdated">—</span>. Is
+        something missing or does a link lead nowhere?
+        <a href="/en/contact">Let me know</a>.
+      </p>
+    </main>
+
+    <footer class="foot foot--page">
+      <ul class="foot__nav">
+        <li><a href="/en/legal-notice">Legal notice</a></li>
+        <li><a href="/en/privacy">Privacy</a></li>
+        <li><a href="/en/contact">Contact</a></li>
+        <li><a data-lang-switch href="/sitemap">Deutsch</a></li>
+      </ul>
+      <p class="disclaimer">
+        <strong>Unofficial fan site.</strong> This site is a private hobby
+        project with no connection to the operator or the manufacturer of the
+        ride. Names and trademarks belong to their respective owners.
+      </p>
+    </footer>
+  </body>
+</html>

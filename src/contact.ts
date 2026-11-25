@@ -5,11 +5,12 @@
  *
  * Zwei Dinge sind hier bewusst entschieden:
  *
- * 1. Turnstile braucht JavaScript, um überhaupt ein Token zu erzeugen. Das
- *    Formular soll aber auch ohne JavaScript funktionieren. Deshalb gibt es
- *    zwei Wege: mit Token wird streng geprüft, ohne Token greift ein engeres
- *    Rate Limit. Wer das nicht will, setzt REQUIRE_TURNSTILE auf true -
- *    dann sind Einsendungen ohne JavaScript nicht mehr möglich.
+ * 1. Turnstile braucht JavaScript, um überhaupt ein Token zu erzeugen.
+ *    Ursprünglich durfte das Formular auch ohne JavaScript senden, nur mit
+ *    einem engeren Rate Limit. Über genau diesen Weg kam Spam herein, also
+ *    ist REQUIRE_TURNSTILE jetzt an: ohne gültiges Token keine Zustellung.
+ *    Wer kein JavaScript hat, bekommt den Hinweis auf die direkte
+ *    E-Mail-Adresse. Auf false gesetzt, gilt wieder das alte Verhalten.
  *
  * 2. Die Absenderadresse der Mail ist immer die eigene Domain, niemals die
  *    des Besuchers. Sonst würde die Mail als Fälschung aussehen und an SPF
@@ -19,34 +20,58 @@
 
 import { validateContact, LIMITS } from "./validation";
 import { verifyTurnstile } from "./turnstile";
+import { pageById, type Lang } from "./pages";
 
 /**
  * Auf true setzen, um Einsendungen ohne gültiges Turnstile-Token
  * abzulehnen. Das schaltet zugleich den Weg ohne JavaScript ab.
  */
-const REQUIRE_TURNSTILE = false;
+const REQUIRE_TURNSTILE = true;
 
 /** Größte zulässige Menge an Formulardaten, bevor abgebrochen wird. */
 const MAX_BODY_BYTES = 16_000;
 
-/** Rückmeldungen an den Besucher. Bewusst ohne interne Details. */
-const MESSAGES = {
-  ok: "Danke, die Nachricht ist angekommen.",
-  ungueltig:
-    "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
-  spam: "Die Nachricht konnte nicht zugestellt werden.",
-  zuviel: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
-  fehler: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
-} as const;
+/** Die möglichen Ergebnisse. Tauchen auch als ?status= in der URL auf. */
+const STATUSES = ["ok", "invalid", "spam", "nojs", "ratelimit", "error"] as const;
 
-type Status = keyof typeof MESSAGES;
+type Status = (typeof STATUSES)[number];
+
+/** Prüft, ob ein Wert aus der URL einer der bekannten Status ist. */
+export function isStatus(value: string): value is Status {
+  return (STATUSES as readonly string[]).includes(value);
+}
+
+/** Rückmeldungen an den Besucher, je Sprache. Bewusst ohne interne Details. */
+const MESSAGES: Record<Lang, Record<Status, string>> = {
+  de: {
+    ok: "Danke, die Nachricht ist angekommen.",
+    invalid:
+      "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
+    spam: "Die Nachricht konnte nicht zugestellt werden.",
+    nojs:
+      "Das Formular braucht JavaScript für den Spamschutz. Alternativ bitte direkt eine E-Mail schreiben.",
+    ratelimit: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
+    error: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
+  },
+  en: {
+    ok: "Thank you, your message has arrived.",
+    invalid:
+      "Please enter your name, email address and a message of at least ten characters.",
+    spam: "The message could not be delivered.",
+    nojs:
+      "The form needs JavaScript for its spam protection. Alternatively, please send an email directly.",
+    ratelimit: "Too many attempts. Please try again in a minute.",
+    error: "That did not work just now. Please try again later.",
+  },
+};
 
 const HTTP_STATUS: Record<Status, number> = {
   ok: 200,
-  ungueltig: 400,
+  invalid: 400,
   spam: 403,
-  zuviel: 429,
-  fehler: 502,
+  nojs: 403,
+  ratelimit: 429,
+  error: 502,
 };
 
 /** Fragt einen Rate Limiter ab und lässt bei fehlendem Binding durch. */
@@ -59,36 +84,60 @@ async function withinLimit(
   return success;
 }
 
+/** Ergebnis einer Einsendung: der Status und die Sprache der Seite. */
+export interface ContactResult {
+  status: Status;
+  lang: Lang;
+}
+
+/**
+ * Sprache der Seite, von der die Einsendung kommt. Die englische Seite
+ * schickt an /api/contact?lang=en; so ist die Sprache bekannt, bevor der
+ * Rumpf gelesen wird, und auch ein Rate Limit antwortet in der richtigen.
+ */
+function requestLang(url: URL): Lang {
+  return url.searchParams.get("lang") === "en" ? "en" : "de";
+}
+
 export async function handleContact(
   request: Request,
   env: Env,
+): Promise<ContactResult> {
+  const lang = requestLang(new URL(request.url));
+  return { status: await processSubmission(request, env, lang), lang };
+}
+
+async function processSubmission(
+  request: Request,
+  env: Env,
+  lang: Lang,
 ): Promise<Status> {
   const url = new URL(request.url);
   const ip = request.headers.get("cf-connecting-ip") ?? "unbekannt";
 
   // Rate Limit zuerst: schützt auch vor dem Aufwand des Rests.
-  if (!(await withinLimit(env.CONTACT_RATE_LIMIT, ip))) return "zuviel";
+  if (!(await withinLimit(env.CONTACT_RATE_LIMIT, ip))) return "ratelimit";
 
   const type = request.headers.get("content-type") ?? "";
   if (
     !type.includes("application/x-www-form-urlencoded") &&
     !type.includes("multipart/form-data")
   ) {
-    return "ungueltig";
+    return "invalid";
   }
 
   // Vor dem Einlesen abschätzen, damit ein riesiger Rumpf nicht erst
   // vollständig im Speicher landet.
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    return "ungueltig";
+    return "invalid";
   }
 
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return "ungueltig";
+    return "invalid";
   }
 
   const checked = validateContact(form);
@@ -105,20 +154,20 @@ export async function handleContact(
       console.error(
         JSON.stringify({ event: "turnstile_secret_missing", path: url.pathname }),
       );
-      return "fehler";
+      return "error";
     }
     const valid = await verifyTurnstile(token, secret, url.hostname, ip);
     if (!valid) return "spam";
   } else {
     // Kein Token: entweder kein JavaScript oder ein einfacher Bot.
-    if (REQUIRE_TURNSTILE) return "spam";
-    if (!(await withinLimit(env.CONTACT_RATE_LIMIT_STRICT, ip))) return "zuviel";
+    if (REQUIRE_TURNSTILE) return "nojs";
+    if (!(await withinLimit(env.CONTACT_RATE_LIMIT_STRICT, ip))) return "ratelimit";
   }
 
   // --- Zustellung --------------------------------------------------------
   if (!env.CONTACT_TO_EMAIL || !env.CONTACT_FROM_EMAIL) {
     console.error(JSON.stringify({ event: "contact_addresses_missing" }));
-    return "fehler";
+    return "error";
   }
 
   const body = [
@@ -126,6 +175,7 @@ export async function handleContact(
     `E-Mail:  ${email}`,
     `Absender-IP: ${ip}`,
     `Geprüft: ${typeof token === "string" && token.length > 0 ? "Turnstile" : "nur Rate Limit (ohne JavaScript gesendet)"}`,
+    `Sprache der Seite: ${lang}`,
     "",
     "Nachricht:",
     message,
@@ -150,30 +200,33 @@ export async function handleContact(
         message: error instanceof Error ? error.message : String(error),
       }),
     );
-    return "fehler";
+    return "error";
   }
 
   return "ok";
 }
 
 /** JSON-Antwort für den Weg mit JavaScript. */
-export function contactJson(status: Status): Response {
+export function contactJson({ status, lang }: ContactResult): Response {
   return Response.json(
-    { ok: status === "ok", status, message: MESSAGES[status] },
+    { ok: status === "ok", status, message: MESSAGES[lang][status] },
     { status: HTTP_STATUS[status] },
   );
 }
 
 /** Weiterleitung auf die Seite für den Weg ohne JavaScript. */
-export function contactRedirect(status: Status, url: URL): Response {
-  const target = new URL("/kontakt", url);
+export function contactRedirect(
+  { status, lang }: ContactResult,
+  url: URL,
+): Response {
+  const target = new URL(pageById("contact", lang)?.path ?? "/kontakt", url);
   target.searchParams.set("status", status);
-  target.hash = "formular";
+  target.hash = lang === "en" ? "form" : "formular";
   return new Response(null, {
     status: 303,
     headers: { location: target.toString() },
   });
 }
 
-export { MESSAGES, LIMITS };
+export { LIMITS };
 export type { Status };

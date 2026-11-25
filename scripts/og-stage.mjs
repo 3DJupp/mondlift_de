@@ -311,7 +311,7 @@ export async function oeffneStartseite({ query = "" } = {}) {
       const stand = await rechne(`({
         ersatz: Boolean(document.querySelector('script[src$="/enterprise.js"]')),
         wandbild: performance.getEntriesByType("resource")
-          .some((e) => e.name.endsWith("/rueckwand.webp") && e.responseEnd > 0),
+          .some((e) => e.name.endsWith("/back-wall.webp") && e.responseEnd > 0),
       })`);
       if (stand.ersatz) {
         throw new Error(
