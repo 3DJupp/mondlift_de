@@ -71,6 +71,11 @@
           Die Nachricht konnte nicht zugestellt werden. Bitte noch einmal
           versuchen oder direkt eine E-Mail schreiben.
         </p>
+        <p class="status__msg status__msg--warn" data-status="ohnejs" hidden>
+          Das Formular braucht JavaScript, weil es darüber vor Spam geschützt
+          ist. Ohne JavaScript bitte einfach direkt an die oben genannte
+          Adresse schreiben.
+        </p>
         <p class="status__msg status__msg--warn" data-status="zuviel" hidden>
           Zu viele Versuche in kurzer Zeit. Bitte eine Minute warten.
         </p>
@@ -79,6 +84,14 @@
           oder direkt eine E-Mail schreiben.
         </p>
       </div>
+
+      <noscript>
+        <p class="status__msg status__msg--warn">
+          Das Formular braucht JavaScript, weil es darüber vor Spam geschützt
+          ist. Ohne JavaScript bitte einfach direkt an die oben genannte
+          Adresse schreiben.
+        </p>
+      </noscript>
 
       <form
         class="form"

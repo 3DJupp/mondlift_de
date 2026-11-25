@@ -5,11 +5,12 @@
  *
  * Zwei Dinge sind hier bewusst entschieden:
  *
- * 1. Turnstile braucht JavaScript, um überhaupt ein Token zu erzeugen. Das
- *    Formular soll aber auch ohne JavaScript funktionieren. Deshalb gibt es
- *    zwei Wege: mit Token wird streng geprüft, ohne Token greift ein engeres
- *    Rate Limit. Wer das nicht will, setzt REQUIRE_TURNSTILE auf true -
- *    dann sind Einsendungen ohne JavaScript nicht mehr möglich.
+ * 1. Turnstile braucht JavaScript, um überhaupt ein Token zu erzeugen.
+ *    Ursprünglich durfte das Formular auch ohne JavaScript senden, nur mit
+ *    einem engeren Rate Limit. Über genau diesen Weg kam Spam herein, also
+ *    ist REQUIRE_TURNSTILE jetzt an: ohne gültiges Token keine Zustellung.
+ *    Wer kein JavaScript hat, bekommt den Hinweis auf die direkte
+ *    E-Mail-Adresse. Auf false gesetzt, gilt wieder das alte Verhalten.
  *
  * 2. Die Absenderadresse der Mail ist immer die eigene Domain, niemals die
  *    des Besuchers. Sonst würde die Mail als Fälschung aussehen und an SPF
@@ -24,7 +25,7 @@ import { verifyTurnstile } from "./turnstile";
  * Auf true setzen, um Einsendungen ohne gültiges Turnstile-Token
  * abzulehnen. Das schaltet zugleich den Weg ohne JavaScript ab.
  */
-const REQUIRE_TURNSTILE = false;
+const REQUIRE_TURNSTILE = true;
 
 /** Größte zulässige Menge an Formulardaten, bevor abgebrochen wird. */
 const MAX_BODY_BYTES = 16_000;
@@ -35,6 +36,8 @@ const MESSAGES = {
   ungueltig:
     "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
   spam: "Die Nachricht konnte nicht zugestellt werden.",
+  ohnejs:
+    "Das Formular braucht JavaScript für den Spamschutz. Alternativ bitte direkt eine E-Mail schreiben.",
   zuviel: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
   fehler: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
 } as const;
@@ -45,6 +48,7 @@ const HTTP_STATUS: Record<Status, number> = {
   ok: 200,
   ungueltig: 400,
   spam: 403,
+  ohnejs: 403,
   zuviel: 429,
   fehler: 502,
 };
@@ -111,7 +115,7 @@ export async function handleContact(
     if (!valid) return "spam";
   } else {
     // Kein Token: entweder kein JavaScript oder ein einfacher Bot.
-    if (REQUIRE_TURNSTILE) return "spam";
+    if (REQUIRE_TURNSTILE) return "ohnejs";
     if (!(await withinLimit(env.CONTACT_RATE_LIMIT_STRICT, ip))) return "zuviel";
   }
 

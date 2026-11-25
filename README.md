@@ -217,18 +217,19 @@ Vier Sperren gegen Spam:
 |--------|---------|
 | Honigtopf-Feld | für Besucher unsichtbar; ausgefüllt heißt abgewiesen |
 | Rate Limit pro IP | 3 Einsendungen je Minute |
-| Strenges Rate Limit | 1 je Minute, nur ohne Turnstile-Token |
-| Cloudflare Turnstile | serverseitig geprüft, inklusive Aktion und Hostname |
+| Strenges Rate Limit | 1 je Minute, nur ohne Turnstile-Token (greift nur, wenn `REQUIRE_TURNSTILE` aus ist) |
+| Cloudflare Turnstile | Pflicht, serverseitig geprüft, inklusive Aktion und Hostname |
 
 Zwei Entscheidungen, die man kennen sollte:
 
-**Turnstile und der Weg ohne JavaScript schließen sich aus.** Turnstile
-braucht JavaScript, um überhaupt ein Token zu erzeugen. Damit das Formular
-trotzdem ohne JavaScript funktioniert, gibt es zwei Wege: mit Token wird
-streng geprüft, ohne Token greift stattdessen das strenge Rate Limit.
-Wer das nicht möchte, setzt `REQUIRE_TURNSTILE` in `src/contact.ts` auf
-`true` — dann werden Einsendungen ohne gültiges Token abgewiesen und der
-Weg ohne JavaScript ist zu.
+**Ohne JavaScript kein Formular.** Turnstile braucht JavaScript, um
+überhaupt ein Token zu erzeugen. Anfangs durfte das Formular auch ohne
+JavaScript senden und war dann nur über das strenge Rate Limit gesichert.
+Genau darüber kam Spam herein, deshalb steht `REQUIRE_TURNSTILE` in
+`src/contact.ts` jetzt auf `true`: Einsendungen ohne gültiges Token werden
+mit dem Status `ohnejs` abgewiesen, und die Seite verweist auf die direkte
+E-Mail-Adresse (auch per `<noscript>` schon vor dem Absenden). Auf `false`
+gesetzt, gilt wieder der alte Weg mit strengem Rate Limit.
 
 **Die Absenderadresse ist immer die eigene Domain**, niemals die des
 Besuchers. Sonst sähe die Mail wie eine Fälschung aus und würde an SPF und
