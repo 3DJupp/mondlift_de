@@ -52,19 +52,19 @@
         body: new FormData(form),
       });
 
-      let status = "fehler";
+      let status = "error";
       try {
         const data = await response.json();
         if (data && typeof data.status === "string") status = data.status;
       } catch {
-        // Keine verwertbare Antwort - bleibt bei "fehler".
+        // Keine verwertbare Antwort - bleibt bei "error".
       }
 
       show(status);
       if (status === "ok") form.reset();
     } catch {
       // Netzwerk weg oder Anfrage abgebrochen.
-      show("fehler");
+      show("error");
     } finally {
       resetTurnstile();
       button.disabled = false;

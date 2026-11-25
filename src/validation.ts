@@ -33,7 +33,7 @@ export type ValidationResult =
   | { ok: false; reason: ValidationReason };
 
 /** Gründe, die auch als ?status= in der URL auftauchen dürfen. */
-export type ValidationReason = "ungueltig" | "spam";
+export type ValidationReason = "invalid" | "spam";
 
 /**
  * Entfernt Steuerzeichen und begrenzt die Länge.
@@ -70,9 +70,9 @@ export function validateContact(form: FieldSource): ValidationResult {
   const email = clean(form.get("email"), LIMITS.email);
   const message = clean(form.get("message"), LIMITS.message, true);
 
-  if (name.length < 2) return { ok: false, reason: "ungueltig" };
-  if (!looksLikeEmail(email)) return { ok: false, reason: "ungueltig" };
-  if (message.length < 10) return { ok: false, reason: "ungueltig" };
+  if (name.length < 2) return { ok: false, reason: "invalid" };
+  if (!looksLikeEmail(email)) return { ok: false, reason: "invalid" };
+  if (message.length < 10) return { ok: false, reason: "invalid" };
 
   return { ok: true, value: { name, email, message } };
 }

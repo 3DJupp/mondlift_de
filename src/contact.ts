@@ -33,24 +33,24 @@ const MAX_BODY_BYTES = 16_000;
 /** Rückmeldungen an den Besucher. Bewusst ohne interne Details. */
 const MESSAGES = {
   ok: "Danke, die Nachricht ist angekommen.",
-  ungueltig:
+  invalid:
     "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
   spam: "Die Nachricht konnte nicht zugestellt werden.",
-  ohnejs:
+  nojs:
     "Das Formular braucht JavaScript für den Spamschutz. Alternativ bitte direkt eine E-Mail schreiben.",
-  zuviel: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
-  fehler: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
+  ratelimit: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
+  error: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
 } as const;
 
 type Status = keyof typeof MESSAGES;
 
 const HTTP_STATUS: Record<Status, number> = {
   ok: 200,
-  ungueltig: 400,
+  invalid: 400,
   spam: 403,
-  ohnejs: 403,
-  zuviel: 429,
-  fehler: 502,
+  nojs: 403,
+  ratelimit: 429,
+  error: 502,
 };
 
 /** Fragt einen Rate Limiter ab und lässt bei fehlendem Binding durch. */
@@ -71,28 +71,28 @@ export async function handleContact(
   const ip = request.headers.get("cf-connecting-ip") ?? "unbekannt";
 
   // Rate Limit zuerst: schützt auch vor dem Aufwand des Rests.
-  if (!(await withinLimit(env.CONTACT_RATE_LIMIT, ip))) return "zuviel";
+  if (!(await withinLimit(env.CONTACT_RATE_LIMIT, ip))) return "ratelimit";
 
   const type = request.headers.get("content-type") ?? "";
   if (
     !type.includes("application/x-www-form-urlencoded") &&
     !type.includes("multipart/form-data")
   ) {
-    return "ungueltig";
+    return "invalid";
   }
 
   // Vor dem Einlesen abschätzen, damit ein riesiger Rumpf nicht erst
   // vollständig im Speicher landet.
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    return "ungueltig";
+    return "invalid";
   }
 
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return "ungueltig";
+    return "invalid";
   }
 
   const checked = validateContact(form);
@@ -109,20 +109,20 @@ export async function handleContact(
       console.error(
         JSON.stringify({ event: "turnstile_secret_missing", path: url.pathname }),
       );
-      return "fehler";
+      return "error";
     }
     const valid = await verifyTurnstile(token, secret, url.hostname, ip);
     if (!valid) return "spam";
   } else {
     // Kein Token: entweder kein JavaScript oder ein einfacher Bot.
-    if (REQUIRE_TURNSTILE) return "ohnejs";
-    if (!(await withinLimit(env.CONTACT_RATE_LIMIT_STRICT, ip))) return "zuviel";
+    if (REQUIRE_TURNSTILE) return "nojs";
+    if (!(await withinLimit(env.CONTACT_RATE_LIMIT_STRICT, ip))) return "ratelimit";
   }
 
   // --- Zustellung --------------------------------------------------------
   if (!env.CONTACT_TO_EMAIL || !env.CONTACT_FROM_EMAIL) {
     console.error(JSON.stringify({ event: "contact_addresses_missing" }));
-    return "fehler";
+    return "error";
   }
 
   const body = [
@@ -154,7 +154,7 @@ export async function handleContact(
         message: error instanceof Error ? error.message : String(error),
       }),
     );
-    return "fehler";
+    return "error";
   }
 
   return "ok";

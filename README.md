@@ -227,7 +227,7 @@ Zwei Entscheidungen, die man kennen sollte:
 JavaScript senden und war dann nur über das strenge Rate Limit gesichert.
 Genau darüber kam Spam herein, deshalb steht `REQUIRE_TURNSTILE` in
 `src/contact.ts` jetzt auf `true`: Einsendungen ohne gültiges Token werden
-mit dem Status `ohnejs` abgewiesen, und die Seite verweist auf die direkte
+mit dem Status `nojs` abgewiesen, und die Seite verweist auf die direkte
 E-Mail-Adresse (auch per `<noscript>` schon vor dem Absenden). Auf `false`
 gesetzt, gilt wieder der alte Weg mit strengem Rate Limit.
 
