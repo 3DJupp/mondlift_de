@@ -3,13 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Seite nicht gefunden — Mondlift</title>
+    <title>Seite nicht gefunden · Page not found — Mondlift</title>
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#070a12" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/css/style.css" />
   </head>
   <body class="page">
+    <!-- Eine Fehlerseite fuer beide Sprachen: Cloudflare liefert fuer jede
+         unbekannte Adresse dieselbe 404.html aus, egal ob darueber /en
+         stand. Deshalb steht hier beides untereinander. -->
     <main class="center">
       <p class="code">404</p>
       <h1>Diese Gondel ist leer</h1>
@@ -19,12 +22,28 @@
       </p>
       <p><a class="back" href="/">&larr; Zurück zum Mondlift</a></p>
 
-      <nav class="nav nav--mitte" aria-label="Seiten">
+      <nav class="nav nav--center" aria-label="Seiten">
         <a href="/mondlift">Das Gerät</a>
         <a href="/enterprise">Der Typ</a>
         <a href="/glossar">Glossar</a>
         <a href="/fragen">Fragen</a>
       </nav>
+
+      <div lang="en">
+        <h2>This gondola is empty</h2>
+        <p>
+          The page you are looking for does not exist here. Perhaps it has
+          moved on.
+        </p>
+        <p><a class="back" href="/en">&larr; Back to the Mondlift</a></p>
+
+        <nav class="nav nav--center" aria-label="Pages">
+          <a href="/en/mondlift">The ride</a>
+          <a href="/en/enterprise">The type</a>
+          <a href="/en/glossary">Glossary</a>
+          <a href="/en/faq">FAQ</a>
+        </nav>
+      </div>
     </main>
   </body>
 </html>

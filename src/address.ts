@@ -1,5 +1,5 @@
 /**
- * GET /anschrift.svg - die Anschrift als Bild.
+ * GET /address.svg - die Anschrift als Bild.
  *
  * Zweck: die Anbieterkennzeichnung nach § 5 DDG muss auf der Seite stehen,
  * sie muss aber nicht als Text dort stehen. Als Bild laesst sie sich nicht
@@ -10,7 +10,7 @@
  * 1. **Es ist ein Vektorbild aus Umrissen, kein `<text>` im SVG.** Text in
  *    einem SVG ist genauso auslesbar wie Text in HTML - der Umweg waere
  *    sonst wirkungslos. Die Umrisse der Zeichen stehen in
- *    anschrift-glyphen.ts, erzeugt von scripts/glyphs.py.
+ *    address-glyphs.ts, erzeugt von scripts/glyphs.py.
  *
  * 2. **Die Anschrift selbst kommt weiterhin nur aus site.config.json.** Ein
  *    fertiges Bild im Repo waere die zweite Stelle mit der Adresse, und eine
@@ -26,7 +26,7 @@
  */
 
 import config from "../site.config.json";
-import { GLYPHS, UPM, ASCENDER, DESCENDER } from "./anschrift-glyphen";
+import { GLYPHS, UPM, ASCENDER, DESCENDER } from "./address-glyphs";
 import { generatedFile } from "./cache";
 
 /** Die Zeilen des Anschriftenblocks, wie im Impressum gesetzt. */
@@ -67,7 +67,7 @@ const PLACEHOLDER: [number, string] = [
 function buildSvg(): string {
   const lineStep = UPM * LINE_HEIGHT;
   const paths: string[] = [];
-  const fehlend = new Set<string>();
+  const missing = new Set<string>();
   let widthUnits = 0;
 
   LINES.forEach((line, index) => {
@@ -78,7 +78,7 @@ function buildSvg(): string {
     // Ueber Codepoints laufen, nicht ueber UTF-16-Einheiten.
     for (const char of line) {
       const glyph = GLYPHS[char];
-      if (glyph === undefined) fehlend.add(char);
+      if (glyph === undefined) missing.add(char);
       const [advance, d] = glyph ?? PLACEHOLDER;
       // Das Leerzeichen hat einen Vorschub, aber keinen Umriss.
       if (d !== "") {
@@ -90,12 +90,12 @@ function buildSvg(): string {
     widthUnits = Math.max(widthUnits, x);
   });
 
-  if (fehlend.size > 0) {
+  if (missing.size > 0) {
     // Sichtbar im Bild und nachlesbar in den Workers Logs.
     console.error(
       JSON.stringify({
-        event: "anschrift_glyphen_fehlen",
-        zeichen: [...fehlend].join(""),
+        event: "address_glyphs_missing",
+        chars: [...missing].join(""),
       }),
     );
   }
@@ -121,6 +121,6 @@ function buildSvg(): string {
 // zusammengesetzt statt bei jeder Anfrage.
 const FILE = generatedFile(buildSvg, "image/svg+xml; charset=utf-8", 86400);
 
-export function handleAnschrift(request: Request): Response {
+export function handleAddress(request: Request): Response {
   return FILE.respond(request);
 }

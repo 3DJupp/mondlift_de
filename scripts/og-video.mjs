@@ -16,7 +16,7 @@
  * laeuft trotzdem fluessig und sieht nach jedem Lauf gleich aus.
  *
  * Gebraucht werden Chromium, ffmpeg und Netz fuer three.js, sonst nichts.
- * Die gemeinsamen Teile stehen in og-buehne.mjs.
+ * Die gemeinsamen Teile stehen in og-stage.mjs.
  *
  *   node scripts/og-video.mjs
  *   node scripts/og-video.mjs --chrome /pfad/zu/chrome
@@ -37,7 +37,7 @@ import {
   arg,
   zahl,
   oeffneStartseite,
-} from "./og-buehne.mjs";
+} from "./og-stage.mjs";
 
 const FPS = 30;
 

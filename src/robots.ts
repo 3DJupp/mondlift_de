@@ -17,7 +17,7 @@
  * und Verwandte). Eine gesperrte Adresse darf nicht abgerufen werden, also
  * erfaehrt die Suchmaschine nie, dass es sie nicht mehr gibt - sie bliebe
  * laenger in der Search Console stehen als eine offene. Sie bekommen
- * stattdessen 410 Gone, siehe src/altlasten.ts.
+ * stattdessen 410 Gone, siehe src/legacy-urls.ts.
  */
 
 import config from "../site.config.json";
@@ -31,7 +31,7 @@ const MAX_AGE = 86400;
  * genannt, weil mehrere von ihnen ohne ausdrueckliche Erlaubnis nicht
  * zugreifen.
  */
-const KI_CRAWLER = [
+const AI_CRAWLERS = [
   "GPTBot",
   "OAI-SearchBot",
   "ChatGPT-User",
@@ -72,7 +72,7 @@ function robotsTxt(): string {
     "Allow: /",
     "",
     "# Sammeln fuer Sprachmodelle, Antworten mit Quellenangabe, Suchindizes",
-    ...KI_CRAWLER.map((name) => `User-agent: ${name}`),
+    ...AI_CRAWLERS.map((name) => `User-agent: ${name}`),
     "Allow: /",
     "",
     `Sitemap: ${abs("/sitemap.xml")}`,

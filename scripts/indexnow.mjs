@@ -126,6 +126,27 @@ try {
 // --base ersetzt die Basisadresse. Gedacht ist das fuer Tests gegen
 // `wrangler dev`; fuer eine echte Meldung muss die Adresse die Domain sein,
 // fuer die der Schluessel gilt.
+/**
+ * Die Seitenliste als flache Liste mit `path` und `lastmod`. Seit die Seite
+ * zweisprachig ist, steht jede Seite einmal mit je einem Block pro Sprache
+ * in der Config; aeltere Staende (fuer --changed) haben noch die flache
+ * Form. Beide werden hier gleich behandelt.
+ */
+function flattenPages(cfg) {
+  const fallback = cfg.site?.lastUpdated;
+  return (cfg.pages ?? []).flatMap((page) => {
+    if (typeof page.path === "string") {
+      return [{ path: page.path, lastmod: page.lastmod ?? fallback }];
+    }
+    return ["de", "en"]
+      .filter((lang) => page[lang]?.path)
+      .map((lang) => ({
+        path: page[lang].path,
+        lastmod: page[lang].lastmod ?? fallback,
+      }));
+  });
+}
+
 const siteUrl = typeof flags.base === "string" ? flags.base : config.site?.url;
 const key = config.indexNow?.key;
 
@@ -155,29 +176,29 @@ const keyLocation = new URL(`/${key}.txt`, siteUrl).toString();
  * das, was IndexNow nicht haben will. Der Vergleich gegen den vorigen Stand
  * nennt dagegen genau die Seiten, die dieser Deploy wirklich aendert.
  */
-function geaendertGegen(ref, pages, fallback) {
-  let alt;
+function changedSince(ref, pages, fallback) {
+  let previousConfig;
   try {
-    const roh = execFileSync("git", ["show", `${ref}:site.config.json`], {
+    const raw = execFileSync("git", ["show", `${ref}:site.config.json`], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    alt = JSON.parse(roh);
+    previousConfig = JSON.parse(raw);
   } catch {
     return null;
   }
 
-  const vorher = new Map(
-    (alt.pages ?? []).map((p) => [p.path, p.lastmod ?? alt.site?.lastUpdated]),
+  const previous = new Map(
+    flattenPages(previousConfig).map((p) => [p.path, p.lastmod]),
   );
-  return pages.filter((p) => vorher.get(p.path) !== (p.lastmod ?? fallback));
+  return pages.filter((p) => previous.get(p.path) !== (p.lastmod ?? fallback));
 }
 
 /** Tage in Millisekunden. */
-const TAG = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Standardfenster fuer --recent, wenn keine Zahl dabeisteht. */
-const RECENT_TAGE = 7;
+const RECENT_DAYS = 7;
 
 /**
  * Die Untergrenze fuer `lastmod`, oder null fuer "alle Seiten".
@@ -187,7 +208,7 @@ const RECENT_TAGE = 7;
  * sich als Zeichenketten vergleichen, was hier genau richtig ist, weil in
  * der Config auch nichts anderes steht.
  */
-function untergrenze() {
+function lowerBound() {
   if (typeof flags.since === "string") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(flags.since)) {
       fail(`--since=${flags.since} ist kein Datum der Form YYYY-MM-DD`);
@@ -196,17 +217,17 @@ function untergrenze() {
   }
   if (!flags.recent) return null;
 
-  const tage = flags.recent === true ? RECENT_TAGE : Number(flags.recent);
-  if (!Number.isFinite(tage) || tage < 0) {
+  const days = flags.recent === true ? RECENT_DAYS : Number(flags.recent);
+  if (!Number.isFinite(days) || days < 0) {
     fail(`--recent=${flags.recent} ist keine Anzahl von Tagen`);
   }
-  return new Date(Date.now() - tage * TAG).toISOString().slice(0, 10);
+  return new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
 }
 
 // Argumente duerfen Pfade sein (/kontakt) oder vollstaendige URLs. Ohne
 // Argumente wird die Seitenliste aus der Config genommen, gegebenenfalls
 // eingeschraenkt auf die kuerzlich geaenderten Seiten.
-const grenze = untergrenze();
+const bound = lowerBound();
 let paths;
 
 /**
@@ -214,76 +235,73 @@ let paths;
  * muss. Leer, wenn Adressen von Hand genannt wurden - dann gibt es nichts
  * zu vergleichen, denn die Config sagt ueber eine beliebige Adresse nichts.
  */
-let erwartet = [];
+let expected = [];
 
 if (rest.length > 0) {
   // Ausdruecklich genannte Adressen werden gemeldet, Datum hin oder her.
   // Steht eine davon in der Config, kann --wait-live sie trotzdem pruefen.
   paths = rest;
-  const bekannt = new Map(
-    (config.pages ?? []).map((p) => [
-      p.path,
-      p.lastmod ?? config.site?.lastUpdated ?? "",
-    ]),
+  const known = new Map(
+    flattenPages(config).map((p) => [p.path, p.lastmod ?? ""]),
   );
-  erwartet = rest
-    .map((pfad) => {
-      const url = new URL(pfad, siteUrl);
-      const lastmod = bekannt.get(url.pathname);
+  expected = rest
+    .map((pathname) => {
+      const url = new URL(pathname, siteUrl);
+      const lastmod = known.get(url.pathname);
       return lastmod === undefined
         ? null
-        : { url: url.toString(), pfad: url.pathname, lastmod };
+        : { url: url.toString(), pathname: url.pathname, lastmod };
     })
     .filter(Boolean);
 } else {
-  const pages = config.pages ?? [];
+  const pages = flattenPages(config);
   const fallback = config.site?.lastUpdated ?? "";
 
-  let gewaehlt = null;
-  let begruendung = "";
+  let selected = null;
+  let reason = "";
 
   if (flags.changed) {
     const ref = typeof flags.changed === "string" ? flags.changed : "HEAD~1";
-    gewaehlt = geaendertGegen(ref, pages, fallback);
-    if (gewaehlt === null) {
+    selected = changedSince(ref, pages, fallback);
+    if (selected === null) {
       console.log(
         `indexnow: ${ref}:site.config.json nicht lesbar - zurueck auf das ` +
           "Zeitfenster.",
       );
     } else {
-      begruendung = `gegenueber ${ref} geaendert`;
+      reason = `gegenueber ${ref} geaendert`;
     }
   }
 
-  if (gewaehlt === null) {
-    gewaehlt =
-      grenze === null
+  if (selected === null) {
+    selected =
+      bound === null
         ? pages
-        : pages.filter((p) => (p.lastmod ?? fallback) >= grenze);
-    if (grenze !== null) begruendung = `lastmod ab ${grenze}`;
+        : pages.filter((p) => (p.lastmod ?? fallback) >= bound);
+    if (bound !== null) reason = `lastmod ab ${bound}`;
   }
 
   // Nichts Neues ist kein Fehler: der haeufigste Deploy aendert Code und
   // keine Inhalte. Dann ist "nichts zu melden" die richtige Antwort, und
   // ein Fehlschlag hier wuerde einen gelungenen Deploy als misslungen
   // ausgeben.
-  if (gewaehlt.length === 0) {
+  if (selected.length === 0) {
     console.log(
-      `indexnow: keine Seite ${begruendung || "ausgewaehlt"} - nichts zu melden.`,
+      `indexnow: keine Seite ${reason || "ausgewaehlt"} - nichts zu melden.`,
     );
     process.exit(0);
   }
 
-  paths = gewaehlt.map((p) => p.path);
-  erwartet = gewaehlt.map((p) => ({
+  paths = selected.map((p) => p.path);
+  expected = selected.map((p) => ({
     url: new URL(p.path, siteUrl).toString(),
-    pfad: new URL(p.path, siteUrl).pathname,
+    pathname: new URL(p.path, siteUrl).pathname,
     lastmod: p.lastmod ?? fallback,
   }));
-  if (begruendung) {
+  if (reason) {
     console.log(
-      `indexnow: ${gewaehlt.length} von ${pages.length} Seiten ` +
-        `(${begruendung}).`,
+      `indexnow: ${selected.length} von ${pages.length} Seiten ` +
+        `(${reason}).`,
     );
   }
 }
@@ -292,9 +310,9 @@ if (paths.length === 0) fail("keine Seiten angegeben und pages ist leer");
 
 const urlList = paths.map((path) => new URL(path, siteUrl).toString());
 
-const fremd = urlList.filter((u) => new URL(u).hostname !== host);
-if (fremd.length > 0) {
-  fail(`diese URLs liegen nicht auf ${host}: ${fremd.join(", ")}`);
+const foreign = urlList.filter((u) => new URL(u).hostname !== host);
+if (foreign.length > 0) {
+  fail(`diese URLs liegen nicht auf ${host}: ${foreign.join(", ")}`);
 }
 
 const endpoint = typeof flags.endpoint === "string" ? flags.endpoint : DEFAULT_ENDPOINT;
@@ -322,9 +340,9 @@ if (flags.curl) {
   out.push(`curl -sS ${keyLocation}; echo`);
   out.push("");
 
-  const menge =
+  const amount =
     urlList.length === 1 ? "die Adresse" : `alle ${urlList.length} Adressen`;
-  out.push(`# 2. Melden - ${menge} in einer Anfrage.`);
+  out.push(`# 2. Melden - ${amount} in einer Anfrage.`);
   out.push("#    200 heisst angenommen, 202 angenommen und Schluessel wird geprueft.");
   out.push(`curl -sS -i -X POST ${endpoint} \\`);
   out.push("  -H 'content-type: application/json; charset=utf-8' \\");
@@ -367,8 +385,8 @@ if (flags.curl) {
  * die Sitemap aus derselben Config kommt wie diese Meldung: steht dort das
  * neue Datum, ist der neue Worker live.
  */
-const WARTE_MINUTEN = 10;
-const WARTE_ABSTAND_MS = 15000;
+const WAIT_MINUTES = 10;
+const WAIT_INTERVAL_MS = 15000;
 
 /**
  * Pfad und lastmod aus einer Sitemap. Ein eigener XML-Parser waere hier
@@ -379,56 +397,56 @@ const WARTE_ABSTAND_MS = 15000;
  * nennt. Strenger waere der Vergleich der vollen Adresse nicht - eine
  * Sitemap, die fremde Hosts auffuehrt, waere ohnehin kaputt.
  */
-function sitemapLesen(xml) {
-  const eintraege = new Map();
+function readSitemap(xml) {
+  const entries = new Map();
   for (const block of xml.match(/<url>[\s\S]*?<\/url>/g) ?? []) {
     const loc = block.match(/<loc>([^<]*)<\/loc>/)?.[1];
     const lastmod = block.match(/<lastmod>([^<]*)<\/lastmod>/)?.[1];
     if (!loc) continue;
     try {
-      eintraege.set(new URL(loc.trim()).pathname, (lastmod ?? "").trim());
+      entries.set(new URL(loc.trim()).pathname, (lastmod ?? "").trim());
     } catch {
       // Eine Adresse, die keine ist, ignorieren statt daran zu scheitern.
     }
   }
-  return eintraege;
+  return entries;
 }
 
-if (flags["wait-live"] && erwartet.length > 0) {
-  const minuten =
-    flags["wait-live"] === true ? WARTE_MINUTEN : Number(flags["wait-live"]);
-  if (!Number.isFinite(minuten) || minuten <= 0) {
+if (flags["wait-live"] && expected.length > 0) {
+  const minutes =
+    flags["wait-live"] === true ? WAIT_MINUTES : Number(flags["wait-live"]);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
     fail(`--wait-live=${flags["wait-live"]} ist keine Anzahl von Minuten`);
   }
 
   const sitemapUrl = new URL("/sitemap.xml", siteUrl).toString();
-  const frist = Date.now() + minuten * 60 * 1000;
-  let offen = erwartet;
+  const deadline = Date.now() + minutes * 60 * 1000;
+  let pending = expected;
 
-  console.log(`indexnow: warte auf den Deploy, hoechstens ${minuten} Minuten.`);
+  console.log(`indexnow: warte auf den Deploy, hoechstens ${minutes} Minuten.`);
 
   while (true) {
     try {
       const response = await fetch(sitemapUrl, { cache: "no-store" });
       if (response.ok) {
-        const live = sitemapLesen(await response.text());
-        offen = erwartet.filter((e) => live.get(e.pfad) !== e.lastmod);
-        if (offen.length === 0) break;
+        const live = readSitemap(await response.text());
+        pending = expected.filter((e) => live.get(e.pathname) !== e.lastmod);
+        if (pending.length === 0) break;
       }
     } catch {
       // Netzfehler sind waehrend eines Deploys normal - weiter warten.
     }
 
-    if (Date.now() >= frist) {
+    if (Date.now() >= deadline) {
       console.error(
-        `indexnow: nach ${minuten} Minuten steht in ${sitemapUrl} noch nicht, ` +
+        `indexnow: nach ${minutes} Minuten steht in ${sitemapUrl} noch nicht, ` +
           "was erwartet wurde:",
       );
-      for (const e of offen) console.error(`  ${e.url} (erwartet ${e.lastmod})`);
+      for (const e of pending) console.error(`  ${e.url} (erwartet ${e.lastmod})`);
       fail("Deploy nicht live - nichts gemeldet");
     }
 
-    await new Promise((weiter) => setTimeout(weiter, WARTE_ABSTAND_MS));
+    await new Promise((resume) => setTimeout(resume, WAIT_INTERVAL_MS));
   }
 
   console.log(`indexnow: Deploy ist live (${sitemapUrl}).`);
@@ -444,15 +462,15 @@ if (flags["wait-live"] && erwartet.length > 0) {
 // laeuft: die neue Fassung ist meist sofort da, aber "meist" ist hier zu
 // wenig - ein Deploy, der eine Sekunde zu frueh meldet, waere ein Fehler,
 // der nur manchmal auftritt und sich entsprechend schlecht suchen laesst.
-const VERSUCHE = 4;
+const ATTEMPTS = 4;
 
-const schlaf = (ms) => new Promise((weiter) => setTimeout(weiter, ms));
+const sleep = (ms) => new Promise((resume) => setTimeout(resume, ms));
 
 if (!flags["skip-check"]) {
   let served = null;
-  let grund = "";
+  let reason = "";
 
-  for (let versuch = 1; versuch <= VERSUCHE; versuch += 1) {
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
     try {
       const response = await fetch(keyLocation, {
         redirect: "follow",
@@ -461,25 +479,25 @@ if (!flags["skip-check"]) {
       if (response.ok) {
         served = (await response.text()).trim();
         if (served === key) break;
-        grund = "enthaelt einen anderen Schluessel als die Config";
+        reason = "enthaelt einen anderen Schluessel als die Config";
       } else {
-        grund = `antwortet mit ${response.status}`;
+        reason = `antwortet mit ${response.status}`;
       }
     } catch (error) {
-      grund = `nicht erreichbar: ${error.message}`;
+      reason = `nicht erreichbar: ${error.message}`;
     }
 
-    if (versuch === VERSUCHE) break;
-    const wartezeit = 2 ** (versuch - 1) * 1000;
+    if (attempt === ATTEMPTS) break;
+    const delay = 2 ** (attempt - 1) * 1000;
     console.log(
-      `indexnow: ${keyLocation} ${grund} - neuer Versuch in ${wartezeit / 1000}s`,
+      `indexnow: ${keyLocation} ${reason} - neuer Versuch in ${delay / 1000}s`,
     );
-    await schlaf(wartezeit);
+    await sleep(delay);
     served = null;
   }
 
   if (served !== key) {
-    fail(`${keyLocation} ${grund || "nicht abrufbar"} - erst deployen`);
+    fail(`${keyLocation} ${reason || "nicht abrufbar"} - erst deployen`);
   }
   console.log(`Schluesseldatei geprueft: ${keyLocation}`);
 }

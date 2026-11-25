@@ -4,7 +4,7 @@
  * Hydraulik, Rad mit Lauflicht und zwanzig Tandemgondeln am Kranz.
  * Alles ist aus einfachen Körpern gerechnet, kein fremdes 3D-Modell wird
  * geladen. Einzige Bilddatei ist das Wandbild der Rückwand
- * (/assets/img/rueckwand.webp); Herkunft siehe README.
+ * (/assets/img/back-wall.webp); Herkunft siehe README.
  */
 (async () => {
   "use strict";
@@ -271,8 +271,8 @@
   // passen; hier wird daraus der Abstand der Punkte. Fehlt das SVG, gibt
   // es null zurück und das Modell bekommt die einfache Beschriftung.
   function nameSignTexture(width) {
-    const svg = document.querySelector("svg.schild");
-    const board = svg?.querySelector(".schild__tafel");
+    const svg = document.querySelector("svg.sign");
+    const board = svg?.querySelector(".sign__board");
     if (!board || typeof Path2D !== "function") return null;
     const view = svg.viewBox.baseVal;
     const scale = width / view.width;
@@ -292,17 +292,17 @@
     };
     g.fillStyle = "#fff0c2";
     g.fill(path(board));
-    const stars = svg.querySelector(".schild__sterne");
+    const stars = svg.querySelector(".sign__stars");
     if (stars) { g.fillStyle = "#e9a91c"; g.fill(path(stars)); }
-    const rim = svg.querySelector(".schild__rand");
+    const rim = svg.querySelector(".sign__rim");
     if (rim) bulbs(rim, "#2f6df0", 8);
-    const row = svg.querySelector("#schild-zeile rect");
+    const row = svg.querySelector("#sign-row rect");
     if (row) {
       g.beginPath();
       g.rect(row.x.baseVal.value, row.y.baseVal.value, row.width.baseVal.value, row.height.baseVal.value);
       g.clip();
     }
-    for (const letter of svg.querySelectorAll(".schild__buchstabe")) {
+    for (const letter of svg.querySelectorAll(".sign__letter")) {
       g.save();
       const shift = letter.transform.baseVal.consolidate();
       if (shift) g.translate(shift.matrix.e, shift.matrix.f);
@@ -311,8 +311,8 @@
       g.miterLimit = 8;
       g.lineWidth = 26;
       g.strokeStyle = "#c4141a";
-      g.stroke(path(letter.querySelector(".schild__koerper")));
-      for (const piece of letter.querySelectorAll(".schild__birnen")) bulbs(piece, "#ffe6a6", 6);
+      g.stroke(path(letter.querySelector(".sign__body")));
+      for (const piece of letter.querySelectorAll(".sign__bulbs")) bulbs(piece, "#ffe6a6", 6);
       g.restore();
     }
     const texture = new THREE.CanvasTexture(c);
@@ -478,7 +478,7 @@
     const wall = new THREE.Mesh(wallGeo, wallMat);
     wall.receiveShadow = true;
     podium.add(wall);
-    new THREE.TextureLoader().load("/assets/img/rueckwand.webp", (texture) => {
+    new THREE.TextureLoader().load("/assets/img/back-wall.webp", (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       wallMat.color.set(0xffffff);

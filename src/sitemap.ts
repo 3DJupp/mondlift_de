@@ -16,7 +16,7 @@
  * November 2026), Firefox und WebKit haben dasselbe angekuendigt. Danach
  * zeigt ein Browser hier wieder rohes XML - kein Schaden, nur der Zustand
  * von vorher. Fuer die Zeit danach gibt es /sitemap: dieselbe Liste als
- * gewoehnliche Seite, ohne XSLT (siehe src/seitenliste.ts). Der Hinweis
+ * gewoehnliche Seite, ohne XSLT (siehe src/page-list.ts). Der Hinweis
  * darauf steht als Kommentar in dieser Datei, denn mehr als einen Kommentar
  * erlaubt das Sitemap-Format nicht.
  *
@@ -35,19 +35,10 @@
 import config from "../site.config.json";
 import { generatedFile } from "./cache";
 import { SITEMAP_XSL_PATH } from "./sitemap-xsl";
+import { DEFAULT_LANG, LANGS, LOCALE, PAGES, absoluteUrl } from "./pages";
 
 /** Eine Stunde. Der Inhalt aendert sich nur mit einem Deploy. */
 const MAX_AGE = 3600;
-
-/** Ein Eintrag aus `pages`. `lastmod` ist optional. */
-interface PageEntry {
-  path: string;
-  changefreq: string;
-  priority: string;
-  lastmod?: string;
-}
-
-const PAGES: PageEntry[] = config.pages;
 
 const XML_ENTITIES: Record<string, string> = {
   "&": "&amp;",
@@ -66,28 +57,47 @@ function escapeXml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => XML_ENTITIES[char] ?? char);
 }
 
+/**
+ * Die Sprachfassungen einer Seite als `xhtml:link`, so wie Google sie fuer
+ * mehrsprachige Seiten in der Sitemap liest. Jede Fassung nennt alle,
+ * sich selbst eingeschlossen, dazu x-default auf die Hauptsprache.
+ */
+function alternateLinks(alternates: Partial<Record<string, string>>): string[] {
+  const links = LANGS.flatMap((lang) => {
+    const path = alternates[lang];
+    return path
+      ? [`    <xhtml:link rel="alternate" hreflang="${LOCALE[lang]}" href="${escapeXml(absoluteUrl(path))}"/>`]
+      : [];
+  });
+  const fallback = alternates[DEFAULT_LANG];
+  if (links.length < 2 || !fallback) return [];
+  return [
+    ...links,
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(absoluteUrl(fallback))}"/>`,
+  ];
+}
+
 /** Die vollstaendige sitemap.xml als Zeichenkette. */
 function sitemapXml(): string {
-  const entries = PAGES.map((page) => {
-    const loc = new URL(page.path, config.site.url).toString();
-    const lastmod = page.lastmod ?? config.site.lastUpdated;
-    return [
+  const entries = PAGES.map((page) =>
+    [
       "  <url>",
-      `    <loc>${escapeXml(loc)}</loc>`,
-      `    <lastmod>${escapeXml(lastmod)}</lastmod>`,
+      `    <loc>${escapeXml(absoluteUrl(page.path))}</loc>`,
+      ...alternateLinks(page.alternates),
+      `    <lastmod>${escapeXml(page.lastmod)}</lastmod>`,
       `    <changefreq>${escapeXml(page.changefreq)}</changefreq>`,
       `    <priority>${escapeXml(page.priority)}</priority>`,
       "  </url>",
-    ].join("\n");
-  });
+    ].join("\n"),
+  );
 
-  const lesbar = new URL("/sitemap", config.site.url).toString();
+  const readable = new URL("/sitemap", config.site.url).toString();
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<?xml-stylesheet type="text/xsl" href="${SITEMAP_XSL_PATH}"?>`,
-    `<!-- Dieselbe Liste fuer Menschen, auch ohne XSLT: ${lesbar} -->`,
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    `<!-- Dieselbe Liste fuer Menschen, auch ohne XSLT: ${readable} -->`,
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
     ...entries,
     "</urlset>",
     "",

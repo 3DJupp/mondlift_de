@@ -20,33 +20,38 @@ public/                     ausgelieferte Dateien (keine Build-Ausgabe)
   impressum.html            § 5 DDG
   datenschutz.html
   sitemap.html              Hülle für die erzeugte Seitenübersicht
-  404.html  favicon.svg
+  en.html                   englische Startseite (/en)
+  en/                       die übrigen englischen Seiten: mondlift, enterprise,
+                            glossary, faq, contact, legal-notice, privacy, sitemap
+  404.html  favicon.svg     404 auf Deutsch und Englisch untereinander
   assets/css/style.css      gemeinsames Stylesheet
   assets/js/enterprise.js   Canvas-2D-Fallback für die Startanimation
   assets/js/enterprise-3d.js Three.js-Szene mit prozeduralem 3D-Modell
-  assets/img/rueckwand.webp Wandbild der Rückwand als Textur (Herkunft siehe unten)
-  assets/js/kontakt.js      Formular, schrittweise Verbesserung
+  assets/img/back-wall.webp Wandbild der Rückwand als Textur (Herkunft siehe unten)
+  assets/js/contact.js      Formular, schrittweise Verbesserung
+  assets/js/consent.js      Einwilligungsbanner für Google Analytics (nur mit Mess-ID)
   assets/og/mondlift.png    Standbild für die Link-Vorschau (erzeugt)
   video/mondlift.mp4        die Startanimation als Video für die Link-Vorschau (erzeugt)
 src/
   index.ts                  Routing, www-Redirect, Fehlerfälle
   headers.ts                Security-Header inkl. CSP
-  site-config.ts            setzt site.config.json per HTMLRewriter ein
-  strukturierte-daten.ts    JSON-LD je Seite und der Hash für die CSP
-  glossar.ts                die Begriffe, als Daten
-  fragen.ts                 die häufigen Fragen, als Daten
+  pages.ts                  Seiten und Sprachen: welche Seite unter welcher Adresse
+  site-config.ts            setzt site.config.json per HTMLRewriter ein, samt hreflang
+  structured-data.ts        JSON-LD je Seite und der Hash für die CSP
+  glossary.ts               die Begriffe, als Daten, je Sprache
+  faq.ts                    die häufigen Fragen, als Daten, je Sprache
   html.ts                   Maskierung und Sprungmarken
   sitemap.ts                erzeugt /sitemap.xml
   sitemap-xsl.ts            die Browser-Ansicht darauf, /sitemap.xsl
-  seitenliste.ts            erzeugt die lesbare Liste unter /sitemap
+  page-list.ts              erzeugt die lesbare Liste unter /sitemap und /en/sitemap
   robots.ts                 erzeugt /robots.txt
-  altlasten.ts              410 Gone für die Adressen des Vorbesitzers
+  legacy-urls.ts            410 Gone für die Adressen des Vorbesitzers
   llms.ts                   erzeugt /llms.txt
   markdown.ts               Markdown-Fassungen der Seiten, /llms-full.txt
   indexnow.ts               liefert die IndexNow-Schlüsseldatei
   video.ts                  liefert /video/ mit Teilabrufen (Range) aus
-  anschrift.ts              zeichnet /anschrift.svg
-  anschrift-glyphen.ts      Zeichenumrisse dafür (erzeugt)
+  address.ts                zeichnet /address.svg
+  address-glyphs.ts         Zeichenumrisse dafür (erzeugt)
   contact.ts                POST /api/contact
   turnstile.ts              serverseitige Token-Prüfung
   validation.ts             Feldprüfung und Längengrenzen
@@ -57,8 +62,8 @@ scripts/
   indexnow.mjs              meldet Änderungen an die Suchmaschinen
   og-image.mjs              rendert das Standbild (läuft selten)
   og-video.mjs              nimmt das Vorschauvideo auf (läuft selten)
-  og-buehne.mjs             was beide teilen: Server, Chromium, Uhr
-  glyphs.py                 erzeugt anschrift-glyphen.ts (läuft selten)
+  og-stage.mjs              was beide teilen: Server, Chromium, Uhr
+  glyphs.py                 erzeugt address-glyphs.ts (läuft selten)
 docs/superpowers/specs/     Entwürfe, aus denen größere Umbauten kamen
 site.config.json            Name, Anschrift, E-Mail, Steckbrief, Seitenliste
 wrangler.jsonc              Worker-Konfiguration
@@ -68,6 +73,10 @@ wrangler.jsonc              Worker-Konfiguration
 `public/`: sie werden aus `site.config.json` erzeugt, siehe unten. Dasselbe gilt für
 Glossar und FAQ, deren Text in `src/` steht — warum, steht im Abschnitt
 über die Inhaltsseiten.
+
+**Sprache im Code.** Bezeichner, Dateinamen, CSS-Klassen und
+data-Attribute sind englisch, Kommentare und die Doku bleiben deutsch.
+Sichtbare Texte gibt es in beiden Sprachen, Deutsch ist die Hauptsprache.
 
 ### Warum ein Worker vor den Assets
 
@@ -197,7 +206,7 @@ Damit die Seite flüssig läuft und schnell lädt:
 `/?t=30` friert die Fahrt bei Sekunde 30 ein. Das hilft beim Vergleich mit
 Fotos und beim Erzeugen von Standbildern.
 
-**Herkunft des Wandbilds.** `public/assets/img/rueckwand.webp` ist aus acht
+**Herkunft des Wandbilds.** `public/assets/img/back-wall.webp` ist aus acht
 Tafeln der Mondlift-Rückwand zusammengesetzt. Die Vorlagen stammen aus dem
 Planet-Coaster-Modell „Mondlift“ von Chaos im Steam Workshop
 (<https://steamcommunity.com/sharedfiles/filedetails/?id=2860665873>) und
@@ -278,11 +287,12 @@ die maschinenlesbare (`DefinedTermSet` und `FAQPage`). Zwei Fassungen
 desselben Textes laufen auseinander, sobald jemand nur eine davon anfasst —
 und bei FAQ-Daten verlangt Google ausdrücklich, dass beide übereinstimmen.
 
-Deshalb steht der Text einmal als Daten in `src/glossar.ts` und
-`src/fragen.ts`, und beide Fassungen entstehen daraus: das HTML
-serverseitig über die Platzhalter `<div data-glossar>` und
-`<div data-fragen>`, die strukturierten Daten in
-`src/strukturierte-daten.ts`. Wer einen Begriff ändert, ändert eine Zeile.
+Deshalb steht der Text einmal als Daten in `src/glossary.ts` und
+`src/faq.ts`, je Sprache eine Liste, und beide Fassungen entstehen daraus:
+das HTML serverseitig über die Platzhalter `<div data-glossary>` und
+`<div data-faq>`, die strukturierten Daten in `src/structured-data.ts`.
+Wer einen Begriff ändert, ändert eine Zeile, und die Zeile in der anderen
+Sprache steht an derselben Stelle der anderen Liste.
 
 Prosaseiten bleiben dagegen normales HTML in `public/`. Dort gibt es nichts
 zu synchronisieren, und eine Textseite, die man nur noch über einen
@@ -296,6 +306,54 @@ eingesetzt: in die Tabelle auf `/mondlift` über die vorhandenen
 `data-site`-Platzhalter (`<dd data-site="ride.height">`) und in die
 strukturierten Daten. Eine Zahl, zwei Ausgaben. Es ist dieselbe Regel, nach
 der Anschrift und Sitemap schon arbeiten.
+
+## Zwei Sprachen
+
+Die Seite gibt es auf Deutsch und Englisch. Deutsch ist die Hauptsprache
+und liegt an der Wurzel, Englisch unter `/en` mit englischen Adressen:
+
+| Deutsch | Englisch |
+|---------|----------|
+| `/` | `/en` |
+| `/mondlift` | `/en/mondlift` |
+| `/enterprise` | `/en/enterprise` |
+| `/glossar` | `/en/glossary` |
+| `/fragen` | `/en/faq` |
+| `/sitemap` | `/en/sitemap` |
+| `/kontakt` | `/en/contact` |
+| `/impressum` | `/en/legal-notice` |
+| `/datenschutz` | `/en/privacy` |
+
+Die englischen Seiten sind eigene HTML-Dateien in `public/en/` (die
+Startseite ist `public/en.html`, damit sie unter `/en` ohne Schrägstrich
+liegt). Übersetzt wird von Hand, nicht zur Laufzeit. Was der Worker selbst
+schreibt, kennt beide Sprachen und richtet sich nach dem Pfad: alles unter
+`/en` ist Englisch.
+
+- **hreflang.** Jede Seite bekommt im Kopf Verweise auf alle Fassungen und
+  `x-default` auf die deutsche. Die stehen nicht in den HTML-Dateien,
+  sondern kommen aus `pages` in `site.config.json`, genau wie die
+  Sitemap.
+- **Sprachumschalter.** `<a data-lang-switch>` in Navigation und Fußzeile
+  zeigt auf dieselbe Seite in der anderen Sprache.
+- **Glossar, FAQ, Seitenliste, Steckbrief, Datum und Zitiervorschlag**
+  setzt der Worker in der Sprache der Seite ein.
+- **Kontaktformular.** Die englische Seite schickt an
+  `/api/contact?lang=en`; Rückmeldung, Weiterleitung und Turnstile-Widget
+  sind dann englisch.
+- **Strukturierte Daten.** Gerät, Bauform, Herausgeber und Website haben
+  in beiden Sprachen dieselbe `@id`, die Seiten verweisen über
+  `workTranslation` und `translationOfWork` aufeinander.
+- **Markdown und llms.txt.** Die englischen Inhaltsseiten haben eigene
+  `.md`-Fassungen (`/en/mondlift.md` usw.), `llms.txt` bekommt einen
+  englischen Abschnitt, `llms-full.txt` enthält beide Sprachen.
+- **Impressum und Datenschutz** sind auf Englisch als Übersetzung
+  gekennzeichnet; rechtlich maßgeblich bleibt die deutsche Fassung.
+
+Eine neue Seite braucht damit: die HTML-Datei in beiden Sprachen und einen
+Eintrag in `pages` mit beiden Blöcken. Fehlt eine Sprache, bekommt die
+Seite keine hreflang-Verweise, und der Umschalter führt zur Startseite der
+anderen Sprache.
 
 ## Strukturierte Daten
 
@@ -387,7 +445,7 @@ Inhalt. Umgekehrt verweist jede Inhaltsseite im Kopf mit
 ### Zitiervorschlag
 
 Unter jeder Inhaltsseite steht ein fertiger Zitiervorschlag: Titel, Seite,
-Stand, Adresse. Der Worker setzt ihn über `<p data-zitat>` aus der
+Stand, Adresse. Der Worker setzt ihn über `<p data-citation>` aus der
 Seitenliste ein, das Datum ist das `lastmod` der Seite. Personennamen
 stehen bewusst nicht darin; wer hinter der Seite steht, sagt das Impressum.
 
@@ -411,7 +469,7 @@ node scripts/og-video.mjs
 
 Beide Skripte öffnen die Startseite in Chromium und steuern es über das
 DevTools-Protokoll; eine Bibliothek braucht es dafür nicht. Was sie teilen,
-steht in `scripts/og-buehne.mjs`. Gebraucht werden Chromium, Netz für
+steht in `scripts/og-stage.mjs`. Gebraucht werden Chromium, Netz für
 Three.js und ffmpeg — fürs Video zwingend, fürs Bild nur, um es auf 256
 Farben und damit auf rund 130 kB zu bringen.
 
@@ -471,13 +529,13 @@ Datenschutzerklärung in der Fassung ohne Tracking.
 Einschalten heißt: die Mess-ID (`G-...`) eintragen und deployen. Danach
 
 - bekommt jede Seite `<meta name="ga-measurement-id">` und
-  `/assets/js/einwilligung.js`,
+  `/assets/js/consent.js` (Texte auf Deutsch oder Englisch, je nach Seite),
 - erscheint beim ersten Besuch unten ein Banner mit „Ablehnen" und
   „Zulassen", beide gleich gewichtet,
 - lädt `gtag.js` erst nach „Zulassen"; vorher geht keine Anfrage an Google,
 - erlaubt die CSP die Quellen von Google (`src/headers.ts`),
 - zeigt die Datenschutzerklärung den GA-Abschnitt samt Knopf zum Ändern der
-  Wahl. Die Blöcke dafür tragen `data-analytics="an"` bzw. `"aus"`, der
+  Wahl. Die Blöcke dafür tragen `data-analytics="on"` bzw. `"off"`, der
   Worker lässt nur die passende Fassung stehen.
 
 Die Wahl liegt zwölf Monate im localStorage. Ein Widerruf löscht die
@@ -498,13 +556,20 @@ Seitenliste steht dort unter `pages`, die Domain unter `site.url`:
 ```json
 "pages": [
   {
-    "path": "/",
-    "lastmod": "2026-10-07",
+    "id": "glossary",
     "changefreq": "monthly",
-    "priority": "1.0"
+    "priority": "0.7",
+    "de": { "path": "/glossar", "title": "Glossar", "summary": "…", "lastmod": "2026-10-18" },
+    "en": { "path": "/en/glossary", "title": "Glossary", "summary": "…", "lastmod": "2026-11-25" }
   }
 ]
 ```
+
+Jede Seite steht einmal da, mit einem Block pro Sprache. Daraus macht
+`src/pages.ts` eine flache Liste, in der jede Fassung ihre Gegenstücke
+kennt. In der Sitemap steht jede Adresse einzeln, jeweils mit
+`xhtml:link`-Verweisen auf alle Sprachfassungen und `x-default` auf die
+deutsche.
 
 Eine fertige Datei in `public/` wäre die zweite Stelle im Repo, an der
 Seitenliste, Domain und Datum stehen — und die läuft mit der Zeit
@@ -544,7 +609,7 @@ Danach zeigt ein Browser hier wieder rohes XML — kein Schaden, nur der
 Zustand von vorher, und die Sitemap funktioniert davon unabhängig weiter.
 
 Für die Zeit danach gibt es `/sitemap`: dieselbe Liste als gewöhnliche
-Seite, aus derselben `pages`-Liste erzeugt (`src/seitenliste.ts`), mit dem
+Seite, aus derselben `pages`-Liste erzeugt (`src/page-list.ts`), mit dem
 Satz zu jeder Seite und dem Stand der letzten Änderung. Die braucht kein
 XSLT. Beide Fassungen sind in der XSLT-Ansicht verlinkt, und in der
 `sitemap.xml` steht ein Kommentar mit dem Hinweis.
@@ -601,12 +666,12 @@ die es gibt. Es verschwindet aber nur, wenn die Antwort stimmt.
 Beides nimmt die Adresse mit der Zeit aus dem Index, `410` sagt dabei
 „endgültig weg" statt „gerade nicht da" und wird schneller verarbeitet.
 
-`src/altlasten.ts` erkennt zwei Gruppen:
+`src/legacy-urls.ts` erkennt zwei Gruppen:
 
 1. **WordPress-Spuren.** `/wp-*`, `/xmlrpc.php`, `*.php`, `/page/2/`,
    `/category/…`, `/2021/07/`, `/feed/`, dazu Query-Parameter wie `?p=123`
    auf der Startseite. Das kann es hier nie geben — dieses Projekt ist ein
-   Worker mit neun statischen Seiten.
+   Worker mit neun statischen Seiten in zwei Sprachen.
 2. **Adressen mit Schrägstrich am Ende.** Keine Adresse dieser Seite endet
    so, WordPress-Permalinks dagegen immer. Ist es sonst eine echte Seite
    (`/glossar/`), wird auf die kanonische Form umgeleitet; sonst `410`.
@@ -860,7 +925,7 @@ gleichzeitig schadet nicht.
 ## Die Anschrift als Bild
 
 Im Impressum steht die Anschrift nicht als Text, sondern als Bild unter
-`/anschrift.svg`. Grund ist Adresshandel: Programme durchsuchen Impressen
+`/address.svg`. Grund ist Adresshandel: Programme durchsuchen Impressen
 nach Anschriften, und was dort als Text steht, landet in Adresslisten.
 
 Drei Dinge, die man dazu wissen sollte.
@@ -869,7 +934,7 @@ Drei Dinge, die man dazu wissen sollte.
 auslesbar wie Text in HTML — der Umweg wäre sonst wirkungslos. Der Worker
 setzt jeden Buchstaben als Pfad zusammen; in der ausgelieferten Datei kommt
 die Anschrift als Zeichenfolge nicht vor. Die Umrisse stehen in
-`src/anschrift-glyphen.ts`.
+`src/address-glyphs.ts`.
 
 **Die Anschrift steht weiter nur in `site.config.json`.** Ein fertiges Bild
 im Repo wäre die zweite Stelle mit der Adresse, und eine Änderung müsste
@@ -893,7 +958,7 @@ Impressum.
 
 ### Farbe und Größe
 
-Die Farbe ist in `src/anschrift.ts` als `#b3bdd1` eingetragen und entspricht
+Die Farbe ist in `src/address.ts` als `#b3bdd1` eingetragen und entspricht
 `--ink-soft` in `style.css`. `currentColor` geht nicht: ein per `<img>`
 eingebundenes SVG erbt die Farbe der Seite nicht, sondern löst gegen Schwarz
 auf — auf dem dunklen Hintergrund also unsichtbar. Wer die Farbe im
@@ -904,7 +969,7 @@ im HTML braucht deshalb keine Maße und die Seite springt beim Laden nicht.
 
 ### Die Zeichenumrisse
 
-`src/anschrift-glyphen.ts` ist **erzeugt** und wird nicht von Hand
+`src/address-glyphs.ts` ist **erzeugt** und wird nicht von Hand
 geändert. Darin stehen 134 Zeichen: Buchstaben, Ziffern und die Satzzeichen,
 die in Namen und Anschriften vorkommen, dazu die Buchstaben des
 Latin-1-Nachtrags für Umlaute und Akzente. Zeichen wie `$ % # @` fehlen
@@ -972,9 +1037,9 @@ geheim, und gehört er zum Inhalt oder zum Betrieb?*
 
 | Wert | Ort | Nötig für |
 |------|-----|-----------|
-| `site.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel |
+| `site.*`, `contact.*` | `site.config.json` | Impressum, Datenschutz, Titel; `site.tagline` je Sprache |
 | `owner.*` | `site.config.json` | Impressum und das Anschrift-Bild |
-| `ride.*` | `site.config.json` | Steckbrief auf `/mondlift`, strukturierte Daten, `llms.txt` |
+| `ride.*` | `site.config.json` | Steckbrief auf `/mondlift`, strukturierte Daten, `llms.txt`; Zahlen gemeinsam, Text unter `ride.de` und `ride.en` |
 | `pages` | `site.config.json` | Sitemap, IndexNow-Meldung, `llms.txt`, Brotkrumen |
 | `indexNow.key` | `site.config.json` | Schlüsseldatei, öffentlich |
 | `TURNSTILE_SITE_KEY` | `wrangler.jsonc` → `vars` | Turnstile-Widget im Formular |
@@ -992,7 +1057,7 @@ Funktion ab:
 
 | Fehlt | Folge |
 |-------|-------|
-| `TURNSTILE_SITE_KEY` | kein Widget, kein Turnstile-Skript; das Formular läuft über Honigtopf und das strenge Rate Limit |
+| `TURNSTILE_SITE_KEY` | kein Widget, kein Turnstile-Skript; solange `REQUIRE_TURNSTILE` an ist, nimmt das Formular dann gar nichts mehr an (Status `nojs`) |
 | `TURNSTILE_SECRET_KEY` | ein eintreffendes Token kann nicht geprüft werden, die Einsendung wird abgewiesen |
 | `CONTACT_TO_EMAIL` / `CONTACT_FROM_EMAIL` | das Formular nimmt an, stellt aber nicht zu und meldet einen Fehler |
 | `indexNow.key` (ungültig) | keine Schlüsseldatei; `npm run indexnow` bricht mit einer Meldung ab |

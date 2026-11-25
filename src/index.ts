@@ -10,7 +10,8 @@
  *  - die IndexNow-Schluesseldatei ausliefern
  *  - die Anschrift als Bild zeichnen
  *  - das Vorschauvideo mit Teilabrufen ausliefern
- *  - Daten aus site.config.json in die HTML-Seiten einsetzen
+ *  - Daten aus site.config.json in die HTML-Seiten einsetzen, samt
+ *    hreflang und Sprachumschalter fuer die englische Fassung unter /en
  *  - strukturierte Daten einsetzen und ihren Hash in die CSP schreiben
  *  - Google Analytics samt Einwilligung einbinden, wenn eine Mess-ID
  *    gesetzt ist
@@ -27,25 +28,26 @@ import { injectSiteConfig, isHtml } from "./site-config";
 import { handleContact, contactJson, contactRedirect } from "./contact";
 import { handleSitemap } from "./sitemap";
 import { LLMS_PATH, handleLlms } from "./llms";
-import { strukturierteDaten } from "./strukturierte-daten";
+import { structuredData } from "./structured-data";
 import { INDEXNOW_KEY_PATH, handleIndexNowKey } from "./indexnow";
 import { ROBOTS_PATH, handleRobots } from "./robots";
 import { SITEMAP_XSL_PATH, handleSitemapXsl } from "./sitemap-xsl";
-import { handleAnschrift } from "./anschrift";
+import { handleAddress } from "./address";
 import { analyticsId } from "./analytics";
-import { altlast, goneResponse } from "./altlasten";
+import { legacyAction, goneResponse } from "./legacy-urls";
 import { VIDEO_PREFIX, handleVideo } from "./video";
 import {
   LLMS_FULL_PATH,
   handleLlmsFull,
   handleMarkdown,
-  markdownFuer,
-  zitiervorschlag,
+  markdownFor,
+  citationFor,
 } from "./markdown";
+import { findPage, langOf } from "./pages";
 
 const CONTACT_ENDPOINT = "/api/contact";
 const SITEMAP_PATH = "/sitemap.xml";
-const ANSCHRIFT_PATH = "/anschrift.svg";
+const ADDRESS_PATH = "/address.svg";
 
 /** Erkennt den Weg mit JavaScript: fetch() schickt diesen Accept-Kopf. */
 function wantsJson(request: Request): boolean {
@@ -130,8 +132,8 @@ export default {
       if (markdown) return withSecurityHeaders(markdown, url);
     }
 
-    if (url.pathname === ANSCHRIFT_PATH) {
-      return withSecurityHeaders(handleAnschrift(request), url);
+    if (url.pathname === ADDRESS_PATH) {
+      return withSecurityHeaders(handleAddress(request), url);
     }
 
     // Die Browser-Ansicht der Sitemap. Muss vor den Altlasten stehen, aber
@@ -152,14 +154,14 @@ export default {
     // Vor dieser Seite lief hier ein WordPress. Seine Adressen ruft Google
     // weiter ab; sie bekommen 410 Gone statt 404, damit sie schneller aus
     // dem Index fallen. Steht hinter den erzeugten Dateien, damit kein
-    // Muster versehentlich eine davon trifft. Siehe src/altlasten.ts.
-    const alt = altlast(url);
-    if (alt?.art === "gone") {
+    // Muster versehentlich eine davon trifft. Siehe src/legacy-urls.ts.
+    const legacy = legacyAction(url);
+    if (legacy?.kind === "gone") {
       return withSecurityHeaders(goneResponse(), url);
     }
-    if (alt?.art === "redirect") {
+    if (legacy?.kind === "redirect") {
       return withSecurityHeaders(
-        new Response(null, { status: 301, headers: { location: alt.ziel } }),
+        new Response(null, { status: 301, headers: { location: legacy.target } }),
         url,
       );
     }
@@ -170,7 +172,7 @@ export default {
       // sonst koennte es in keiner Link-Vorschau laufen. Siehe src/video.ts.
       if (url.pathname.startsWith(VIDEO_PREFIX)) {
         const video = await handleVideo(request, url, env);
-        if (video) return withSecurityHeaders(video, url, { einbindbar: true });
+        if (video) return withSecurityHeaders(video, url, { embeddable: true });
       }
 
       // Das Asset-Binding soll die Query nicht sehen: ?status=... gehört
@@ -184,19 +186,21 @@ export default {
 
       // Die strukturierten Daten und der Hash dafuer gehoeren zusammen:
       // der Block kommt in den Kopf der Seite, der Hash in die CSP. Beide
-      // aus derselben Zeichenkette, siehe src/strukturierte-daten.ts.
-      const daten = await strukturierteDaten(url.pathname);
+      // aus derselben Zeichenkette, siehe src/structured-data.ts.
+      const data = await structuredData(url.pathname);
       const gaId = analyticsId(env);
       const body = injectSiteConfig(asset, {
+        lang: langOf(url.pathname),
+        page: findPage(url.pathname),
         turnstileSiteKey: env.TURNSTILE_SITE_KEY,
         analyticsId: gaId,
         status: url.searchParams.get("status"),
-        jsonLd: daten?.json,
-        markdownHref: markdownFuer(url.pathname),
-        zitat: zitiervorschlag(url.pathname),
+        jsonLd: data?.json,
+        markdownHref: markdownFor(url.pathname),
+        citation: citationFor(url.pathname),
       });
       return withSecurityHeaders(body, url, {
-        scriptHashes: daten ? [daten.hash] : [],
+        scriptHashes: data ? [data.hash] : [],
         analytics: gaId !== null,
       });
     } catch (error) {

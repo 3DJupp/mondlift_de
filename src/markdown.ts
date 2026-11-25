@@ -1,6 +1,7 @@
 /**
  * Markdown-Fassungen der Inhaltsseiten: /mondlift.md, /enterprise.md usw.,
- * dazu /llms-full.txt mit allen zusammen.
+ * auf Englisch /en/mondlift.md usw., dazu /llms-full.txt mit allen
+ * zusammen.
  *
  * Warum: Sprachmodelle, die eine Antwort belegen wollen, holen eine Seite
  * oft zur Laufzeit ab und müssen aus dem HTML erst den Text schälen - mit
@@ -24,36 +25,39 @@
 import config from "../site.config.json";
 import { respondText } from "./cache";
 import { injectSiteConfig } from "./site-config";
+import {
+  LANGS,
+  PAGES,
+  absoluteUrl,
+  findPage,
+  formatDate,
+  type Lang,
+  type Page,
+} from "./pages";
 
 /** Eine Stunde, wie bei llms.txt: ändert sich nur mit einem Deploy. */
 const MAX_AGE = 3600;
 
 /** Die Seiten mit Markdown-Fassung, in der Reihenfolge für llms-full.txt. */
-export const MARKDOWN_SEITEN = [
-  "/",
-  "/mondlift",
-  "/enterprise",
-  "/fragen",
-  "/glossar",
-] as const;
+const MARKDOWN_IDS = ["home", "mondlift", "enterprise", "faq", "glossary"];
+
+/** Alle Fassungen mit Markdown, erst Deutsch, dann Englisch. */
+export const MARKDOWN_PAGES: Page[] = LANGS.flatMap((lang) =>
+  MARKDOWN_IDS.flatMap((id) =>
+    PAGES.filter((page) => page.id === id && page.lang === lang),
+  ),
+);
 
 export const LLMS_FULL_PATH = "/llms-full.txt";
 
-function abs(path: string): string {
-  return new URL(path, config.site.url).toString();
-}
-
 /** Pfad der Markdown-Fassung zu einer Seite: "/" wird zu "/index.md". */
-export function markdownPfad(path: string): string {
+export function markdownPath(path: string): string {
   return path === "/" ? "/index.md" : `${path}.md`;
 }
 
 /** Umkehrung: zu "/mondlift.md" die Seite "/mondlift", sonst null. */
-function seiteZu(pathname: string): string | null {
-  for (const path of MARKDOWN_SEITEN) {
-    if (markdownPfad(path) === pathname) return path;
-  }
-  return null;
+function pageForMarkdown(pathname: string): Page | null {
+  return MARKDOWN_PAGES.find((page) => markdownPath(page.path) === pathname) ?? null;
 }
 
 const ENTITIES: Record<string, string> = {
@@ -93,7 +97,7 @@ const SKIP = new Set(["script", "style", "nav", "form", "svg", "noscript", "temp
  * `<main>` als Markdown. Überschriften, Absätze, Listen, Definitionslisten,
  * Tabellen, Hervorhebungen und Links - mehr kommt in public/ nicht vor.
  */
-export function mainAlsMarkdown(html: string): string {
+export function mainToMarkdown(html: string): string {
   const start = html.search(/<main[\s>]/i);
   const end = html.search(/<\/main>/i);
   if (start < 0 || end < start) return "";
@@ -187,9 +191,9 @@ export function mainAlsMarkdown(html: string): string {
           out += href ? `](${href})` : "";
         } else {
           const href = attr(rawAttrs, "href");
-          const ziel = href && !href.startsWith("mailto:") ? abs(href) : null;
-          links.push(ziel ?? "");
-          if (ziel) out += "[";
+          const target = href && !href.startsWith("mailto:") ? absoluteUrl(href) : null;
+          links.push(target ?? "");
+          if (target) out += "[";
         }
         break;
       case "br":
@@ -235,38 +239,43 @@ export function mainAlsMarkdown(html: string): string {
 }
 
 /** Titel und Beschreibung aus dem Kopf der Seite. */
-function kopf(html: string): { titel: string; beschreibung: string } {
-  const titel = /<title>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? config.site.name;
+function readHead(html: string): { title: string; description: string } {
+  const title = /<title>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? config.site.name;
   const meta = /<meta\s+name="description"\s+content="([^"]*)"/i.exec(html)?.[1] ?? "";
   return {
-    titel: decode(titel).replace(/\s+/g, " ").trim(),
-    beschreibung: decode(meta).replace(/\s+/g, " ").trim(),
+    title: decode(title).replace(/\s+/g, " ").trim(),
+    description: decode(meta).replace(/\s+/g, " ").trim(),
   };
 }
 
-interface PageEntry {
-  path: string;
-  lastmod?: string;
-}
-
-function stand(path: string): string {
-  const page = (config.pages as PageEntry[]).find((p) => p.path === path);
-  return page?.lastmod ?? config.site.lastUpdated;
-}
+/** Die Kopfzeilen einer Markdown-Datei, je Sprache. */
+const FILE_LABELS: Record<Lang, { address: string; updated: string; publisher: string }> = {
+  de: {
+    address: "Adresse",
+    updated: "Stand",
+    publisher: `Herausgeber: ${config.site.domain}, private und inoffizielle Fan-Seite ohne Verbindung zu Betreiber oder Hersteller`,
+  },
+  en: {
+    address: "Address",
+    updated: "Last updated",
+    publisher: `Publisher: ${config.site.domain}, a private and unofficial fan site with no connection to the operator or the manufacturer`,
+  },
+};
 
 /** Eine ganze Seite als Markdown-Datei, mit Adresse und Stand im Kopf. */
-function alsDatei(path: string, html: string): string {
-  const { titel, beschreibung } = kopf(html);
+function toFile(page: Page, html: string): string {
+  const { title, description } = readHead(html);
+  const labels = FILE_LABELS[page.lang];
   return [
-    `# ${titel}`,
+    `# ${title}`,
     "",
-    beschreibung ? `> ${beschreibung}` : "",
+    description ? `> ${description}` : "",
     "",
-    `Adresse: ${abs(path)}  `,
-    `Stand: ${stand(path)}  `,
-    `Herausgeber: ${config.site.domain}, private und inoffizielle Fan-Seite ohne Verbindung zu Betreiber oder Hersteller`,
+    `${labels.address}: ${absoluteUrl(page.path)}  `,
+    `${labels.updated}: ${page.lastmod}  `,
+    labels.publisher,
     "",
-    mainAlsMarkdown(html),
+    mainToMarkdown(html),
     "",
   ].join("\n");
 }
@@ -274,19 +283,19 @@ function alsDatei(path: string, html: string): string {
 /** Je Isolate einmal gebaut; die Seiten ändern sich nur mit einem Deploy. */
 const CACHE = new Map<string, Promise<string>>();
 
-function erzeugen(path: string, origin: string, env: Env): Promise<string> {
-  const bekannt = CACHE.get(path);
-  if (bekannt) return bekannt;
-  const laufend = (async () => {
-    const asset = await env.ASSETS.fetch(new Request(new URL(path, origin)));
-    if (!asset.ok) throw new Error(`Seite ${path}: ${asset.status}`);
-    const html = await injectSiteConfig(asset).text();
-    return alsDatei(path, html);
+function render(page: Page, origin: string, env: Env): Promise<string> {
+  const known = CACHE.get(page.path);
+  if (known) return known;
+  const pending = (async () => {
+    const asset = await env.ASSETS.fetch(new Request(new URL(page.path, origin)));
+    if (!asset.ok) throw new Error(`Seite ${page.path}: ${asset.status}`);
+    const html = await injectSiteConfig(asset, { page }).text();
+    return toFile(page, html);
   })();
-  CACHE.set(path, laufend);
+  CACHE.set(page.path, pending);
   // Ein Fehlschlag soll nicht für die Lebensdauer des Isolates hängen bleiben.
-  laufend.catch(() => CACHE.delete(path));
-  return laufend;
+  pending.catch(() => CACHE.delete(page.path));
+  return pending;
 }
 
 /** Antwort auf /<seite>.md, oder null, wenn der Pfad keine solche ist. */
@@ -295,11 +304,11 @@ export async function handleMarkdown(
   url: URL,
   env: Env,
 ): Promise<Response | null> {
-  const path = seiteZu(url.pathname);
-  if (path === null) return null;
-  const body = await erzeugen(path, url.origin, env);
+  const page = pageForMarkdown(url.pathname);
+  if (page === null) return null;
+  const body = await render(page, url.origin, env);
   const response = respondText(request, body, "text/markdown; charset=utf-8", MAX_AGE);
-  response.headers.set("link", `<${abs(path)}>; rel="canonical"`);
+  response.headers.set("link", `<${absoluteUrl(page.path)}>; rel="canonical"`);
   return response;
 }
 
@@ -309,37 +318,25 @@ export async function handleLlmsFull(
   url: URL,
   env: Env,
 ): Promise<Response> {
-  const teile = await Promise.all(
-    MARKDOWN_SEITEN.map((path) => erzeugen(path, url.origin, env)),
+  const parts = await Promise.all(
+    MARKDOWN_PAGES.map((page) => render(page, url.origin, env)),
   );
   const body = [
-    `# ${config.site.name}: alle Inhaltsseiten`,
+    `# ${config.site.name}: alle Inhaltsseiten / all content pages`,
     "",
-    `> Volltext von ${config.site.domain} in einer Datei, für Sprachmodelle. Das kurze Inhaltsverzeichnis steht unter ${abs("/llms.txt")}. Beim Zitieren bitte die Adresse der jeweiligen Seite angeben, nicht diese Datei.`,
+    `> Volltext von ${config.site.domain} in einer Datei, für Sprachmodelle, erst die deutschen Seiten, dann die englischen. Das kurze Inhaltsverzeichnis steht unter ${absoluteUrl("/llms.txt")}. Beim Zitieren bitte die Adresse der jeweiligen Seite angeben, nicht diese Datei.`,
+    ">",
+    `> Full text of ${config.site.domain} in one file for language models, German pages first, then English. The short index is at ${absoluteUrl("/llms.txt")}. When citing, please give the address of the individual page, not this file.`,
     "",
-    ...teile.map((teil) => `---\n\n${teil.replace(/^# /, "## ").replace(/\n(#{1,5}) /g, "\n#$1 ")}`),
+    ...parts.map((part) => `---\n\n${part.replace(/^# /, "## ").replace(/\n(#{1,5}) /g, "\n#$1 ")}`),
   ].join("\n");
   return respondText(request, body, "text/plain; charset=utf-8", MAX_AGE);
 }
 
-/** Pfad auf die Form der Seitenliste bringen: ohne .html und ohne Slash. */
-function normalise(pathname: string): string {
-  const ohne = pathname.replace(/\.html$/, "").replace(/\/+$/, "");
-  return ohne === "" || ohne === "/index" ? "/" : ohne;
-}
-
 /** Zu einer HTML-Seite die Adresse ihrer Markdown-Fassung, sonst undefined. */
-export function markdownFuer(pathname: string): string | undefined {
-  const path = normalise(pathname);
-  return (MARKDOWN_SEITEN as readonly string[]).includes(path)
-    ? markdownPfad(path)
-    : undefined;
-}
-
-interface TitledPage {
-  path: string;
-  title?: string;
-  lastmod?: string;
+export function markdownFor(pathname: string): string | undefined {
+  const page = findPage(pathname);
+  return page && MARKDOWN_PAGES.includes(page) ? markdownPath(page.path) : undefined;
 }
 
 /**
@@ -348,13 +345,13 @@ interface TitledPage {
  * vorfinden statt eine zu raten. Ohne Personennamen - Herausgeber ist die
  * Seite, wer dahintersteht, sagt das Impressum.
  */
-export function zitiervorschlag(pathname: string): string | undefined {
-  const path = normalise(pathname);
-  if (path === "/" || !(MARKDOWN_SEITEN as readonly string[]).includes(path)) {
+export function citationFor(pathname: string): string | undefined {
+  const page = findPage(pathname);
+  if (!page || page.id === "home" || !MARKDOWN_PAGES.includes(page)) {
     return undefined;
   }
-  const page = (config.pages as TitledPage[]).find((p) => p.path === path);
-  if (!page?.title) return undefined;
-  const [y, m, d] = (page.lastmod ?? config.site.lastUpdated).split("-");
-  return `„${page.title}“. In: ${config.site.domain}, Stand ${d}.${m}.${y}. ${abs(path)}`;
+  const date = formatDate(page.lastmod, page.lang);
+  return page.lang === "en"
+    ? `“${page.title}”. In: ${config.site.domain}, last updated ${date}. ${absoluteUrl(page.path)}`
+    : `„${page.title}“. In: ${config.site.domain}, Stand ${date}. ${absoluteUrl(page.path)}`;
 }

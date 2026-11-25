@@ -20,6 +20,7 @@
 
 import { validateContact, LIMITS } from "./validation";
 import { verifyTurnstile } from "./turnstile";
+import { pageById, type Lang } from "./pages";
 
 /**
  * Auf true setzen, um Einsendungen ohne gültiges Turnstile-Token
@@ -30,19 +31,39 @@ const REQUIRE_TURNSTILE = true;
 /** Größte zulässige Menge an Formulardaten, bevor abgebrochen wird. */
 const MAX_BODY_BYTES = 16_000;
 
-/** Rückmeldungen an den Besucher. Bewusst ohne interne Details. */
-const MESSAGES = {
-  ok: "Danke, die Nachricht ist angekommen.",
-  invalid:
-    "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
-  spam: "Die Nachricht konnte nicht zugestellt werden.",
-  nojs:
-    "Das Formular braucht JavaScript für den Spamschutz. Alternativ bitte direkt eine E-Mail schreiben.",
-  ratelimit: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
-  error: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
-} as const;
+/** Die möglichen Ergebnisse. Tauchen auch als ?status= in der URL auf. */
+const STATUSES = ["ok", "invalid", "spam", "nojs", "ratelimit", "error"] as const;
 
-type Status = keyof typeof MESSAGES;
+type Status = (typeof STATUSES)[number];
+
+/** Prüft, ob ein Wert aus der URL einer der bekannten Status ist. */
+export function isStatus(value: string): value is Status {
+  return (STATUSES as readonly string[]).includes(value);
+}
+
+/** Rückmeldungen an den Besucher, je Sprache. Bewusst ohne interne Details. */
+const MESSAGES: Record<Lang, Record<Status, string>> = {
+  de: {
+    ok: "Danke, die Nachricht ist angekommen.",
+    invalid:
+      "Bitte Name, E-Mail-Adresse und eine Nachricht von mindestens zehn Zeichen angeben.",
+    spam: "Die Nachricht konnte nicht zugestellt werden.",
+    nojs:
+      "Das Formular braucht JavaScript für den Spamschutz. Alternativ bitte direkt eine E-Mail schreiben.",
+    ratelimit: "Zu viele Versuche. Bitte in einer Minute noch einmal probieren.",
+    error: "Das hat gerade nicht geklappt. Bitte später noch einmal versuchen.",
+  },
+  en: {
+    ok: "Thank you, your message has arrived.",
+    invalid:
+      "Please enter your name, email address and a message of at least ten characters.",
+    spam: "The message could not be delivered.",
+    nojs:
+      "The form needs JavaScript for its spam protection. Alternatively, please send an email directly.",
+    ratelimit: "Too many attempts. Please try again in a minute.",
+    error: "That did not work just now. Please try again later.",
+  },
+};
 
 const HTTP_STATUS: Record<Status, number> = {
   ok: 200,
@@ -63,9 +84,33 @@ async function withinLimit(
   return success;
 }
 
+/** Ergebnis einer Einsendung: der Status und die Sprache der Seite. */
+export interface ContactResult {
+  status: Status;
+  lang: Lang;
+}
+
+/**
+ * Sprache der Seite, von der die Einsendung kommt. Die englische Seite
+ * schickt an /api/contact?lang=en; so ist die Sprache bekannt, bevor der
+ * Rumpf gelesen wird, und auch ein Rate Limit antwortet in der richtigen.
+ */
+function requestLang(url: URL): Lang {
+  return url.searchParams.get("lang") === "en" ? "en" : "de";
+}
+
 export async function handleContact(
   request: Request,
   env: Env,
+): Promise<ContactResult> {
+  const lang = requestLang(new URL(request.url));
+  return { status: await processSubmission(request, env, lang), lang };
+}
+
+async function processSubmission(
+  request: Request,
+  env: Env,
+  lang: Lang,
 ): Promise<Status> {
   const url = new URL(request.url);
   const ip = request.headers.get("cf-connecting-ip") ?? "unbekannt";
@@ -130,6 +175,7 @@ export async function handleContact(
     `E-Mail:  ${email}`,
     `Absender-IP: ${ip}`,
     `Geprüft: ${typeof token === "string" && token.length > 0 ? "Turnstile" : "nur Rate Limit (ohne JavaScript gesendet)"}`,
+    `Sprache der Seite: ${lang}`,
     "",
     "Nachricht:",
     message,
@@ -161,23 +207,26 @@ export async function handleContact(
 }
 
 /** JSON-Antwort für den Weg mit JavaScript. */
-export function contactJson(status: Status): Response {
+export function contactJson({ status, lang }: ContactResult): Response {
   return Response.json(
-    { ok: status === "ok", status, message: MESSAGES[status] },
+    { ok: status === "ok", status, message: MESSAGES[lang][status] },
     { status: HTTP_STATUS[status] },
   );
 }
 
 /** Weiterleitung auf die Seite für den Weg ohne JavaScript. */
-export function contactRedirect(status: Status, url: URL): Response {
-  const target = new URL("/kontakt", url);
+export function contactRedirect(
+  { status, lang }: ContactResult,
+  url: URL,
+): Response {
+  const target = new URL(pageById("contact", lang)?.path ?? "/kontakt", url);
   target.searchParams.set("status", status);
-  target.hash = "formular";
+  target.hash = lang === "en" ? "form" : "formular";
   return new Response(null, {
     status: 303,
     headers: { location: target.toString() },
   });
 }
 
-export { MESSAGES, LIMITS };
+export { LIMITS };
 export type { Status };

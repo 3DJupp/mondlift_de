@@ -43,7 +43,8 @@
 
     button.disabled = true;
     const label = button.textContent;
-    button.textContent = "Wird gesendet …";
+    button.textContent =
+      document.documentElement.lang === "en" ? "Sending …" : "Wird gesendet …";
 
     try {
       const response = await fetch(form.action, {

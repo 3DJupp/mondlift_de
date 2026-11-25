@@ -10,7 +10,7 @@
  * tragen einen JSON-LD-Block, und der ist technisch ein Inline-Skript.
  * Erlaubt wird deshalb nicht `'unsafe-inline'`, sondern genau dieser eine
  * Block - der Hash wird im Worker ueber dieselbe Zeichenkette gerechnet,
- * die er ausliefert, siehe src/strukturierte-daten.ts. Seiten ohne Block
+ * die er ausliefert, siehe src/structured-data.ts. Seiten ohne Block
  * bekommen auch keinen Hash.
  */
 
@@ -26,14 +26,14 @@ export interface HeaderOptions {
   /**
    * Google Analytics ist eingerichtet. Dann darf die Seite das Skript von
    * Google laden und Messdaten dorthin schicken - geladen wird es trotzdem
-   * erst nach Einwilligung, siehe public/assets/js/einwilligung.js.
+   * erst nach Einwilligung, siehe public/assets/js/consent.js.
    */
   analytics?: boolean;
   /**
    * Die Antwort darf von fremden Seiten als Bild oder Video eingebunden
    * werden. Gilt nur fuer das Vorschauvideo, siehe src/video.ts.
    */
-  einbindbar?: boolean;
+  embeddable?: boolean;
 }
 
 /**
@@ -116,7 +116,7 @@ export function withSecurityHeaders(
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set(
     "Cross-Origin-Resource-Policy",
-    options.einbindbar ? "cross-origin" : "same-origin",
+    options.embeddable ? "cross-origin" : "same-origin",
   );
 
   // HSTS nur ueber HTTPS, damit lokales `wrangler dev` auf http nicht
