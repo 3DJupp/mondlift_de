@@ -519,28 +519,40 @@ nicht Google Analytics heißt —, steht in [BACKLOG.md](BACKLOG.md). Kurz:
 Search Console und Bing Webmaster Tools kosten keine Zeile Code und keinen
 Cookie-Banner, und sie beantworten die Fragen, um die es hier geht.
 
-### Google Analytics (vorbereitet, aus)
+### Google Analytics
 
-GA4 ist eingebaut, aber abgeschaltet, solange in `wrangler.jsonc` unter
-`vars` die `GA_MEASUREMENT_ID` leer ist. Dann ändert sich gegenüber vorher
+GA4 ist eingebaut und an (`GA_MEASUREMENT_ID` = `G-6T0V4MT2S8` in
+`wrangler.jsonc`), geladen wird `gtag.js` direkt. Abgeschaltet ist es,
+sobald dort die `GA_MEASUREMENT_ID` leer ist. Dann ändert sich gegenüber vorher
 nichts: kein Banner, kein Skript, keine Google-Quellen in der CSP, die
 Datenschutzerklärung in der Fassung ohne Tracking.
 
-Einschalten heißt: die Mess-ID (`G-...`) eintragen und deployen. Danach
+Einschalten heißt: eine GA4-Mess-ID (`G-...`) oder eine Container-ID des
+Tag Managers (`GTM-...`) eintragen und deployen. Mit `G-` lädt die Seite
+`gtag.js` direkt, mit `GTM-` lädt sie `gtm.js`, und was dann gemessen wird,
+steht im Container. Das Snippet, das Google für den Tag Manager vorgibt,
+wird dafür nicht eingefügt: sein Inline-Skript ließe die CSP nicht zu, und
+es würde vor der Einwilligung laden. `consent.js` macht dasselbe, nur
+später. Danach
 
 - bekommt jede Seite `<meta name="ga-measurement-id">` und
   `/assets/js/consent.js` (Texte auf Deutsch oder Englisch, je nach Seite),
 - erscheint beim ersten Besuch unten ein Banner mit „Ablehnen" und
   „Zulassen", beide gleich gewichtet,
-- lädt `gtag.js` erst nach „Zulassen"; vorher geht keine Anfrage an Google,
+- lädt `gtag.js` bzw. `gtm.js` erst nach „Zulassen"; vorher geht keine
+  Anfrage an Google,
 - erlaubt die CSP die Quellen von Google (`src/headers.ts`),
 - zeigt die Datenschutzerklärung den GA-Abschnitt samt Knopf zum Ändern der
   Wahl. Die Blöcke dafür tragen `data-analytics="on"` bzw. `"off"`, der
   Worker lässt nur die passende Fassung stehen.
 
 Die Wahl liegt zwölf Monate im localStorage. Ein Widerruf löscht die
-GA-Cookies und lädt die Seite neu. Google Signals und Werbefunktionen sind
-im Code abgeschaltet. Im GA-Konto gehören vorher noch erledigt: die
+GA-Cookies und lädt die Seite neu. Mit einer `G-`-ID sind Google Signals
+und Werbefunktionen im Code abgeschaltet; mit dem Tag Manager gehört das in
+die GA-Verwaltung (Datenerfassung, Google Signals aus). Der Container
+sollte nur das GA4-Tag enthalten: Tags mit eigenem Inline-Code („Benutzer-
+definiertes HTML“) blockiert die CSP, und Werbe-Tags deckt die
+Datenschutzerklärung nicht ab. Im GA-Konto gehören außerdem erledigt: die
 Datenverarbeitungsbedingungen akzeptieren und die Datenaufbewahrung auf
 14 Monate stellen, weil die Datenschutzerklärung das so nennt.
 

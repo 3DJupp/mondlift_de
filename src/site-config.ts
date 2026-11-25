@@ -13,6 +13,7 @@
  *   <span data-site="owner.name"></span>      Textinhalt
  *   <a data-site-href="contact.mailto">        href-Attribut
  *   <a data-lang-switch>                       Link auf die andere Sprache
+ *   <span data-lang-toggle>                    Schalter DE/EN, aktuelle markiert
  *   <div data-turnstile>                       bekommt data-sitekey
  *   <script data-turnstile-script>             entfällt ohne Site Key
  *   <p data-status="ok" hidden>                sichtbar bei ?status=ok
@@ -83,11 +84,15 @@ const VALUES: Record<Lang, Record<string, string>> = {
 };
 
 /** Beschriftungen, die der Worker selbst ins HTML schreibt. */
-const LABELS: Record<Lang, { citation: string; switchTo: string }> = {
-  // switchTo ist die Beschriftung des Links, der auf diese Sprache führt -
-  // also immer in der Zielsprache geschrieben.
-  de: { citation: "Zitiervorschlag", switchTo: "Deutsch" },
-  en: { citation: "Suggested citation", switchTo: "English" },
+const LABELS: Record<
+  Lang,
+  { citation: string; switchTo: string; short: string; group: string }
+> = {
+  // switchTo und short beschriften den Weg in diese Sprache - also immer in
+  // der Zielsprache geschrieben. group ist die Beschriftung des Schalters
+  // für Screenreader, in der Sprache der Seite.
+  de: { citation: "Zitiervorschlag", switchTo: "Deutsch", short: "DE", group: "Sprache" },
+  en: { citation: "Suggested citation", switchTo: "English", short: "EN", group: "Language" },
 };
 
 export interface PageContext {
@@ -202,6 +207,24 @@ export function injectSiteConfig(
         element.setAttribute("lang", LOCALE[target]);
         element.setInnerContent(LABELS[target].switchTo);
         element.removeAttribute("data-lang-switch");
+      },
+    })
+    .on("[data-lang-toggle]", {
+      element(element) {
+        // Beide Sprachen nebeneinander, die aktuelle ist kein Link. So ist
+        // auf einen Blick klar, dass es ein Schalter ist und wo man steht.
+        const options = LANGS.map((option) => {
+          const label = `aria-label="${LABELS[option].switchTo}" lang="${LOCALE[option]}"`;
+          if (option === lang) {
+            return `<span class="lang__option" aria-current="true" ${label}>${LABELS[option].short}</span>`;
+          }
+          const href = escapeHtml(context.page?.alternates[option] ?? homePath(option));
+          return `<a class="lang__option" href="${href}" hreflang="${LOCALE[option]}" ${label}>${LABELS[option].short}</a>`;
+        });
+        element.setAttribute("role", "group");
+        element.setAttribute("aria-label", LABELS[lang].group);
+        element.setInnerContent(options.join(""), { html: true });
+        element.removeAttribute("data-lang-toggle");
       },
     })
     .on("[data-analytics]", {

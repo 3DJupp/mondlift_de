@@ -25,6 +25,7 @@
 import config from "../site.config.json";
 import { respondText } from "./cache";
 import { injectSiteConfig } from "./site-config";
+import { analyticsId } from "./analytics";
 import {
   LANGS,
   PAGES,
@@ -289,7 +290,12 @@ function render(page: Page, origin: string, env: Env): Promise<string> {
   const pending = (async () => {
     const asset = await env.ASSETS.fetch(new Request(new URL(page.path, origin)));
     if (!asset.ok) throw new Error(`Seite ${page.path}: ${asset.status}`);
-    const html = await injectSiteConfig(asset, { page }).text();
+    // Mit demselben Analytics-Stand wie die HTML-Seite, sonst stünde in der
+    // Markdown-Fassung „ohne Tracking“, während die Seite misst.
+    const html = await injectSiteConfig(asset, {
+      page,
+      analyticsId: analyticsId(env),
+    }).text();
     return toFile(page, html);
   })();
   CACHE.set(page.path, pending);

@@ -50,6 +50,7 @@
     <canvas id="ride" aria-hidden="true"></canvas>
 
     <div class="hero">
+      <span class="lang hero__lang" data-lang-toggle><a href="/" hreflang="de" lang="de">DE</a></span>
       <header class="hero__head">
         <!-- The name is in the heading as text; what you see is the sign
              below it, modelled on the name board above the back wall:
@@ -123,11 +124,12 @@
     <main class="sheet" id="content">
       <div class="wrap">
         <nav class="nav nav--sheet" aria-label="Pages">
-          <a href="/en/mondlift">The ride</a>
-          <a href="/en/enterprise">The type</a>
-          <a href="/en/glossary">Glossary</a>
-          <a href="/en/faq">FAQ</a>
-          <a class="nav__lang" data-lang-switch href="/">Deutsch</a>
+          <div class="nav__links">
+            <a href="/en/mondlift">The ride</a>
+            <a href="/en/enterprise">The type</a>
+            <a href="/en/glossary">Glossary</a>
+            <a href="/en/faq">FAQ</a>
+          </div>
         </nav>
 
         <h2>A wheel that stands up</h2>
@@ -223,8 +225,10 @@
 
         <p>
           If you are interested in the technology behind it: the site works
-          without a framework, without cookies and without tracking. What is
-          processed when you visit is set out in the
+          without a framework<span data-analytics="off">, without cookies and
+          without tracking</span><span data-analytics="on">; cookies and
+          Google Analytics only come in if you agree</span>. What is processed
+          when you visit is set out in the
           <a href="/en/privacy">privacy notice</a>.
         </p>
       </div>

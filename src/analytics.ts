@@ -1,6 +1,10 @@
 /**
- * Google Analytics 4 - vorbereitet, aber aus, solange keine Mess-ID gesetzt
- * ist.
+ * Google Analytics 4 - aus, solange keine Mess-ID gesetzt ist.
+ *
+ * Zwei Formen werden angenommen: eine GA4-Mess-ID (`G-...`), dann lädt die
+ * Seite gtag.js direkt, oder eine Container-ID des Google Tag Managers
+ * (`GTM-...`), dann lädt sie gtm.js, und welche Tags laufen, steht im
+ * Container. Beides erst nach Einwilligung.
  *
  * Die ID steht in wrangler.jsonc unter `vars.GA_MEASUREMENT_ID` (sie ist
  * öffentlich, sie steht ohnehin im HTML). Leer heißt: kein Banner, kein
@@ -14,12 +18,12 @@
  *  - Blöcke mit `data-analytics="on"` bleiben stehen, solche mit
  *    `data-analytics="off"` fallen weg (Datenschutzerklärung).
  *
- * Geladen wird gtag.js erst im Browser und erst nach einem Klick auf
+ * Geladen wird gtag.js bzw. gtm.js erst im Browser und erst nach einem Klick auf
  * „Zulassen", siehe public/assets/js/consent.js.
  */
 
-/** Format einer GA4-Mess-ID, etwa G-AB12CD34EF. */
-const MEASUREMENT_ID = /^G-[A-Z0-9]{4,16}$/;
+/** GA4-Mess-ID (G-AB12CD34EF) oder GTM-Container-ID (GTM-AB12CD3). */
+const MEASUREMENT_ID = /^(G|GTM)-[A-Z0-9]{4,16}$/;
 
 /**
  * Die gültige Mess-ID oder null. Ein Tippfehler in der Konfiguration soll
