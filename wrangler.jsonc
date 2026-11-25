@@ -34,13 +34,14 @@
   // ohnehin im HTML - der Secret Key gehört dagegen in `wrangler secret put`.
   // Leer lassen heißt: kein Widget im Formular.
   //
-  // GA_MEASUREMENT_ID ist die GA4-Mess-ID (G-...), ebenfalls öffentlich.
+  // GA_MEASUREMENT_ID ist die GA4-Mess-ID (G-...) oder die Container-ID des
+  // Google Tag Managers (GTM-...), ebenfalls öffentlich.
   // Leer heißt: kein Analytics, kein Banner, keine Google-Quellen in der
   // CSP. Erst mit einer ID erscheint das Einwilligungsbanner - siehe
   // src/analytics.ts und README.
   "vars": {
     "TURNSTILE_SITE_KEY": "0x4AAAAAAFRtdEHO2PO0lLFd",
-    "GA_MEASUREMENT_ID": ""
+    "GA_MEASUREMENT_ID": "G-6T0V4MT2S8"
   },
 
   // Rate Limits fürs Kontaktformular, pro IP. Die Periode darf nur 10 oder

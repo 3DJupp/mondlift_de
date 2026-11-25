@@ -2,7 +2,8 @@
  * Einwilligung für Google Analytics.
  *
  * Dieses Skript bindet der Worker nur ein, wenn in wrangler.jsonc eine
- * GA4-Mess-ID gesetzt ist (siehe src/analytics.ts). Die ID steht dann in
+ * GA4-Mess-ID (G-...) oder eine Tag-Manager-Container-ID (GTM-...) gesetzt
+ * ist (siehe src/analytics.ts). Die ID steht dann in
  * <meta name="ga-measurement-id">.
  *
  * Ablauf:
@@ -23,7 +24,8 @@
 
   var meta = document.querySelector('meta[name="ga-measurement-id"]');
   var gaId = meta && meta.getAttribute("content");
-  if (!gaId || !/^G-[A-Z0-9]{4,16}$/.test(gaId)) return;
+  if (!gaId || !/^(G|GTM)-[A-Z0-9]{4,16}$/.test(gaId)) return;
+  var IS_GTM = gaId.indexOf("GTM-") === 0;
 
   var STORAGE_KEY = "mondlift-consent";
   var VERSION = 1;
@@ -99,21 +101,33 @@
     window.gtag = function () {
       window.dataLayer.push(arguments);
     };
-    // Consent Mode: Analyse ja, alles rund um Werbung nein.
+    // Consent Mode: Analyse ja, alles rund um Werbung nein. Gilt auch für
+    // die Tags in einem Tag-Manager-Container.
     window.gtag("consent", "default", {
       analytics_storage: "granted",
       ad_storage: "denied",
       ad_user_data: "denied",
       ad_personalization: "denied",
     });
-    window.gtag("js", new Date());
-    window.gtag("config", gaId, {
-      allow_google_signals: false,
-      allow_ad_personalization_signals: false,
-    });
+
     var script = document.createElement("script");
     script.async = true;
-    script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(gaId);
+    if (IS_GTM) {
+      // Entspricht dem Snippet, das Google für den Tag Manager vorgibt,
+      // nur ohne Inline-Skript, das die CSP nicht erlaubt. Google Signals
+      // und Werbefunktionen werden dann im GA4-Tag bzw. in der GA-
+      // Verwaltung abgeschaltet, nicht hier.
+      window.gtag("js", new Date());
+      window.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+      script.src = "https://www.googletagmanager.com/gtm.js?id=" + encodeURIComponent(gaId);
+    } else {
+      window.gtag("js", new Date());
+      window.gtag("config", gaId, {
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+      });
+      script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(gaId);
+    }
     document.head.appendChild(script);
   }
 

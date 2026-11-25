@@ -280,6 +280,9 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  /* Grundlinie statt Oberkante: ein Umlaut in Grossbuchstaben (ÜBERSICHT)
+     macht sonst seine Zeile hoeher und den Eintrag schief. */
+  align-items: baseline;
   gap: 0.45rem 1.35rem;
   margin: 0 0 0.7rem;
   padding: 0;
@@ -1063,8 +1066,109 @@ address {
   display: none;
 }
 
-/* Der Sprachumschalter steht am Ende der Navigation und rueckt nach
-   rechts, damit er nicht wie eine weitere Inhaltsseite aussieht. */
-.nav__lang {
+/* ------------------------------------------------------- Seitenkopf */
+
+/* Links der Name als Weg zur Startseite, daneben die Rubriken, rechts der
+   Sprachschalter. Auf schmalen Bildschirmen stehen Name und Schalter in
+   der ersten Zeile und die Rubriken darunter, gleichmaessig verteilt -
+   statt dass einzelne Eintraege zufaellig in eine zweite Zeile rutschen. */
+.nav {
+  align-items: center;
+  gap: 0.6rem 1.6rem;
+}
+
+.nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.3rem;
+}
+
+.nav .nav__home {
+  color: var(--ink);
+  border-bottom-color: transparent;
+  font-weight: 600;
+}
+
+.nav .nav__home:hover {
+  color: var(--amber);
+}
+
+.nav > .lang {
   margin-left: auto;
+}
+
+@media (max-width: 34rem) {
+  .nav__links {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: space-between;
+    gap: 0.4rem 0.8rem;
+  }
+
+  .nav__links a {
+    letter-spacing: 0.08em;
+  }
+
+  /* Auf der Startseite gibt es keinen Namen und keinen Schalter in der
+     Leiste, die Rubriken stehen allein. */
+  .nav--sheet .nav__links {
+    order: 0;
+  }
+}
+
+/* Der Sprachschalter: beide Sprachen in einer Pille, die aktuelle hell
+   hinterlegt. Als Schalter erkennbar, nicht als weitere Rubrik. */
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(7, 10, 18, 0.55);
+  line-height: 1;
+}
+
+.lang .lang__option,
+.nav .lang .lang__option {
+  display: inline-block;
+  padding: 0.32rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  color: var(--ink-dim);
+}
+
+.lang a.lang__option:hover {
+  color: var(--amber);
+}
+
+.lang .lang__option[aria-current] {
+  color: var(--bg);
+  background: var(--amber);
+}
+
+/* Auf der Startseite oben rechts im Bild, wo die Navigation noch nicht zu
+   sehen ist. */
+.hero__lang {
+  position: absolute;
+  top: clamp(0.8rem, 2.5vw, 1.6rem);
+  right: clamp(0.8rem, 2.5vw, 1.6rem);
+  z-index: 2;
+}
+
+/* Auf schmalen Bildschirmen steht der Sprachschalter sonst direkt neben
+   dem Schild. */
+@media (max-width: 34rem) {
+  .hero__head {
+    padding-top: 2.4rem;
+  }
+}
+
+/* Zahlen in Tabellen nicht trennen: „rund 50“ gehoert in eine Zeile. */
+.data-table .nowrap {
+  white-space: nowrap;
 }
